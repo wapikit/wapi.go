@@ -104,8 +104,5 @@ Distributed under the AGPL 3.0 License. View [LICENSE](./LICENSE).
 
 ## Contact
 
-- [Sarthak Jain](https://sarthakjdev.com)
 - Email: sarthak@softlancer.co
-- [Twitter](https://twitter.com/sarthakjdev) | [LinkedIn](https://www.linkedin.com/in/sarthakjdev)
-
-Note: This SDK is part of an open-source product-building initiative by [Softlancer](https://github.com/softlancerhq), and this repository will soon be moved under the same organization.
+- [Twitter](https://twitter.com/wapikit) | [LinkedIn](https://www.linkedin.com/in/wapikit)
