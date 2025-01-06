@@ -102,7 +102,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &messageValue); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid MessagesValue JSON: %v", err))
 				}
-				err = wh.handleMessagesSubscriptionEvents(messageValue.Messages, messageValue.Statuses, messageValue.Metadata.PhoneNumberId)
+				err = wh.handleMessagesSubscriptionEvents(messageValue.Messages, messageValue.Statuses, messageValue.Metadata.PhoneNumberId, entry.Id)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -294,7 +294,7 @@ func (wh *WebhookManager) ListenToEvents() {
 	}
 }
 
-func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, statuses []Status, phoneNumberId string) error {
+func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, statuses []Status, phoneNumberId, businessAccountId string) error {
 	// consider the field here too, because we will be supporting more events
 	if len(statuses) > 0 {
 		for _, status := range statuses {
@@ -333,6 +333,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 			{
 				wh.EventManager.Publish(events.TextMessageEventType, events.NewTextMessageEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,
@@ -357,6 +358,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 
 				wh.EventManager.Publish(events.ImageMessageEventType, events.NewImageMessageEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,
@@ -382,6 +384,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 
 				wh.EventManager.Publish(events.AudioMessageEventType, events.NewAudioMessageEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,
@@ -409,6 +412,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 
 				wh.EventManager.Publish(events.VideoMessageEventType, events.NewVideoMessageEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,
@@ -435,6 +439,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 
 				wh.EventManager.Publish(events.DocumentMessageEventType, events.NewVideoMessageEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,
@@ -457,6 +462,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 
 				wh.EventManager.Publish(events.LocationMessageEventType, events.NewLocationMessageEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,
@@ -470,6 +476,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 			{
 				wh.EventManager.Publish(events.ContactMessageEventType, events.NewTextMessageEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,
@@ -494,6 +501,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 
 				wh.EventManager.Publish(events.StickerMessageEventType, events.NewStickerMessageEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,
@@ -509,6 +517,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 			{
 				wh.EventManager.Publish(events.QuickReplyMessageEventType, events.NewQuickReplyButtonInteractionEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,
@@ -524,6 +533,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 				if message.Interactive.Type == "list" {
 					wh.EventManager.Publish(events.ListInteractionMessageEventType, events.NewListInteractionEvent(
 						events.NewBaseMessageEvent(
+							businessAccountId,
 							phoneNumberId,
 							message.Id,
 							message.Timestamp,
@@ -537,6 +547,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 				} else {
 					wh.EventManager.Publish(events.ReplyButtonInteractionEventType, events.NewReplyButtonInteractionEvent(
 						events.NewBaseMessageEvent(
+							businessAccountId,
 							phoneNumberId,
 							message.Id,
 							message.Timestamp,
@@ -563,6 +574,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 
 				wh.EventManager.Publish(events.ReactionMessageEventType, events.NewReactionMessageEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,
@@ -576,6 +588,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 			{
 				wh.EventManager.Publish(events.OrderReceivedEventType, events.NewTextMessageEvent(
 					events.NewBaseMessageEvent(
+						businessAccountId,
 						phoneNumberId,
 						message.Id,
 						message.Timestamp,

@@ -31,15 +31,16 @@ type BaseBusinessAccountEventInterface interface {
 }
 
 type BaseMessageEvent struct {
-	requester   request_client.RequestClient
-	MessageId   string         `json:"message_id"`
-	Context     MessageContext `json:"context"`
-	Timestamp   string         `json:"timestamp"`
-	IsForwarded bool           `json:"is_forwarded"`
-	PhoneNumber string         `json:"phone_number"`
+	BusinessAccountId string `json:"business_account_id"`
+	requester         request_client.RequestClient
+	MessageId         string         `json:"message_id"`
+	Context           MessageContext `json:"context"`
+	Timestamp         string         `json:"timestamp"`
+	IsForwarded       bool           `json:"is_forwarded"`
+	PhoneNumber       string         `json:"phone_number"`
 }
 
-func NewBaseMessageEvent(phoneNumber string, messageId string, timestamp string, from string, isForwarded bool, requester request_client.RequestClient) BaseMessageEvent {
+func NewBaseMessageEvent(businessAccountId, messageId, phoneNumber, timestamp, from string, isForwarded bool, requester request_client.RequestClient) BaseMessageEvent {
 	return BaseMessageEvent{
 		MessageId: messageId,
 		Context: MessageContext{
