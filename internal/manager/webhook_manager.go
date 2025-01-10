@@ -102,7 +102,14 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &messageValue); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid MessagesValue JSON: %v", err))
 				}
-				err = wh.handleMessagesSubscriptionEvents(messageValue.Messages, messageValue.Statuses, messageValue.Metadata.PhoneNumberId, entry.Id)
+
+				err = wh.handleMessagesSubscriptionEvents(HandleMessageSubscriptionEventPayload{
+					Messages:          messageValue.Messages,
+					Statuses:          messageValue.Statuses,
+					PhoneNumber:       messageValue.Metadata.DisplayPhoneNumber,
+					BusinessAccountId: entry.Id,
+				})
+
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -294,10 +301,17 @@ func (wh *WebhookManager) ListenToEvents() {
 	}
 }
 
-func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, statuses []Status, phoneNumberId, businessAccountId string) error {
+type HandleMessageSubscriptionEventPayload struct {
+	Messages          []Message `json:"messages"`
+	Statuses          []Status  `json:"statuses"`
+	PhoneNumber       string    `json:"phone_number_id"`     // * this is the phone number to which this event has bee sent to
+	BusinessAccountId string    `json:"business_account_id"` // * business account id to which this event has been sent to
+}
+
+func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessageSubscriptionEventPayload) error {
 	// consider the field here too, because we will be supporting more events
-	if len(statuses) > 0 {
-		for _, status := range statuses {
+	if len(payload.Statuses) > 0 {
+		for _, status := range payload.Statuses {
 			switch status.Status {
 			case string(MessageStatusDelivered):
 				{
@@ -327,19 +341,32 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 		}
 	}
 
-	for _, message := range messages {
+	for _, message := range payload.Messages {
+
+		var repliedTo string
+
+		if message.Context.Id != "" {
+			repliedTo = message.Context.Id
+		}
+
+		baseMessageEvent := events.NewBaseMessageEvent(events.BaseMessageEventParams{
+			BusinessAccountId: payload.BusinessAccountId,
+			MessageId:         message.Id,
+			PhoneNumber:       payload.PhoneNumber,
+			Timestamp:         message.Timestamp,
+			From:              message.From,
+			IsForwarded:       message.Context.Forwarded,
+			Context: events.MessageContext{
+				RepliedToMessageId: repliedTo,
+			},
+			Requester: wh.Requester,
+		})
+
 		switch message.Type {
 		case NotificationMessageTypeText:
 			{
 				wh.EventManager.Publish(events.TextMessageEventType, events.NewTextMessageEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					message.Text.Body),
 				)
 			}
@@ -357,14 +384,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 				}
 
 				wh.EventManager.Publish(events.ImageMessageEventType, events.NewImageMessageEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					*imageMessageComponent,
 					message.Image.MIMEType, message.Image.SHA256, message.Image.Id),
 				)
@@ -383,14 +403,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 				}
 
 				wh.EventManager.Publish(events.AudioMessageEventType, events.NewAudioMessageEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					*audioMessageComponent,
 					message.Audio.MIMEType, message.Audio.SHA256, message.Audio.Id),
 				)
@@ -411,14 +424,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 				}
 
 				wh.EventManager.Publish(events.VideoMessageEventType, events.NewVideoMessageEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					*videoMessageComponent,
 					message.Video.MIMEType, message.Video.SHA256, message.Video.Id),
 				)
@@ -438,14 +444,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 				}
 
 				wh.EventManager.Publish(events.DocumentMessageEventType, events.NewVideoMessageEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					*documentMessageComponent,
 					message.Document.MIMEType, message.Document.SHA256, message.Document.Id),
 				)
@@ -461,28 +460,14 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 				}
 
 				wh.EventManager.Publish(events.LocationMessageEventType, events.NewLocationMessageEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					*locationMessageComponent),
 				)
 			}
 		case NotificationMessageTypeContacts:
 			{
 				wh.EventManager.Publish(events.ContactMessageEventType, events.NewTextMessageEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					message.Text.Body),
 				)
 			}
@@ -500,14 +485,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 				}
 
 				wh.EventManager.Publish(events.StickerMessageEventType, events.NewStickerMessageEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					*stickerMessageComponent,
 					message.Sticker.MIMEType, message.Sticker.SHA256, message.Sticker.Id),
 				)
@@ -516,14 +494,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 		case NotificationMessageTypeButton:
 			{
 				wh.EventManager.Publish(events.QuickReplyMessageEventType, events.NewQuickReplyButtonInteractionEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					message.Button.Text,
 					message.Button.Payload,
 				))
@@ -532,28 +503,14 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 			{
 				if message.Interactive.Type == "list" {
 					wh.EventManager.Publish(events.ListInteractionMessageEventType, events.NewListInteractionEvent(
-						events.NewBaseMessageEvent(
-							businessAccountId,
-							phoneNumberId,
-							message.Id,
-							message.Timestamp,
-							message.From,
-							message.Context.Forwarded,
-							wh.Requester),
+						baseMessageEvent,
 						message.Interactive.ListReply.Title,
 						message.Interactive.ListReply.Id,
 						message.Interactive.ListReply.Description,
 					))
 				} else {
 					wh.EventManager.Publish(events.ReplyButtonInteractionEventType, events.NewReplyButtonInteractionEvent(
-						events.NewBaseMessageEvent(
-							businessAccountId,
-							phoneNumberId,
-							message.Id,
-							message.Timestamp,
-							message.From,
-							message.Context.Forwarded,
-							wh.Requester),
+						baseMessageEvent,
 						message.Interactive.ButtonReply.Title,
 						message.Interactive.ButtonReply.ReplyId,
 					))
@@ -573,28 +530,14 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(messages []Message, s
 				}
 
 				wh.EventManager.Publish(events.ReactionMessageEventType, events.NewReactionMessageEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					*reactionMessageComponent,
 				))
 			}
 		case NotificationMessageTypeOrder:
 			{
 				wh.EventManager.Publish(events.OrderReceivedEventType, events.NewTextMessageEvent(
-					events.NewBaseMessageEvent(
-						businessAccountId,
-						phoneNumberId,
-						message.Id,
-						message.Timestamp,
-						message.From,
-						message.Context.Forwarded,
-						wh.Requester),
+					baseMessageEvent,
 					message.Text.Body),
 				)
 			}

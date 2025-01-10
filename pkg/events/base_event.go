@@ -9,7 +9,7 @@ import (
 )
 
 type MessageContext struct {
-	From string `json:"from"`
+	RepliedToMessageId string `json:"replied_to_message_id"`
 }
 
 type BaseEvent interface {
@@ -34,22 +34,34 @@ type BaseMessageEvent struct {
 	BusinessAccountId string `json:"business_account_id"`
 	requester         request_client.RequestClient
 	MessageId         string         `json:"message_id"`
+	From              string         `json:"from"`
 	Context           MessageContext `json:"context"`
 	Timestamp         string         `json:"timestamp"`
 	IsForwarded       bool           `json:"is_forwarded"`
 	PhoneNumber       string         `json:"phone_number"`
 }
 
-func NewBaseMessageEvent(businessAccountId, messageId, phoneNumber, timestamp, from string, isForwarded bool, requester request_client.RequestClient) BaseMessageEvent {
+type BaseMessageEventParams struct {
+	BusinessAccountId string
+	MessageId         string
+	PhoneNumber       string
+	Timestamp         string
+	From              string // * whatsapp account id of the user who sent the message
+	IsForwarded       bool
+	Context           MessageContext // * this context will not be present if in case a message is a reply to another message
+	Requester         request_client.RequestClient
+}
+
+func NewBaseMessageEvent(params BaseMessageEventParams) BaseMessageEvent {
 	return BaseMessageEvent{
-		MessageId: messageId,
-		Context: MessageContext{
-			From: from,
-		},
-		requester:   requester,
-		Timestamp:   timestamp,
-		IsForwarded: isForwarded,
-		PhoneNumber: phoneNumber,
+		MessageId:         params.MessageId,
+		Context:           params.Context,
+		requester:         params.Requester,
+		Timestamp:         params.Timestamp,
+		IsForwarded:       params.IsForwarded,
+		PhoneNumber:       params.PhoneNumber,
+		BusinessAccountId: params.BusinessAccountId,
+		From:              params.From,
 	}
 }
 
@@ -60,7 +72,7 @@ func (bme BaseMessageEvent) GetEventType() string {
 // Reply to the message
 func (baseMessageEvent *BaseMessageEvent) Reply(Message components.BaseMessage) (string, error) {
 	body, err := Message.ToJson(components.ApiCompatibleJsonConverterConfigs{
-		SendToPhoneNumber: baseMessageEvent.Context.From,
+		SendToPhoneNumber: baseMessageEvent.From,
 		ReplyToMessageId:  baseMessageEvent.MessageId,
 	})
 
