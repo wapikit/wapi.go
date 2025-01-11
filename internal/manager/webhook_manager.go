@@ -573,8 +573,9 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 	return nil
 }
 
-func (wh *WebhookManager) handleAccountAlertsSubscriptionEvents(value AccountAlertsValue) {
+func (wh *WebhookManager) handleAccountAlertsSubscriptionEvents(value AccountAlertsValue) error {
 	wh.EventManager.Publish(events.AccountAlertsEventType, events.AccountAlertEvent{})
+	return nil
 }
 
 func (wh *WebhookManager) handleSecuritySubscriptionEvents(value SecurityValue) {
