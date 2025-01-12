@@ -104,9 +104,12 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 
 				err = wh.handleMessagesSubscriptionEvents(HandleMessageSubscriptionEventPayload{
-					Messages:          messageValue.Messages,
-					Statuses:          messageValue.Statuses,
-					PhoneNumber:       messageValue.Metadata.DisplayPhoneNumber,
+					Messages: messageValue.Messages,
+					Statuses: messageValue.Statuses,
+					PhoneNumber: events.BusinessPhoneNumber{
+						DisplayNumber: messageValue.Metadata.DisplayPhoneNumber,
+						Id:            messageValue.Metadata.PhoneNumberId,
+					},
 					BusinessAccountId: entry.Id,
 				})
 
@@ -302,10 +305,10 @@ func (wh *WebhookManager) ListenToEvents() {
 }
 
 type HandleMessageSubscriptionEventPayload struct {
-	Messages          []Message `json:"messages"`
-	Statuses          []Status  `json:"statuses"`
-	PhoneNumber       string    `json:"phone_number_id"`     // * this is the phone number to which this event has bee sent to
-	BusinessAccountId string    `json:"business_account_id"` // * business account id to which this event has been sent to
+	Messages          []Message                  `json:"messages"`
+	Statuses          []Status                   `json:"statuses"`
+	PhoneNumber       events.BusinessPhoneNumber `json:"phone_number_id"`     // * this is the phone number to which this event has bee sent to
+	BusinessAccountId string                     `json:"business_account_id"` // * business account id to which this event has been sent to
 }
 
 func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessageSubscriptionEventPayload) error {

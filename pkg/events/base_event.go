@@ -30,21 +30,26 @@ type BaseBusinessAccountEventInterface interface {
 	BaseEvent
 }
 
+type BusinessPhoneNumber struct {
+	DisplayNumber string `json:"display_number"`
+	Id            string `json:"id"`
+}
+
 type BaseMessageEvent struct {
 	BusinessAccountId string `json:"business_account_id"`
 	requester         request_client.RequestClient
-	MessageId         string         `json:"message_id"`
-	From              string         `json:"from"`
-	Context           MessageContext `json:"context"`
-	Timestamp         string         `json:"timestamp"`
-	IsForwarded       bool           `json:"is_forwarded"`
-	PhoneNumber       string         `json:"phone_number"`
+	MessageId         string              `json:"message_id"`
+	From              string              `json:"from"`
+	Context           MessageContext      `json:"context"`
+	Timestamp         string              `json:"timestamp"`
+	IsForwarded       bool                `json:"is_forwarded"`
+	PhoneNumber       BusinessPhoneNumber `json:"phone_number"`
 }
 
 type BaseMessageEventParams struct {
 	BusinessAccountId string
 	MessageId         string
-	PhoneNumber       string
+	PhoneNumber       BusinessPhoneNumber
 	Timestamp         string
 	From              string // * whatsapp account id of the user who sent the message
 	IsForwarded       bool
@@ -80,7 +85,7 @@ func (baseMessageEvent *BaseMessageEvent) Reply(Message components.BaseMessage) 
 		return "", err
 	}
 
-	apiRequest := baseMessageEvent.requester.NewApiRequest(strings.Join([]string{baseMessageEvent.PhoneNumber, "messages"}, "/"), http.MethodPost)
+	apiRequest := baseMessageEvent.requester.NewApiRequest(strings.Join([]string{baseMessageEvent.PhoneNumber.Id, "messages"}, "/"), http.MethodPost)
 	apiRequest.SetBody(string(body))
 	apiRequest.Execute()
 
