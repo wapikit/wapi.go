@@ -4,6 +4,66 @@ import "github.com/wapikit/wapi.go/pkg/events"
 
 
 
+<a name="AccountAlertEvent"></a>
+## type AccountAlertEvent
+
+
+
+```go
+type AccountAlertEvent struct {
+    BaseBusinessAccountEvent
+}
+```
+
+<a name="NewAccountAlertEvent"></a>
+### func NewAccountAlertEvent
+
+```go
+func NewAccountAlertEvent() *AccountAlertEvent
+```
+
+
+
+<a name="AccountReviewUpdateEvent"></a>
+## type AccountReviewUpdateEvent
+
+
+
+```go
+type AccountReviewUpdateEvent struct {
+    BaseBusinessAccountEvent
+}
+```
+
+<a name="NewAccountReviewUpdateEvent"></a>
+### func NewAccountReviewUpdateEvent
+
+```go
+func NewAccountReviewUpdateEvent() *AccountReviewUpdateEvent
+```
+
+
+
+<a name="AccountUpdateEvent"></a>
+## type AccountUpdateEvent
+
+
+
+```go
+type AccountUpdateEvent struct {
+    BaseBusinessAccountEvent
+}
+```
+
+<a name="NewAccountUpdateEvent"></a>
+### func NewAccountUpdateEvent
+
+```go
+func NewAccountUpdateEvent() *AccountUpdateEvent
+```
+
+
+
 <a name="AdInteractionEvent"></a>
 ## type AdInteractionEvent
 
@@ -106,6 +166,37 @@ func NewAudioMessageEvent(baseMessageEvent BaseMessageEvent, audio components.Au
 
 NewAudioMessageEvent creates a new AudioMessageEvent instance.
 
+<a name="BaseBusinessAccountEvent"></a>
+## type BaseBusinessAccountEvent
+
+
+
+```go
+type BaseBusinessAccountEvent struct {
+    Timestamp string `json:"timestamp"`
+}
+```
+
+<a name="BaseBusinessAccountEvent.GetEventType"></a>
+### func \(BaseBusinessAccountEvent\) GetEventType
+
+```go
+func (bme BaseBusinessAccountEvent) GetEventType() string
+```
+
+
+
+<a name="BaseBusinessAccountEventInterface"></a>
+## type BaseBusinessAccountEventInterface
+
+
+
+```go
+type BaseBusinessAccountEventInterface interface {
+    BaseEvent
+}
+```
+
 <a name="BaseEvent"></a>
 ## type BaseEvent
 
@@ -138,12 +229,14 @@ type BaseMediaMessageEvent struct {
 
 ```go
 type BaseMessageEvent struct {
-    requester   request_client.RequestClient
-    MessageId   string         `json:"message_id"`
-    Context     MessageContext `json:"context"`
-    Timestamp   string         `json:"timestamp"`
-    IsForwarded bool           `json:"is_forwarded"`
-    PhoneNumber string         `json:"phone_number"`
+    BusinessAccountId string `json:"business_account_id"`
+    requester         request_client.RequestClient
+    MessageId         string              `json:"message_id"`
+    From              string              `json:"from"`
+    Context           MessageContext      `json:"context"`
+    Timestamp         string              `json:"timestamp"`
+    IsForwarded       bool                `json:"is_forwarded"`
+    PhoneNumber       BusinessPhoneNumber `json:"phone_number"`
 }
 ```
 
@@ -151,7 +244,7 @@ type BaseMessageEvent struct {
 ### func NewBaseMessageEvent
 
 ```go
-func NewBaseMessageEvent(phoneNumber string, messageId string, timestamp string, from string, isForwarded bool, requester request_client.RequestClient) BaseMessageEvent
+func NewBaseMessageEvent(params BaseMessageEventParams) BaseMessageEvent
 ```
 
 
@@ -196,6 +289,24 @@ type BaseMessageEventInterface interface {
 }
 ```
 
+<a name="BaseMessageEventParams"></a>
+## type BaseMessageEventParams
+
+
+
+```go
+type BaseMessageEventParams struct {
+    BusinessAccountId string
+    MessageId         string
+    PhoneNumber       BusinessPhoneNumber
+    Timestamp         string
+    From              string // * whatsapp account id of the user who sent the message
+    IsForwarded       bool
+    Context           MessageContext // * this context will not be present if in case a message is a reply to another message
+    Requester         request_client.RequestClient
+}
+```
+
 <a name="BaseSystemEvent"></a>
 ## type BaseSystemEvent
 
@@ -224,6 +335,38 @@ func (bme BaseSystemEvent) GetEventType() string
 ```go
 type BaseSystemEventInterface interface {
     BaseEvent
+}
+```
+
+<a name="BusinessCapabilityUpdateEvent"></a>
+## type BusinessCapabilityUpdateEvent
+
+
+
+```go
+type BusinessCapabilityUpdateEvent struct {
+    BaseBusinessAccountEvent
+}
+```
+
+<a name="NewBusinessCapabilityUpdateEvent"></a>
+### func NewBusinessCapabilityUpdateEvent
+
+```go
+func NewBusinessCapabilityUpdateEvent() *BusinessCapabilityUpdateEvent
+```
+
+
+
+<a name="BusinessPhoneNumber"></a>
+## type BusinessPhoneNumber
+
+
+
+```go
+type BusinessPhoneNumber struct {
+    DisplayNumber string `json:"display_number"`
+    Id            string `json:"id"`
 }
 ```
 
@@ -310,33 +453,42 @@ type EventType string
 
 ```go
 const (
-    TextMessageEventType             EventType = "text_message"
-    AudioMessageEventType            EventType = "audio_message"
-    VideoMessageEventType            EventType = "video_message"
-    ImageMessageEventType            EventType = "image_message"
-    ContactMessageEventType          EventType = "contact_message"
-    DocumentMessageEventType         EventType = "document_message"
-    LocationMessageEventType         EventType = "location_message"
-    ReactionMessageEventType         EventType = "reaction_message"
-    ListInteractionMessageEventType  EventType = "list_interaction_message"
-    TemplateMessageEventType         EventType = "template_message"
-    QuickReplyMessageEventType       EventType = "quick_reply_message"
-    ReplyButtonInteractionEventType  EventType = "reply_button_interaction"
-    StickerMessageEventType          EventType = "sticker_message"
-    AdInteractionEventType           EventType = "ad_interaction_message"
-    CustomerIdentityChangedEventType EventType = "customer_identity_changed"
-    CustomerNumberChangedEventType   EventType = "customer_number_changed"
-    MessageDeliveredEventType        EventType = "message_delivered"
-    MessageFailedEventType           EventType = "message_failed"
-    MessageReadEventType             EventType = "message_read"
-    MessageSentEventType             EventType = "message_sent"
-    MessageUndeliveredEventType      EventType = "message_undelivered"
-    OrderReceivedEventType           EventType = "order_received"
-    ProductInquiryEventType          EventType = "product_inquiry"
-    UnknownEventType                 EventType = "unknown"
-    ErrorEventType                   EventType = "error"
-    WarnEventType                    EventType = "warn"
-    ReadyEventType                   EventType = "ready"
+    TextMessageEventType                  EventType = "text_message"
+    AudioMessageEventType                 EventType = "audio_message"
+    VideoMessageEventType                 EventType = "video_message"
+    ImageMessageEventType                 EventType = "image_message"
+    ContactMessageEventType               EventType = "contact_message"
+    DocumentMessageEventType              EventType = "document_message"
+    LocationMessageEventType              EventType = "location_message"
+    ReactionMessageEventType              EventType = "reaction_message"
+    ListInteractionMessageEventType       EventType = "list_interaction_message"
+    TemplateMessageEventType              EventType = "template_message"
+    QuickReplyMessageEventType            EventType = "quick_reply_message"
+    ReplyButtonInteractionEventType       EventType = "reply_button_interaction"
+    StickerMessageEventType               EventType = "sticker_message"
+    AdInteractionEventType                EventType = "ad_interaction_message"
+    CustomerIdentityChangedEventType      EventType = "customer_identity_changed"
+    CustomerNumberChangedEventType        EventType = "customer_number_changed"
+    MessageDeliveredEventType             EventType = "message_delivered"
+    MessageFailedEventType                EventType = "message_failed"
+    MessageReadEventType                  EventType = "message_read"
+    MessageSentEventType                  EventType = "message_sent"
+    MessageUndeliveredEventType           EventType = "message_undelivered"
+    OrderReceivedEventType                EventType = "order_received"
+    ProductInquiryEventType               EventType = "product_inquiry"
+    UnknownEventType                      EventType = "unknown"
+    ErrorEventType                        EventType = "error"
+    WarnEventType                         EventType = "warn"
+    ReadyEventType                        EventType = "ready"
+    MessageTemplateStatusUpdateEventType  EventType = "message_template_status_update"
+    MessageTemplateQualityUpdateEventType EventType = "message_template_quality_update"
+    PhoneNumberNameUpdateEventType        EventType = "phone_number_name_update"
+    PhoneNumberQualityUpdateEventType     EventType = "phone_number_quality_update"
+    SecurityEventType                     EventType = "security"
+    AccountUpdateEventType                EventType = "account_update"
+    AccountReviewUpdateEventType          EventType = "account_review_update"
+    AccountAlertsEventType                EventType = "account_alerts"
+    BusinessCapabilityUpdateEventType     EventType = "business_capability_update"
 )
 ```
 
@@ -412,7 +564,7 @@ NewLocationMessageEvent creates a new LocationMessageEvent instance.
 
 ```go
 type MessageContext struct {
-    From string `json:"from"`
+    RepliedToMessageId string `json:"replied_to_message_id"`
 }
 ```
 
@@ -505,6 +657,46 @@ func NewMessageSentEvent(baseSystemEvent BaseSystemEvent, messageId, sendTo stri
 
 NewMessageSentEvent creates a new instance of MessageSentEvent.
 
+<a name="MessageTemplateQualityUpdateEvent"></a>
+## type MessageTemplateQualityUpdateEvent
+
+
+
+```go
+type MessageTemplateQualityUpdateEvent struct {
+    BaseBusinessAccountEvent
+}
+```
+
+<a name="NewMessageTemplateQualityUpdateEvent"></a>
+### func NewMessageTemplateQualityUpdateEvent
+
+```go
+func NewMessageTemplateQualityUpdateEvent() *MessageTemplateQualityUpdateEvent
+```
+
+
+
+<a name="MessageTemplateStatusUpdateEvent"></a>
+## type MessageTemplateStatusUpdateEvent
+
+
+
+```go
+type MessageTemplateStatusUpdateEvent struct {
+    BaseBusinessAccountEvent
+}
+```
+
+<a name="NewMessageTemplateStatusUpdateEvent"></a>
+### func NewMessageTemplateStatusUpdateEvent
+
+```go
+func NewMessageTemplateStatusUpdateEvent() *MessageTemplateStatusUpdateEvent
+```
+
+
+
 <a name="MessageUndeliveredEvent"></a>
 ## type MessageUndeliveredEvent
 
@@ -547,6 +739,46 @@ func NewOrderEvent(baseMessageEvent BaseMessageEvent, order components.Order) *O
 ```
 
 NewOrderEvent creates a new OrderEvent instance.
+
+<a name="PhoneNumberNameUpdateEvent"></a>
+## type PhoneNumberNameUpdateEvent
+
+
+
+```go
+type PhoneNumberNameUpdateEvent struct {
+    BaseBusinessAccountEvent
+}
+```
+
+<a name="NewPhoneNumberNameUpdateEvent"></a>
+### func NewPhoneNumberNameUpdateEvent
+
+```go
+func NewPhoneNumberNameUpdateEvent() *PhoneNumberNameUpdateEvent
+```
+
+
+
+<a name="PhoneNumberQualityUpdateEvent"></a>
+## type PhoneNumberQualityUpdateEvent
+
+
+
+```go
+type PhoneNumberQualityUpdateEvent struct {
+    BaseBusinessAccountEvent
+}
+```
+
+<a name="NewPhoneNumberQualityUpdateEvent"></a>
+### func NewPhoneNumberQualityUpdateEvent
+
+```go
+func NewPhoneNumberQualityUpdateEvent() *PhoneNumberQualityUpdateEvent
+```
+
+
 
 <a name="ProductInquiryEvent"></a>
 ## type ProductInquiryEvent
@@ -656,6 +888,26 @@ func NewReplyButtonInteractionEvent(baseMessageEvent BaseMessageEvent, title, bu
 
 NewReplyButtonInteractionEvent creates a new instance of ReplyButtonInteractionEvent.
 
+<a name="SecurityEvent"></a>
+## type SecurityEvent
+
+
+
+```go
+type SecurityEvent struct {
+    BaseBusinessAccountEvent
+}
+```
+
+<a name="NewSecurity"></a>
+### func NewSecurity
+
+```go
+func NewSecurity() *SecurityEvent
+```
+
+
+
 <a name="StickerMessageEvent"></a>
 ## type StickerMessageEvent
 
@@ -676,6 +928,26 @@ func NewStickerMessageEvent(baseMessageEvent BaseMessageEvent, sticker component
 ```
 
 NewStickerMessageEvent creates a new StickerMessageEvent instance.
+
+<a name="TemplateCategoryUpdateEvent"></a>
+## type TemplateCategoryUpdateEvent
+
+
+
+```go
+type TemplateCategoryUpdateEvent struct {
+    BaseBusinessAccountEvent
+}
+```
+
+<a name="NewMessageTemplateCategoryUpdateEvent"></a>
+### func NewMessageTemplateCategoryUpdateEvent
+
+```go
+func NewMessageTemplateCategoryUpdateEvent() *TemplateCategoryUpdateEvent
+```
+
+
 
 <a name="TextMessageEvent"></a>
 ## type TextMessageEvent

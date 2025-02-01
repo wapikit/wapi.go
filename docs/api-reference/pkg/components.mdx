@@ -689,6 +689,26 @@ const (
 )
 ```
 
+<a name="Product"></a>
+## type Product
+
+
+
+```go
+type Product struct {
+    RetailerId string `json:"retailerId" validate:"required"`
+}
+```
+
+<a name="Product.SetRetailerId"></a>
+### func \(\*Product\) SetRetailerId
+
+```go
+func (p *Product) SetRetailerId(id string)
+```
+
+
+
 <a name="ProductItem"></a>
 ## type ProductItem
 
@@ -710,6 +730,9 @@ ProductListMessage represents a product list message.
 
 ```go
 type ProductListMessage struct {
+    Action ProductListMessageAction `json:"action" validate:"required"`
+    Body   ProductListMessageBody   `json:"body" validate:"required"`
+    Type   InteractiveMessageType   `json:"type" validate:"required"`
 }
 ```
 
@@ -722,6 +745,15 @@ func NewProductListMessage(params ProductListMessageParams) (*ProductListMessage
 
 NewProductListMessage creates a new product list message.
 
+<a name="ProductListMessage.AddSection"></a>
+### func \(\*ProductListMessage\) AddSection
+
+```go
+func (message *ProductListMessage) AddSection(section ProductSection)
+```
+
+
+
 <a name="ProductListMessage.ToJson"></a>
 ### func \(\*ProductListMessage\) ToJson
 
@@ -730,6 +762,28 @@ func (m *ProductListMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) (
 ```
 
 ToJson converts the product list message to JSON.
+
+<a name="ProductListMessageAction"></a>
+## type ProductListMessageAction
+
+
+
+```go
+type ProductListMessageAction struct {
+    Sections          []ProductSection `json:"sections" validate:"required"`
+    CatalogId         string           `json:"catalogId" validate:"required"`
+    ProductRetailerId string           `json:"productRetailerId" validate:"required"`
+}
+```
+
+<a name="ProductListMessageAction.AddSection"></a>
+### func \(\*ProductListMessageAction\) AddSection
+
+```go
+func (a *ProductListMessageAction) AddSection(section ProductSection)
+```
+
+
 
 <a name="ProductListMessageApiPayload"></a>
 ## type ProductListMessageApiPayload
@@ -743,6 +797,17 @@ type ProductListMessageApiPayload struct {
 }
 ```
 
+<a name="ProductListMessageBody"></a>
+## type ProductListMessageBody
+
+
+
+```go
+type ProductListMessageBody struct {
+    Text string `json:"text" validate:"required"`
+}
+```
+
 <a name="ProductListMessageParams"></a>
 ## type ProductListMessageParams
 
@@ -750,6 +815,10 @@ ProductListMessageParams represents the parameters for creating a product list m
 
 ```go
 type ProductListMessageParams struct {
+    CatalogId         string `validate:"required"`
+    ProductRetailerId string `validate:"required"`
+    BodyText          string `validate:"required"`
+    Sections          []ProductSection
 }
 ```
 
@@ -760,6 +829,9 @@ ProductMessage represents a product message.
 
 ```go
 type ProductMessage struct {
+    Type   InteractiveMessageType `json:"type" validate:"required"`
+    Body   ProductMessageBody     `json:"body" validate:"required"`
+    Action productMessageAction   `json:"action" validate:"required"`
 }
 ```
 
@@ -771,6 +843,42 @@ func NewProductMessage(params ProductMessageParams) (*ProductMessage, error)
 ```
 
 NewProductMessage creates a new product message with the given parameters.
+
+<a name="ProductMessage.SetBodyText"></a>
+### func \(\*ProductMessage\) SetBodyText
+
+```go
+func (m *ProductMessage) SetBodyText(text string)
+```
+
+
+
+<a name="ProductMessage.SetCatalogId"></a>
+### func \(\*ProductMessage\) SetCatalogId
+
+```go
+func (m *ProductMessage) SetCatalogId(id string)
+```
+
+
+
+<a name="ProductMessage.SetHeader"></a>
+### func \(\*ProductMessage\) SetHeader
+
+```go
+func (m *ProductMessage) SetHeader()
+```
+
+
+
+<a name="ProductMessage.SetProductRetailerId"></a>
+### func \(\*ProductMessage\) SetProductRetailerId
+
+```go
+func (m *ProductMessage) SetProductRetailerId(id string)
+```
+
+
 
 <a name="ProductMessage.ToJson"></a>
 ### func \(\*ProductMessage\) ToJson
@@ -793,6 +901,17 @@ type ProductMessageApiPayload struct {
 }
 ```
 
+<a name="ProductMessageBody"></a>
+## type ProductMessageBody
+
+
+
+```go
+type ProductMessageBody struct {
+    Text string `json:"text" validate:"required"`
+}
+```
+
 <a name="ProductMessageParams"></a>
 ## type ProductMessageParams
 
@@ -800,8 +919,41 @@ ProductMessageParams represents the parameters for creating a product message.
 
 ```go
 type ProductMessageParams struct {
+    CatalogId         string `validate:"required"`
+    ProductRetailerId string `validate:"required"`
+    BodyText          string `validate:"required"`
 }
 ```
+
+<a name="ProductSection"></a>
+## type ProductSection
+
+
+
+```go
+type ProductSection struct {
+    Title    string    `json:"title" validate:"required"`
+    Products []Product `json:"products" validate:"required"`
+}
+```
+
+<a name="ProductSection.AddProduct"></a>
+### func \(\*ProductSection\) AddProduct
+
+```go
+func (ps *ProductSection) AddProduct(product Product)
+```
+
+
+
+<a name="ProductSection.SetTitle"></a>
+### func \(\*ProductSection\) SetTitle
+
+```go
+func (ps *ProductSection) SetTitle(title string)
+```
+
+
 
 <a name="QuickReplyButtonMessage"></a>
 ## type QuickReplyButtonMessage
@@ -989,6 +1141,9 @@ TemplateMessage represents a template message.
 
 ```go
 type TemplateMessage struct {
+    Name       string                     `json:"name" validate:"required"`       // Template name.
+    Language   TemplateMessageLanguage    `json:"language" validate:"required"`   // Language configuration.
+    Components []TemplateMessageComponent `json:"components" validate:"required"` // Array of components.
 }
 ```
 
@@ -996,21 +1151,346 @@ type TemplateMessage struct {
 ### func NewTemplateMessage
 
 ```go
-func NewTemplateMessage() (*TemplateMessage, error)
+func NewTemplateMessage(params *TemplateMessageConfigs) (*TemplateMessage, error)
 ```
 
-NewTemplateMessage creates a new instance of TemplateMessage.
+NewTemplateMessage creates a new TemplateMessage instance.
+
+<a name="TemplateMessage.AddBody"></a>
+### func \(\*TemplateMessage\) AddBody
+
+```go
+func (tm *TemplateMessage) AddBody(params TemplateMessageComponentBodyType)
+```
+
+AddBody adds \(or overrides\) a body component in the template message. Only one body component is allowed.
+
+<a name="TemplateMessage.AddButton"></a>
+### func \(\*TemplateMessage\) AddButton
+
+```go
+func (tm *TemplateMessage) AddButton(params TemplateMessageComponentButtonType) error
+```
+
+AddButton adds a button component to the template message. A maximum of 10 buttons is allowed.
+
+<a name="TemplateMessage.AddHeader"></a>
+### func \(\*TemplateMessage\) AddHeader
+
+```go
+func (tm *TemplateMessage) AddHeader(params TemplateMessageComponentHeaderType)
+```
+
+AddHeader adds \(or overrides\) a header component in the template message. Only one header is allowed.
+
+<a name="TemplateMessage.ToJson"></a>
+### func \(\*TemplateMessage\) ToJson
+
+```go
+func (m *TemplateMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]byte, error)
+```
+
+ToJson converts the template message into a JSON payload compatible with the API.
 
 <a name="TemplateMessageApiPayload"></a>
 ## type TemplateMessageApiPayload
 
-TemplateMessageApiPayload represents the API payload for a template message.
+TemplateMessageApiPayload represents the API payload for sending a template message.
 
 ```go
 type TemplateMessageApiPayload struct {
     BaseMessagePayload
     Template TemplateMessage `json:"template" validate:"required"`
 }
+```
+
+<a name="TemplateMessageBodyAndHeaderParameter"></a>
+## type TemplateMessageBodyAndHeaderParameter
+
+TemplateMessageBodyAndHeaderParameter represents parameters for body and header components. \*\*New Change:\*\* Added the optional ParameterName field for named parameters.
+
+```go
+type TemplateMessageBodyAndHeaderParameter struct {
+    Type          TemplateMessageParameterType      `json:"type" validate:"required"` // e.g., "text", "currency", etc.
+    ParameterName *string                           `json:"parameter_name,omitempty"` // Optional: name of the parameter (for named parameters).
+    Currency      *TemplateMessageParameterCurrency `json:"currency,omitempty"`       // Currency details (if type is currency).
+    DateTime      *TemplateMessageParameterDateTime `json:"date_time,omitempty"`      // Date/time details (if type is date_time).
+    Document      *TemplateMessageParameterMedia    `json:"document,omitempty"`       // Document details (if type is document).
+    Image         *TemplateMessageParameterMedia    `json:"image,omitempty"`          // Image details (if type is image).
+    Text          *string                           `json:"text,omitempty"`           // Text content (if type is text).
+    Video         *TemplateMessageParameterMedia    `json:"video,omitempty"`          // Video details (if type is video).
+    Location      *TemplateMessageParameterLocation `json:"location,omitempty"`       // Location details (if type is location).
+}
+```
+
+<a name="TemplateMessageBodyAndHeaderParameter.GetParameterType"></a>
+### func \(TemplateMessageBodyAndHeaderParameter\) GetParameterType
+
+```go
+func (t TemplateMessageBodyAndHeaderParameter) GetParameterType() string
+```
+
+GetParameterType returns the parameter type as a string.
+
+<a name="TemplateMessageButtonComponentType"></a>
+## type TemplateMessageButtonComponentType
+
+TemplateMessageButtonComponentType represents the subtype of a button component.
+
+```go
+type TemplateMessageButtonComponentType string
+```
+
+<a name="TemplateMessageButtonComponentTypeQuickReply"></a>
+
+```go
+const (
+    TemplateMessageButtonComponentTypeQuickReply TemplateMessageButtonComponentType = "quick_reply"
+    TemplateMessageButtonComponentTypeUrl        TemplateMessageButtonComponentType = "url"
+    TemplateMessageButtonComponentTypeCatalog    TemplateMessageButtonComponentType = "catalog"
+)
+```
+
+<a name="TemplateMessageButtonParameter"></a>
+## type TemplateMessageButtonParameter
+
+TemplateMessageButtonParameter represents a parameter for a button component.
+
+```go
+type TemplateMessageButtonParameter struct {
+    Type    TemplateMessageButtonParameterType `json:"type" validate:"required"` // e.g., "payload" or "text"
+    Payload string                             `json:"payload,omitempty"`        // Required for quick_reply buttons.
+    Text    string                             `json:"text,omitempty"`           // Required for URL buttons.
+}
+```
+
+<a name="TemplateMessageButtonParameter.GetParameterType"></a>
+### func \(TemplateMessageButtonParameter\) GetParameterType
+
+```go
+func (t TemplateMessageButtonParameter) GetParameterType() string
+```
+
+GetParameterType returns the button parameter type as a string.
+
+<a name="TemplateMessageButtonParameterType"></a>
+## type TemplateMessageButtonParameterType
+
+TemplateMessageButtonParameterType represents the type for button parameters.
+
+```go
+type TemplateMessageButtonParameterType string
+```
+
+<a name="TemplateMessageButtonParameterTypePayload"></a>
+
+```go
+const (
+    TemplateMessageButtonParameterTypePayload TemplateMessageButtonParameterType = "payload"
+    TemplateMessageButtonParameterTypeText    TemplateMessageButtonParameterType = "text"
+)
+```
+
+<a name="TemplateMessageComponent"></a>
+## type TemplateMessageComponent
+
+TemplateMessageComponent is an interface for all template message components.
+
+```go
+type TemplateMessageComponent interface {
+    GetComponentType() string
+}
+```
+
+<a name="TemplateMessageComponentBodyType"></a>
+## type TemplateMessageComponentBodyType
+
+TemplateMessageComponentBodyType represents a body component.
+
+```go
+type TemplateMessageComponentBodyType struct {
+    Type       TemplateMessageComponentType `json:"type" validate:"required"`       // "body"
+    Parameters []TemplateMessageParameter   `json:"parameters" validate:"required"` // Parameters for the body component.
+}
+```
+
+<a name="TemplateMessageComponentBodyType.GetComponentType"></a>
+### func \(TemplateMessageComponentBodyType\) GetComponentType
+
+```go
+func (t TemplateMessageComponentBodyType) GetComponentType() string
+```
+
+GetComponentType returns the component type.
+
+<a name="TemplateMessageComponentButtonType"></a>
+## type TemplateMessageComponentButtonType
+
+TemplateMessageComponentButtonType represents a button component.
+
+```go
+type TemplateMessageComponentButtonType struct {
+    Type       TemplateMessageComponentType       `json:"type" validate:"required"`       // e.g., "button"
+    SubType    TemplateMessageButtonComponentType `json:"sub_type" validate:"required"`   // e.g., "quick_reply", "url", etc.
+    Index      int                                `json:"index" validate:"required"`      // Position index of the button (0 to 9)
+    Parameters []TemplateMessageParameter         `json:"parameters" validate:"required"` // Parameters for the button component.
+}
+```
+
+<a name="TemplateMessageComponentButtonType.GetComponentType"></a>
+### func \(TemplateMessageComponentButtonType\) GetComponentType
+
+```go
+func (t TemplateMessageComponentButtonType) GetComponentType() string
+```
+
+GetComponentType returns the component type.
+
+<a name="TemplateMessageComponentHeaderType"></a>
+## type TemplateMessageComponentHeaderType
+
+TemplateMessageComponentHeaderType represents a header component.
+
+```go
+type TemplateMessageComponentHeaderType struct {
+    Type       TemplateMessageComponentType `json:"type" validate:"required"`       // "header"
+    Parameters []TemplateMessageParameter   `json:"parameters" validate:"required"` // Parameters for the header component.
+}
+```
+
+<a name="TemplateMessageComponentHeaderType.GetComponentType"></a>
+### func \(TemplateMessageComponentHeaderType\) GetComponentType
+
+```go
+func (t TemplateMessageComponentHeaderType) GetComponentType() string
+```
+
+GetComponentType returns the component type.
+
+<a name="TemplateMessageComponentType"></a>
+## type TemplateMessageComponentType
+
+TemplateMessageComponentType represents the type of a template message component.
+
+```go
+type TemplateMessageComponentType string
+```
+
+<a name="TemplateMessageComponentTypeHeader"></a>
+
+```go
+const (
+    TemplateMessageComponentTypeHeader TemplateMessageComponentType = "header"
+    TemplateMessageComponentTypeBody   TemplateMessageComponentType = "body"
+    TemplateMessageComponentTypeButton TemplateMessageComponentType = "button"
+)
+```
+
+<a name="TemplateMessageConfigs"></a>
+## type TemplateMessageConfigs
+
+TemplateMessageConfigs represents basic configurations for a template message.
+
+```go
+type TemplateMessageConfigs struct {
+    Name     string `json:"name" validate:"required"`     // Template name.
+    Language string `json:"language" validate:"required"` // Language code.
+}
+```
+
+<a name="TemplateMessageLanguage"></a>
+## type TemplateMessageLanguage
+
+TemplateMessageLanguage represents the language configuration.
+
+```go
+type TemplateMessageLanguage struct {
+    Code   string `json:"code" validate:"required"`   // e.g., "en_US"
+    Policy string `json:"policy" validate:"required"` // e.g., "deterministic"
+}
+```
+
+<a name="TemplateMessageParameter"></a>
+## type TemplateMessageParameter
+
+TemplateMessageParameter is an interface for all parameter types.
+
+```go
+type TemplateMessageParameter interface {
+    GetParameterType() string
+}
+```
+
+<a name="TemplateMessageParameterCurrency"></a>
+## type TemplateMessageParameterCurrency
+
+TemplateMessageParameterCurrency represents a currency parameter.
+
+```go
+type TemplateMessageParameterCurrency struct {
+    FallbackValue string `json:"fallback_value" validate:"required"` // Default text if localization fails.
+    Code          string `json:"code" validate:"required"`           // ISO 4217 currency code.
+    Amount1000    int    `json:"amount_1000" validate:"required"`    // Amount multiplied by 1000.
+}
+```
+
+<a name="TemplateMessageParameterDateTime"></a>
+## type TemplateMessageParameterDateTime
+
+TemplateMessageParameterDateTime represents a date\-time parameter.
+
+```go
+type TemplateMessageParameterDateTime struct {
+    FallbackValue string `json:"fallback_value" validate:"required"` // Default text if localization fails.
+}
+```
+
+<a name="TemplateMessageParameterLocation"></a>
+## type TemplateMessageParameterLocation
+
+TemplateMessageParameterLocation represents a location parameter.
+
+```go
+type TemplateMessageParameterLocation struct {
+    Latitude  string `json:"latitude" validate:"required"`  // Latitude.
+    Longitude string `json:"longitude" validate:"required"` // Longitude.
+    Name      string `json:"name" validate:"required"`      // Location name.
+    Address   string `json:"address" validate:"required"`   // Address.
+}
+```
+
+<a name="TemplateMessageParameterMedia"></a>
+## type TemplateMessageParameterMedia
+
+TemplateMessageParameterMedia represents a media parameter \(for document, image, video\).
+
+```go
+type TemplateMessageParameterMedia struct {
+    Link string `json:"link" validate:"required"` // URL link of the media.
+}
+```
+
+<a name="TemplateMessageParameterType"></a>
+## type TemplateMessageParameterType
+
+TemplateMessageParameterType represents the type of a parameter.
+
+```go
+type TemplateMessageParameterType string
+```
+
+<a name="TemplateMessageParameterTypeCurrency"></a>
+
+```go
+const (
+    TemplateMessageParameterTypeCurrency TemplateMessageParameterType = "currency"
+    TemplateMessageParameterTypeDateTime TemplateMessageParameterType = "date_time"
+    TemplateMessageParameterTypeDocument TemplateMessageParameterType = "document"
+    TemplateMessageParameterTypeImage    TemplateMessageParameterType = "image"
+    TemplateMessageParameterTypeText     TemplateMessageParameterType = "text"
+    TemplateMessageParameterTypeVideo    TemplateMessageParameterType = "video"
+    TemplateMessageParameterTypeLocation TemplateMessageParameterType = "location"
+)
 ```
 
 <a name="TextMessageApiPayload"></a>
@@ -1267,6 +1747,18 @@ func (row *listSectionRow) SetTitle(title string)
 ```
 
 SetTitle sets the title of the list section row.
+
+<a name="productMessageAction"></a>
+## type productMessageAction
+
+
+
+```go
+type productMessageAction struct {
+    CatalogId         string `json:"catalog_id" validate:"required"`
+    ProductRetailerId string `json:"product_retailer_id" validate:"required"`
+}
+```
 
 <a name="quickReplyButtonMessageButton"></a>
 ## type quickReplyButtonMessageButton

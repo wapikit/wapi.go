@@ -7,6 +7,7 @@ import (
 	"github.com/wapikit/wapi.go/internal"
 )
 
+// TemplateMessageComponentType represents the type of a template message component.
 type TemplateMessageComponentType string
 
 const (
@@ -15,6 +16,7 @@ const (
 	TemplateMessageComponentTypeButton TemplateMessageComponentType = "button"
 )
 
+// TemplateMessageButtonComponentType represents the subtype of a button component.
 type TemplateMessageButtonComponentType string
 
 const (
@@ -23,39 +25,47 @@ const (
 	TemplateMessageButtonComponentTypeCatalog    TemplateMessageButtonComponentType = "catalog"
 )
 
+// TemplateMessageComponent is an interface for all template message components.
 type TemplateMessageComponent interface {
 	GetComponentType() string
 }
 
+// TemplateMessageComponentButtonType represents a button component.
 type TemplateMessageComponentButtonType struct {
-	Type       TemplateMessageComponentType       `json:"type" validate:"required"`       // Type of the template message component.
-	SubType    TemplateMessageButtonComponentType `json:"sub_type" validate:"required"`   // Subtype of the template message component.
-	Index      int                                `json:"index" validate:"required"`      // Index of the template message component.
-	Parameters []TemplateMessageParameter         `json:"parameters" validate:"required"` // Parameters of the template message component.
+	Type       TemplateMessageComponentType       `json:"type" validate:"required"`                 // e.g., "button"
+	SubType    TemplateMessageButtonComponentType `json:"sub_type" validate:"required"`             // e.g., "quick_reply", "url", etc.
+	Index      int                                `json:"index" validate:"required"`                // Position index of the button (0 to 9)
+	Parameters *[]TemplateMessageParameter        `json:"parameters,omitempty" validate:"required"` // Parameters for the button component.
 }
 
+// GetComponentType returns the component type.
 func (t TemplateMessageComponentButtonType) GetComponentType() string {
 	return string(t.Type)
 }
 
+// TemplateMessageComponentHeaderType represents a header component.
 type TemplateMessageComponentHeaderType struct {
-	Type       TemplateMessageComponentType `json:"type" validate:"required"`       // Type of the template message component.
-	Parameters []TemplateMessageParameter   `json:"parameters" validate:"required"` // Parameters of the template message component.
+	Type       TemplateMessageComponentType `json:"type" validate:"required"`                 // "header"
+	Parameters *[]TemplateMessageParameter  `json:"parameters,omitempty" validate:"required"` // Parameters for the header component.
 }
 
+// GetComponentType returns the component type.
 func (t TemplateMessageComponentHeaderType) GetComponentType() string {
 	return string(t.Type)
 }
 
+// TemplateMessageComponentBodyType represents a body component.
 type TemplateMessageComponentBodyType struct {
-	Type       TemplateMessageComponentType `json:"type" validate:"required"`       // Type of the template message component.
-	Parameters []TemplateMessageParameter   `json:"parameters" validate:"required"` // Parameters of the template message component.
+	Type       TemplateMessageComponentType `json:"type" validate:"required"`       // "body"
+	Parameters []TemplateMessageParameter   `json:"parameters" validate:"required"` // Parameters for the body component.
 }
 
+// GetComponentType returns the component type.
 func (t TemplateMessageComponentBodyType) GetComponentType() string {
 	return string(t.Type)
 }
 
+// TemplateMessageParameterType represents the type of a parameter.
 type TemplateMessageParameterType string
 
 const (
@@ -68,46 +78,55 @@ const (
 	TemplateMessageParameterTypeLocation TemplateMessageParameterType = "location"
 )
 
+// TemplateMessageParameterCurrency represents a currency parameter.
 type TemplateMessageParameterCurrency struct {
-	FallbackValue string `json:"fallback_value" validate:"required"` // Fallback value of the currency parameter.
-	Code          string `json:"code" validate:"required"`           // Code of the currency parameter.
-	Amount1000    int    `json:"amount_1000" validate:"required"`    // Amount of the currency parameter.
+	FallbackValue string `json:"fallback_value" validate:"required"` // Default text if localization fails.
+	Code          string `json:"code" validate:"required"`           // ISO 4217 currency code.
+	Amount1000    int    `json:"amount_1000" validate:"required"`    // Amount multiplied by 1000.
 }
 
+// TemplateMessageParameterDateTime represents a date-time parameter.
 type TemplateMessageParameterDateTime struct {
-	FallbackValue string `json:"fallback_value" validate:"required"` // Fallback value of the date time parameter.
+	FallbackValue string `json:"fallback_value" validate:"required"` // Default text if localization fails.
 }
 
+// TemplateMessageParameterMedia represents a media parameter (for document, image, video).
 type TemplateMessageParameterMedia struct {
-	Link string `json:"link" validate:"required"` // link of the media parameter.
+	Link string `json:"link" validate:"required"` // URL link of the media.
 }
 
+// TemplateMessageParameterLocation represents a location parameter.
 type TemplateMessageParameterLocation struct {
-	Latitude  string `json:"latitude" validate:"required"`  // Latitude of the location parameter.
-	Longitude string `json:"longitude" validate:"required"` // Longitude of the location parameter.
-	Name      string `json:"name" validate:"required"`      // Name of the location parameter.
-	Address   string `json:"address" validate:"required"`   // Address of the location parameter.
+	Latitude  string `json:"latitude" validate:"required"`  // Latitude.
+	Longitude string `json:"longitude" validate:"required"` // Longitude.
+	Name      string `json:"name" validate:"required"`      // Location name.
+	Address   string `json:"address" validate:"required"`   // Address.
 }
 
+// TemplateMessageParameter is an interface for all parameter types.
 type TemplateMessageParameter interface {
 	GetParameterType() string
 }
 
+// TemplateMessageBodyAndHeaderParameter represents parameters for body and header components.
 type TemplateMessageBodyAndHeaderParameter struct {
-	Type     TemplateMessageParameterType      `json:"type" validate:"required"` // Type of the template message parameter.
-	Currency *TemplateMessageParameterCurrency `json:"currency,omitempty"`       // Currency of the template message parameter.
-	DateTime *TemplateMessageParameterDateTime `json:"date_time,omitempty"`      // Date time of the template message parameter.
-	Document *TemplateMessageParameterMedia    `json:"document,omitempty"`       // Document of the template message parameter.
-	Image    *TemplateMessageParameterMedia    `json:"image,omitempty"`          // Image of the template message parameter.
-	Text     *string                           `json:"text,omitempty"`           // Text of the template message parameter.
-	Video    *TemplateMessageParameterMedia    `json:"video,omitempty"`          // Video of the template message parameter.
-	Location *TemplateMessageParameterLocation `json:"location,omitempty"`       // Location of the template message parameter.
+	Type          TemplateMessageParameterType      `json:"type" validate:"required"` // e.g., "text", "currency", etc.
+	ParameterName *string                           `json:"parameter_name,omitempty"` // Optional: name of the parameter (for named parameters).
+	Currency      *TemplateMessageParameterCurrency `json:"currency,omitempty"`       // Currency details (if type is currency).
+	DateTime      *TemplateMessageParameterDateTime `json:"date_time,omitempty"`      // Date/time details (if type is date_time).
+	Document      *TemplateMessageParameterMedia    `json:"document,omitempty"`       // Document details (if type is document).
+	Image         *TemplateMessageParameterMedia    `json:"image,omitempty"`          // Image details (if type is image).
+	Text          *string                           `json:"text,omitempty"`           // Text content (if type is text).
+	Video         *TemplateMessageParameterMedia    `json:"video,omitempty"`          // Video details (if type is video).
+	Location      *TemplateMessageParameterLocation `json:"location,omitempty"`       // Location details (if type is location).
 }
 
+// GetParameterType returns the parameter type as a string.
 func (t TemplateMessageBodyAndHeaderParameter) GetParameterType() string {
 	return string(t.Type)
 }
 
+// TemplateMessageButtonParameterType represents the type for button parameters.
 type TemplateMessageButtonParameterType string
 
 const (
@@ -115,41 +134,44 @@ const (
 	TemplateMessageButtonParameterTypeText    TemplateMessageButtonParameterType = "text"
 )
 
+// TemplateMessageButtonParameter represents a parameter for a button component.
 type TemplateMessageButtonParameter struct {
-	Type    TemplateMessageButtonParameterType `json:"type" validate:"required"` // Type of the template message parameter.
-	Payload string                             `json:"payload,omitempty"`        // Payload of the template message parameter, required for type of button sub_type -> quick_reply
-	Text    string                             `json:"text,omitempty"`           // Text of the template message parameter, required for type of button sub_type -> URL.
+	Type    TemplateMessageButtonParameterType `json:"type" validate:"required"` // e.g., "payload" or "text"
+	Payload string                             `json:"payload,omitempty"`        // Required for quick_reply buttons.
+	Text    string                             `json:"text,omitempty"`           // Required for URL buttons.
 }
 
+// GetParameterType returns the button parameter type as a string.
 func (t TemplateMessageButtonParameter) GetParameterType() string {
 	return string(t.Type)
 }
 
+// TemplateMessageLanguage represents the language configuration.
 type TemplateMessageLanguage struct {
-	Code   string `json:"code" validate:"required"`
-	Policy string `json:"policy" validate:"required"`
+	Code   string `json:"code" validate:"required"`   // e.g., "en_US"
+	Policy string `json:"policy" validate:"required"` // e.g., "deterministic"
 }
 
 // TemplateMessage represents a template message.
 type TemplateMessage struct {
-	Name       string                     `json:"name" validate:"required"` // Name of the template message.
-	Language   TemplateMessageLanguage    `json:"language" validate:"required"`
-	Components []TemplateMessageComponent `json:"components" validate:"required"` // Components of the template message.
+	Name       string                     `json:"name" validate:"required"`       // Template name.
+	Language   TemplateMessageLanguage    `json:"language" validate:"required"`   // Language configuration.
+	Components []TemplateMessageComponent `json:"components" validate:"required"` // Array of components.
 }
 
-// TemplateMessageApiPayload represents the API payload for a template message.
+// TemplateMessageApiPayload represents the API payload for sending a template message.
 type TemplateMessageApiPayload struct {
 	BaseMessagePayload
 	Template TemplateMessage `json:"template" validate:"required"`
 }
 
-// TemplateMessageConfigs represents the configurations for a template message.
+// TemplateMessageConfigs represents basic configurations for a template message.
 type TemplateMessageConfigs struct {
-	Name     string `json:"name" validate:"required"`     // Name of the template message.
-	Language string `json:"language" validate:"required"` // Language of the template message.
+	Name     string `json:"name" validate:"required"`     // Template name.
+	Language string `json:"language" validate:"required"` // Language code.
 }
 
-// NewTemplateMessage creates a new instance of TemplateMessage.
+// NewTemplateMessage creates a new TemplateMessage instance.
 func NewTemplateMessage(params *TemplateMessageConfigs) (*TemplateMessage, error) {
 	return &TemplateMessage{
 		Name: params.Name,
@@ -160,8 +182,8 @@ func NewTemplateMessage(params *TemplateMessageConfigs) (*TemplateMessage, error
 	}, nil
 }
 
-// AddHeader adds a header to the template message.
-// Template Messages in whatsapp can only have one header, so this function will override the last header added if any.
+// AddHeader adds (or overrides) a header component in the template message.
+// Only one header is allowed.
 func (tm *TemplateMessage) AddHeader(params TemplateMessageComponentHeaderType) {
 	var existingHeaderIndex int
 	var found bool
@@ -178,13 +200,13 @@ func (tm *TemplateMessage) AddHeader(params TemplateMessageComponentHeaderType) 
 		// Override the existing header.
 		tm.Components[existingHeaderIndex] = params
 	} else {
-		// Add the new header if no existing header is found.
+		// Append the new header.
 		tm.Components = append(tm.Components, params)
 	}
 }
 
-// AddBody adds a body to the template message.
-// Template Messages in whatsapp can only have one body component, so this function will override the last body added if any.
+// AddBody adds (or overrides) a body component in the template message.
+// Only one body component is allowed.
 func (tm *TemplateMessage) AddBody(params TemplateMessageComponentBodyType) {
 	var existingBodyIndex int
 	var found bool
@@ -201,13 +223,15 @@ func (tm *TemplateMessage) AddBody(params TemplateMessageComponentBodyType) {
 		// Override the existing body.
 		tm.Components[existingBodyIndex] = params
 	} else {
-		// Add the new body if no existing body is found.
+		// Append the new body.
 		tm.Components = append(tm.Components, params)
 	}
 }
 
+// AddButton adds a button component to the template message.
+// A maximum of 10 buttons is allowed.
 func (tm *TemplateMessage) AddButton(params TemplateMessageComponentButtonType) error {
-	// at max 10 buttons can be added to a template message
+	// Count existing button components.
 	numberOfButtons := 0
 	for _, component := range tm.Components {
 		if TemplateMessageComponentType(component.GetComponentType()) == TemplateMessageComponentTypeButton {
@@ -222,7 +246,7 @@ func (tm *TemplateMessage) AddButton(params TemplateMessageComponentButtonType) 
 	return nil
 }
 
-// ToJson converts the template message to JSON.
+// ToJson converts the template message into a JSON payload compatible with the API.
 func (m *TemplateMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]byte, error) {
 	if err := internal.GetValidator().Struct(configs); err != nil {
 		return nil, fmt.Errorf("error validating configs: %v", err)
@@ -240,7 +264,6 @@ func (m *TemplateMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]b
 	}
 
 	jsonToReturn, err := json.Marshal(jsonData)
-
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling json: %v", err)
 	}
