@@ -107,11 +107,19 @@ type TemplateMessageComponentButton struct {
 	Url         string                    `json:"url,omitempty"`          // required when Type = URL
 }
 
+// NamedParamExample represents a single named parameter and its example value.
+type NamedParamExample struct {
+	ParamName string `json:"param_name"`
+	Example   string `json:"example"`
+}
+
 // TemplateMessageComponentExample represents an example object for a template component.
 type TemplateMessageComponentExample struct {
-	HeaderHandle []string   `json:"header_handle,omitempty"` // for media headers (IMAGE, VIDEO, DOCUMENT)
-	HeaderText   []string   `json:"header_text,omitempty"`   // for text headers (positional examples)
-	BodyText     [][]string `json:"body_text,omitempty"`     // for body components (array of arrays for positional examples)
+	HeaderHandle          []string            `json:"header_handle,omitempty"`            // for media headers (IMAGE, VIDEO, DOCUMENT)
+	HeaderTextNamedParams []NamedParamExample `json:"header_text_named_params,omitempty"` // for named header params
+	HeaderText            []string            `json:"header_text,omitempty"`              // for text headers (positional examples)
+	BodyText              [][]string          `json:"body_text,omitempty"`                // for body components (array of arrays for positional examples)
+	BodyTextNamedParams   []NamedParamExample `json:"body_text_named_params,omitempty"`
 }
 
 // TemplateMessageLimitedTimeOfferParameter represents a limited time offer parameter.
@@ -146,15 +154,15 @@ const (
 // WhatsAppBusinessHSMWhatsAppHSMComponent represents a component in a message template.
 // Note: The "Type" field here now uses MessageTemplateComponentType.
 type WhatsAppBusinessHSMWhatsAppHSMComponent struct {
-	AddSecurityRecommendation bool                                     `json:"add_security_recommendation,omitempty"`
-	Buttons                   []TemplateMessageComponentButton         `json:"buttons,omitempty"`
-	Cards                     []TemplateMessageComponentCard           `json:"cards,omitempty"`
-	CodeExpirationMinutes     int                                      `json:"code_expiration_minutes,omitempty"`
-	Example                   TemplateMessageComponentExample          `json:"example,omitempty"`
-	Format                    MessageTemplateComponentFormat           `json:"format,omitempty"`
-	LimitedTimeOffer          TemplateMessageLimitedTimeOfferParameter `json:"limited_time_offer,omitempty"`
-	Text                      string                                   `json:"text,omitempty"`
-	Type                      MessageTemplateComponentType             `json:"type,omitempty"`
+	AddSecurityRecommendation bool                                      `json:"add_security_recommendation,omitempty"`
+	Buttons                   []TemplateMessageComponentButton          `json:"buttons,omitempty"`
+	Cards                     []TemplateMessageComponentCard            `json:"cards,omitempty"`
+	CodeExpirationMinutes     int                                       `json:"code_expiration_minutes,omitempty"`
+	Example                   *TemplateMessageComponentExample          `json:"example,omitempty"`
+	Format                    MessageTemplateComponentFormat            `json:"format,omitempty"`
+	LimitedTimeOffer          *TemplateMessageLimitedTimeOfferParameter `json:"limited_time_offer,omitempty"`
+	Text                      string                                    `json:"text,omitempty"`
+	Type                      MessageTemplateComponentType              `json:"type,omitempty"`
 }
 
 // TemplateMessageQualityScore represents the quality score of a template.
