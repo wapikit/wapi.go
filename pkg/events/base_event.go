@@ -40,6 +40,7 @@ type BaseMessageEvent struct {
 	requester         request_client.RequestClient
 	MessageId         string              `json:"message_id"`
 	From              string              `json:"from"`
+	SenderName        string              `json:"sender_name"`
 	Context           MessageContext      `json:"context"`
 	Timestamp         string              `json:"timestamp"`
 	IsForwarded       bool                `json:"is_forwarded"`
@@ -52,6 +53,7 @@ type BaseMessageEventParams struct {
 	PhoneNumber       BusinessPhoneNumber
 	Timestamp         string
 	From              string // * whatsapp account id of the user who sent the message
+	SenderName        string
 	IsForwarded       bool
 	Context           MessageContext // * this context will not be present if in case a message is a reply to another message
 	Requester         request_client.RequestClient
@@ -65,6 +67,7 @@ func NewBaseMessageEvent(params BaseMessageEventParams) BaseMessageEvent {
 		Timestamp:         params.Timestamp,
 		IsForwarded:       params.IsForwarded,
 		PhoneNumber:       params.PhoneNumber,
+		SenderName:        params.SenderName,
 		BusinessAccountId: params.BusinessAccountId,
 		From:              params.From,
 	}

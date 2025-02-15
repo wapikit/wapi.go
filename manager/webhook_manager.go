@@ -103,6 +103,11 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid MessagesValue JSON: %v", err))
 				}
 
+				senderName := ""
+				if len(messageValue.Contacts) > 0 {
+					senderName = messageValue.Contacts[0].Profile.Name
+				}
+
 				err = wh.handleMessagesSubscriptionEvents(HandleMessageSubscriptionEventPayload{
 					Messages: messageValue.Messages,
 					Statuses: messageValue.Statuses,
@@ -111,6 +116,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 						Id:            messageValue.Metadata.PhoneNumberId,
 					},
 					BusinessAccountId: entry.Id,
+					SenderName:        senderName,
 				})
 
 				if err != nil {
@@ -309,6 +315,7 @@ type HandleMessageSubscriptionEventPayload struct {
 	Statuses          []Status                   `json:"statuses"`
 	PhoneNumber       events.BusinessPhoneNumber `json:"phone_number_id"`     // * this is the phone number to which this event has bee sent to
 	BusinessAccountId string                     `json:"business_account_id"` // * business account id to which this event has been sent to
+	SenderName        string                     `json:"sender_name"`
 }
 
 func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessageSubscriptionEventPayload) error {
@@ -345,9 +352,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 	}
 
 	for _, message := range payload.Messages {
-
 		var repliedTo string
-
 		if message.Context.Id != "" {
 			repliedTo = message.Context.Id
 		}
@@ -358,6 +363,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 			PhoneNumber:       payload.PhoneNumber,
 			Timestamp:         message.Timestamp,
 			From:              message.From,
+			SenderName:        payload.SenderName,
 			IsForwarded:       message.Context.Forwarded,
 			Context: events.MessageContext{
 				RepliedToMessageId: repliedTo,
@@ -469,10 +475,12 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 			}
 		case NotificationMessageTypeContacts:
 			{
-				wh.EventManager.Publish(events.ContactMessageEventType, events.NewTextMessageEvent(
+				contactMessageComponent, _ := components.NewContactMessage([]components.Contact{})
+				// ! TODO: add the contact here to the contact message component
+				wh.EventManager.Publish(events.ContactMessageEventType, events.NewContactsMessageEvent(
 					baseMessageEvent,
-					message.Text.Body),
-				)
+					*contactMessageComponent,
+				))
 			}
 		case NotificationMessageTypeSticker:
 			{

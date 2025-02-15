@@ -27,6 +27,14 @@ type RequestClient struct {
 	apiAccessToken string
 }
 
+func (client *RequestClient) BaseUrl() string {
+	return client.baseUrl
+}
+
+func (client *RequestClient) ApiVersion() string {
+	return client.apiVersion
+}
+
 // NewRequestClient creates a new instance of RequestClient.
 func NewRequestClient(apiAccessToken string) *RequestClient {
 	return &RequestClient{
@@ -179,4 +187,43 @@ func (request *ApiRequest) Execute() (string, error) {
 	}
 
 	return response, err
+}
+
+// RequestMultipart allows sending an arbitrary body with a custom Content-Type.
+// This is needed for file uploads (multipart/form-data).
+func (rc *RequestClient) RequestMultipart(
+	method string,
+	path string,
+	body io.Reader,
+	contentType string,
+) (string, error) {
+	// 1. Build the final URL
+	requestPath := strings.Join([]string{
+		REQUEST_PROTOCOL, "://",
+		rc.baseUrl, "/",
+		rc.apiVersion, "/",
+		path,
+	}, "")
+
+	// 2. Create the HTTP request with the custom body & Content-Type
+	httpRequest, err := http.NewRequest(method, requestPath, body)
+	if err != nil {
+		return "", fmt.Errorf("error creating request: %w", err)
+	}
+	httpRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", rc.apiAccessToken))
+	httpRequest.Header.Set("Content-Type", contentType)
+
+	// 3. Send the request using a standard HTTP client
+	httpClient := &http.Client{}
+	response, err := httpClient.Do(httpRequest)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer response.Body.Close()
+
+	respBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+	return string(respBody), nil
 }
