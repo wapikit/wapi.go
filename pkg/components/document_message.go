@@ -12,7 +12,7 @@ type DocumentMessage struct {
 	Id       string  `json:"id,omitempty"`
 	Link     *string `json:"link,omitempty"`
 	Caption  *string `json:"caption,omitempty"`
-	FileName string  `json:"file_name" validate:"required"`
+	FileName string  `json:"filename" validate:"required"`
 }
 
 // DocumentMessageApiPayload represents the API payload for a document message.
@@ -23,10 +23,10 @@ type DocumentMessageApiPayload struct {
 
 // DocumentMessageConfigs represents the configurations for a document message.
 type DocumentMessageConfigs struct {
-	Id       string  `validate:"required"`
-	Link     *string `validate:"required"`
-	Caption  *string
-	FileName string `validate:"required"`
+	Id       string  `json:"id" validate:"required"`
+	Link     *string `json:"link,omitempty"`
+	Caption  *string `json:"caption,omitempty"`
+	FileName string  `json:"filename" validate:"required"`
 }
 
 // NewDocumentMessage creates a new DocumentMessage instance.
