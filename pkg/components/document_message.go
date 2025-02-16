@@ -9,6 +9,10 @@ import (
 
 // DocumentMessage represents a document message.
 type DocumentMessage struct {
+	Id       string  `json:"id,omitempty"`
+	Link     *string `json:"link,omitempty"`
+	Caption  *string `json:"caption,omitempty"`
+	FileName string  `json:"file_name" validate:"required"`
 }
 
 // DocumentMessageApiPayload represents the API payload for a document message.
@@ -19,6 +23,10 @@ type DocumentMessageApiPayload struct {
 
 // DocumentMessageConfigs represents the configurations for a document message.
 type DocumentMessageConfigs struct {
+	Id       string  `validate:"required"`
+	Link     *string `validate:"required"`
+	Caption  *string
+	FileName string `validate:"required"`
 }
 
 // NewDocumentMessage creates a new DocumentMessage instance.
@@ -26,8 +34,12 @@ func NewDocumentMessage(params DocumentMessageConfigs) (*DocumentMessage, error)
 	if err := internal.GetValidator().Struct(params); err != nil {
 		return nil, fmt.Errorf("error validating configs: %v", err)
 	}
-
-	return &DocumentMessage{}, nil
+	return &DocumentMessage{
+		Id:       params.Id,
+		Link:     params.Link,
+		Caption:  params.Caption,
+		FileName: params.FileName,
+	}, nil
 }
 
 // ToJson converts the DocumentMessage instance to JSON.
