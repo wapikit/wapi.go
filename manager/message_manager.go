@@ -61,8 +61,6 @@ func (mm *MessageManager) Send(message components.BaseMessage, phoneNumber strin
 		return nil, fmt.Errorf("error converting message to json: %v", err)
 	}
 
-	fmt.Println("Body is", string(body))
-
 	// Build the API request.
 	apiRequest := mm.requester.NewApiRequest(strings.Join([]string{mm.PhoneNumberId, "messages"}, "/"), http.MethodPost)
 	apiRequest.SetBody(string(body))
