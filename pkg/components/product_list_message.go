@@ -78,13 +78,13 @@ func (message *ProductListMessage) SetProductRetailerId(productRetailerId string
 	message.Action.ProductRetailerId = productRetailerId
 }
 
-func (message *ProductListMessage) SetFooterText(text string) {
+func (message *ProductListMessage) SetFooter(text string) {
 	message.Footer = &ProductListMessageFooter{
 		Text: text,
 	}
 }
 
-func (message *ProductListMessage) SetHeaderText(text string) {
+func (message *ProductListMessage) SetHeader(text string) {
 	message.Header = ProductListMessageHeader{
 		Text: text,
 	}
