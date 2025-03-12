@@ -11,10 +11,25 @@ type CatalogMessageAction struct {
 	CatalogId string `json:"catalog_id" validate:"required"`
 }
 
+type CatalogMessageBody struct {
+	Text string `json:"text" validate:"required"`
+}
+
+type CatalogMessageFooter struct {
+	Text string `json:"text" validate:"required"`
+}
+
+type CatalogMessageHeader struct {
+	Text string `json:"text" validate:"required"`
+}
+
 // ProductMessage represents a product message.
 type CatalogMessage struct {
 	Type   InteractiveMessageType `json:"type" validate:"required"`
 	Action CatalogMessageAction   `json:"action" validate:"required"`
+	Body   CatalogMessageBody     `json:"body" validate:"required"`
+	Footer *CatalogMessageFooter  `json:"footer,omitempty"`
+	Header *CatalogMessageHeader  `json:"header,omitempty"`
 }
 
 func NewCatalogMessage(catalogId string) (*CatalogMessage, error) {
@@ -24,6 +39,24 @@ func NewCatalogMessage(catalogId string) (*CatalogMessage, error) {
 			CatalogId: catalogId,
 		},
 	}, nil
+}
+
+func (m *CatalogMessage) SetHeader(text string) {
+	m.Header = &CatalogMessageHeader{
+		Text: text,
+	}
+}
+
+func (m *CatalogMessage) SetBody(text string) {
+	m.Body = CatalogMessageBody{
+		Text: text,
+	}
+}
+
+func (m *CatalogMessage) SetFooter(text string) {
+	m.Footer = &CatalogMessageFooter{
+		Text: text,
+	}
 }
 
 // ProductMessageApiPayload represents the API payload for a product message.
