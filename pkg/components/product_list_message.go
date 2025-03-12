@@ -42,15 +42,52 @@ type ProductListMessageBody struct {
 	Text string `json:"text" validate:"required"`
 }
 
+type ProductListMessageFooter struct {
+	Text string `json:"text" validate:"required"`
+}
+
+// ! TODO: support more header types
+type ProductListMessageHeader struct {
+	Text string `json:"text" validate:"required"`
+}
+
 // ProductListMessage represents a product list message.
 type ProductListMessage struct {
-	Action ProductListMessageAction `json:"action" validate:"required"`
-	Body   ProductListMessageBody   `json:"body" validate:"required"`
-	Type   InteractiveMessageType   `json:"type" validate:"required"`
+	Action ProductListMessageAction  `json:"action" validate:"required"`
+	Body   ProductListMessageBody    `json:"body" validate:"required"`
+	Footer *ProductListMessageFooter `json:"footer,omitempty"`
+	Header ProductListMessageHeader  `json:"header,omitempty"`
+	Type   InteractiveMessageType    `json:"type" validate:"required"`
 }
 
 func (message *ProductListMessage) AddSection(section ProductSection) {
 	message.Action.Sections = append(message.Action.Sections, section)
+}
+
+func (message *ProductListMessage) SetBody(text string) {
+	message.Body = ProductListMessageBody{
+		Text: text,
+	}
+}
+
+func (message *ProductListMessage) SetCatalogId(catalogId string) {
+	message.Action.CatalogId = catalogId
+}
+
+func (message *ProductListMessage) SetProductRetailerId(productRetailerId string) {
+	message.Action.ProductRetailerId = productRetailerId
+}
+
+func (message *ProductListMessage) SetFooterText(text string) {
+	message.Footer = &ProductListMessageFooter{
+		Text: text,
+	}
+}
+
+func (message *ProductListMessage) SetHeaderText(text string) {
+	message.Header = ProductListMessageHeader{
+		Text: text,
+	}
 }
 
 // ProductListMessageParams represents the parameters for creating a product list message.
