@@ -86,7 +86,7 @@ func (t TemplateMessageComponentBodyType) GetComponentType() string {
 
 type TemplateMessageCaraouselCard struct {
 	CardIndex  int                        `json:"card_index" validate:"required"`
-	Components []TemplateMessageComponent `json:"components" validate:"required"` // only headder, buttons and body
+	Components []TemplateMessageComponent `json:"components" validate:"required"` // only header, buttons and body
 }
 
 type TemplateMessageComponentCarouselType struct {
@@ -190,7 +190,7 @@ type TemplateMessageButtonParameterAction struct {
 
 // TemplateMessageButtonParameter represents a parameter for a button component.
 type TemplateMessageButtonParameter struct {
-	Type       TemplateMessageButtonParameterType    `json:"type" validate:"required"` // e.g., "payload" or "text"
+	Type       TemplateMessageButtonParameterType    `json:"type" validate:"required"` // e.g., "payload" or "text" or "action"
 	Payload    *string                               `json:"payload,omitempty"`        // Required for quick_reply buttons.
 	Text       *string                               `json:"text,omitempty"`           // Required for URL buttons.
 	Action     *TemplateMessageButtonParameterAction `json:"action,omitempty"`         // Required for catalog buttons.

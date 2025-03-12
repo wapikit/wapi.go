@@ -225,7 +225,6 @@ func (cm *CatalogManager) GetAllCatalogs() (*CatalogFetchResponseEdge, error) {
 		fmt.Println("GetAllCatalogs error", err)
 		return nil, err
 	}
-	fmt.Println("GetAllCatalogs response", response)
 	var result CatalogFetchResponseEdge
 	if err := json.Unmarshal([]byte(response), &result); err != nil {
 		return nil, err
@@ -327,8 +326,6 @@ func (cm *CatalogManager) GetCatalogProducts(catalogId string) ([]ProductItem, e
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println("GetCatalogProducts response", response)
 
 	// Temporary response structure.
 	var res struct {

@@ -29,9 +29,9 @@ func (ps *ProductSection) AddProduct(product Product) {
 }
 
 type ProductListMessageAction struct {
-	Sections          []ProductSection `json:"sections" validate:"required"`
-	CatalogId         string           `json:"catalogId" validate:"required"`
-	ProductRetailerId string           `json:"productRetailerId" validate:"required"`
+	Sections          []ProductSection `json:"sections" validate:"required"` // minimum 1 and maximum 10
+	CatalogId         string           `json:"catalog_id" validate:"required"`
+	ProductRetailerId string           `json:"product_retailer_id" validate:"required"`
 }
 
 func (a *ProductListMessageAction) AddSection(section ProductSection) {
