@@ -57,8 +57,6 @@ func (requestClientInstance *RequestClient) request(params RequestCloudApiParams
 	if len(params.QueryParam) > 0 {
 		queryParamString = "?"
 		for key, value := range params.QueryParam {
-			fmt.Println("Key is", key, "Value is", value)
-			fmt.Println("queryParamString is", queryParamString)
 			// if first query param, don't add "&"
 			if queryParamString != "?" {
 				queryParamString += "&"

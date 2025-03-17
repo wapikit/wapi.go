@@ -39,7 +39,6 @@ type WebhookManagerConfig struct {
 // NewWebhook creates a new WebhookManager with the given options.
 func NewWebhook(options *WebhookManagerConfig) *WebhookManager {
 	if err := internal.GetValidator().Struct(options); err != nil {
-		fmt.Println("Error validating WebhookManagerConfig:", err)
 		return nil
 	}
 	return &WebhookManager{
@@ -63,7 +62,6 @@ func (wh *WebhookManager) GetRequestHandler(c echo.Context) error {
 	hubVerificationToken := c.QueryParam("hub.verify_token")
 	hubChallenge := c.QueryParam("hub.challenge")
 	hubMode := c.QueryParam("hub.mode")
-	fmt.Println(hubVerificationToken, hubChallenge)
 	if hubMode == "subscribe" && hubVerificationToken == wh.secret {
 		return c.String(200, hubChallenge)
 	} else {

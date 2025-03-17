@@ -389,6 +389,10 @@ DocumentMessage represents a document message.
 
 ```go
 type DocumentMessage struct {
+    Id       string  `json:"id,omitempty"`
+    Link     *string `json:"link,omitempty"`
+    Caption  *string `json:"caption,omitempty"`
+    FileName string  `json:"filename" validate:"required"`
 }
 ```
 
@@ -429,6 +433,10 @@ DocumentMessageConfigs represents the configurations for a document message.
 
 ```go
 type DocumentMessageConfigs struct {
+    Id       string  `json:"id" validate:"required"`
+    Link     *string `json:"link,omitempty"`
+    Caption  *string `json:"caption,omitempty"`
+    FileName string  `json:"filename" validate:"required"`
 }
 ```
 
@@ -1207,7 +1215,7 @@ type TemplateMessageApiPayload struct {
 <a name="TemplateMessageBodyAndHeaderParameter"></a>
 ## type TemplateMessageBodyAndHeaderParameter
 
-TemplateMessageBodyAndHeaderParameter represents parameters for body and header components. \*\*New Change:\*\* Added the optional ParameterName field for named parameters.
+TemplateMessageBodyAndHeaderParameter represents parameters for body and header components.
 
 ```go
 type TemplateMessageBodyAndHeaderParameter struct {
@@ -1220,6 +1228,7 @@ type TemplateMessageBodyAndHeaderParameter struct {
     Text          *string                           `json:"text,omitempty"`           // Text content (if type is text).
     Video         *TemplateMessageParameterMedia    `json:"video,omitempty"`          // Video details (if type is video).
     Location      *TemplateMessageParameterLocation `json:"location,omitempty"`       // Location details (if type is location).
+    Product       *TemplateMessageParameterProduct  `json:"product,omitempty"`        // Product details (if type is product).
 }
 ```
 
@@ -1245,9 +1254,11 @@ type TemplateMessageButtonComponentType string
 
 ```go
 const (
-    TemplateMessageButtonComponentTypeQuickReply TemplateMessageButtonComponentType = "quick_reply"
-    TemplateMessageButtonComponentTypeUrl        TemplateMessageButtonComponentType = "url"
-    TemplateMessageButtonComponentTypeCatalog    TemplateMessageButtonComponentType = "catalog"
+    TemplateMessageButtonComponentTypeQuickReply          TemplateMessageButtonComponentType = "quick_reply"
+    TemplateMessageButtonComponentTypeUrl                 TemplateMessageButtonComponentType = "url"
+    TemplateMessageButtonComponentTypeCatalog             TemplateMessageButtonComponentType = "catalog"
+    TemplateMessageButtonComponentTypeCopyCode            TemplateMessageButtonComponentType = "copy_code"
+    TemplateMessageButtonComponentTypeMultiProductMessage TemplateMessageButtonComponentType = "mpm"
 )
 ```
 
@@ -1258,9 +1269,11 @@ TemplateMessageButtonParameter represents a parameter for a button component.
 
 ```go
 type TemplateMessageButtonParameter struct {
-    Type    TemplateMessageButtonParameterType `json:"type" validate:"required"` // e.g., "payload" or "text"
-    Payload string                             `json:"payload,omitempty"`        // Required for quick_reply buttons.
-    Text    string                             `json:"text,omitempty"`           // Required for URL buttons.
+    Type       TemplateMessageButtonParameterType    `json:"type" validate:"required"` // e.g., "payload" or "text"
+    Payload    *string                               `json:"payload,omitempty"`        // Required for quick_reply buttons.
+    Text       *string                               `json:"text,omitempty"`           // Required for URL buttons.
+    Action     *TemplateMessageButtonParameterAction `json:"action,omitempty"`         // Required for catalog buttons.
+    CouponCode *string                               `json:"coupon_code,omitempty"`    // Required for copy code button in coupon_code parameter.
 }
 ```
 
@@ -1272,6 +1285,18 @@ func (t TemplateMessageButtonParameter) GetParameterType() string
 ```
 
 GetParameterType returns the button parameter type as a string.
+
+<a name="TemplateMessageButtonParameterAction"></a>
+## type TemplateMessageButtonParameterAction
+
+
+
+```go
+type TemplateMessageButtonParameterAction struct {
+    ThumbnailProductRetailerId string                                                     `json:"thumbnail_product_retailer_id" validate:"required"`
+    Sections                   *[]TemplateMessageMultiProductButtonActionParameterSection `json:"sections,omitempty"` // Required for MPM buttons. UPTO 10 sections in a buttons parameter
+}
+```
 
 <a name="TemplateMessageButtonParameterType"></a>
 ## type TemplateMessageButtonParameterType
@@ -1286,9 +1311,23 @@ type TemplateMessageButtonParameterType string
 
 ```go
 const (
-    TemplateMessageButtonParameterTypePayload TemplateMessageButtonParameterType = "payload"
-    TemplateMessageButtonParameterTypeText    TemplateMessageButtonParameterType = "text"
+    TemplateMessageButtonParameterTypePayload    TemplateMessageButtonParameterType = "payload"
+    TemplateMessageButtonParameterTypeText       TemplateMessageButtonParameterType = "text"
+    TemplateMessageButtonParameterTypeAction     TemplateMessageButtonParameterType = "action"
+    TemplateMessageButtonParameterTypeCouponCode TemplateMessageButtonParameterType = "coupon_code"
 )
+```
+
+<a name="TemplateMessageCaraouselCard"></a>
+## type TemplateMessageCaraouselCard
+
+
+
+```go
+type TemplateMessageCaraouselCard struct {
+    CardIndex  int                        `json:"card_index" validate:"required"`
+    Components []TemplateMessageComponent `json:"components" validate:"required"` // only headder, buttons and body
+}
 ```
 
 <a name="TemplateMessageComponent"></a>
@@ -1330,10 +1369,10 @@ TemplateMessageComponentButtonType represents a button component.
 
 ```go
 type TemplateMessageComponentButtonType struct {
-    Type       TemplateMessageComponentType       `json:"type" validate:"required"`       // e.g., "button"
-    SubType    TemplateMessageButtonComponentType `json:"sub_type" validate:"required"`   // e.g., "quick_reply", "url", etc.
-    Index      int                                `json:"index" validate:"required"`      // Position index of the button (0 to 9)
-    Parameters []TemplateMessageParameter         `json:"parameters" validate:"required"` // Parameters for the button component.
+    Type       TemplateMessageComponentType       `json:"type" validate:"required"`                 // e.g., "button"
+    SubType    TemplateMessageButtonComponentType `json:"sub_type" validate:"required"`             // e.g., "quick_reply", "url", etc.
+    Index      int                                `json:"index" validate:"required"`                // Position index of the button (0 to 9)
+    Parameters *[]TemplateMessageParameter        `json:"parameters,omitempty" validate:"required"` // Parameters for the button component.
 }
 ```
 
@@ -1344,7 +1383,19 @@ type TemplateMessageComponentButtonType struct {
 func (t TemplateMessageComponentButtonType) GetComponentType() string
 ```
 
-GetComponentType returns the component type.
+
+
+<a name="TemplateMessageComponentCarouselType"></a>
+## type TemplateMessageComponentCarouselType
+
+
+
+```go
+type TemplateMessageComponentCarouselType struct {
+    Type  TemplateMessageComponentType   `json:"type" validate:"required"` // "carousel"
+    Cards []TemplateMessageCaraouselCard `json:"cards" validate:"required"`
+}
+```
 
 <a name="TemplateMessageComponentHeaderType"></a>
 ## type TemplateMessageComponentHeaderType
@@ -1353,8 +1404,8 @@ TemplateMessageComponentHeaderType represents a header component.
 
 ```go
 type TemplateMessageComponentHeaderType struct {
-    Type       TemplateMessageComponentType `json:"type" validate:"required"`       // "header"
-    Parameters []TemplateMessageParameter   `json:"parameters" validate:"required"` // Parameters for the header component.
+    Type       TemplateMessageComponentType `json:"type" validate:"required"`                 // "header"
+    Parameters *[]TemplateMessageParameter  `json:"parameters,omitempty" validate:"required"` // Parameters for the header component.
 }
 ```
 
@@ -1366,6 +1417,27 @@ func (t TemplateMessageComponentHeaderType) GetComponentType() string
 ```
 
 GetComponentType returns the component type.
+
+<a name="TemplateMessageComponentLimitedTimeOfferType"></a>
+## type TemplateMessageComponentLimitedTimeOfferType
+
+
+
+```go
+type TemplateMessageComponentLimitedTimeOfferType struct {
+    Type       TemplateMessageComponentType                `json:"type" validate:"required"`
+    Parameters *[]TemplateMessageLimitedTimeOfferParameter `json:"parameters,omitempty" validate:"required"`
+}
+```
+
+<a name="TemplateMessageComponentLimitedTimeOfferType.GetComponentType"></a>
+### func \(TemplateMessageComponentLimitedTimeOfferType\) GetComponentType
+
+```go
+func (t TemplateMessageComponentLimitedTimeOfferType) GetComponentType() string
+```
+
+
 
 <a name="TemplateMessageComponentType"></a>
 ## type TemplateMessageComponentType
@@ -1380,9 +1452,11 @@ type TemplateMessageComponentType string
 
 ```go
 const (
-    TemplateMessageComponentTypeHeader TemplateMessageComponentType = "header"
-    TemplateMessageComponentTypeBody   TemplateMessageComponentType = "body"
-    TemplateMessageComponentTypeButton TemplateMessageComponentType = "button"
+    TemplateMessageComponentTypeHeader           TemplateMessageComponentType = "header"
+    TemplateMessageComponentTypeBody             TemplateMessageComponentType = "body"
+    TemplateMessageComponentTypeButton           TemplateMessageComponentType = "button"
+    TemplateMessageComponentTypeLimitedTimeOffer TemplateMessageComponentType = "limited_time_offer"
+    TemplateMessageComponentTypeCarousel         TemplateMessageComponentType = "carousel"
 )
 ```
 
@@ -1407,6 +1481,44 @@ TemplateMessageLanguage represents the language configuration.
 type TemplateMessageLanguage struct {
     Code   string `json:"code" validate:"required"`   // e.g., "en_US"
     Policy string `json:"policy" validate:"required"` // e.g., "deterministic"
+}
+```
+
+<a name="TemplateMessageLimitedTimeOfferParameter"></a>
+## type TemplateMessageLimitedTimeOfferParameter
+
+
+
+```go
+type TemplateMessageLimitedTimeOfferParameter struct {
+    Type             TemplateMessageParameterType `json:"type" validate:"required"` // e.g., "text", "currency", etc.
+    LimitedTimeOffer struct {
+        ExpirationTimeMs int64 `json:"expiration_time_ms" validate:"required"` // Expiration time in milliseconds.
+    }   `json:"limited_time_offer" validate:"required"`
+}
+```
+
+<a name="TemplateMessageMultiProductButtonActionParameterProductItem"></a>
+## type TemplateMessageMultiProductButtonActionParameterProductItem
+
+
+
+```go
+type TemplateMessageMultiProductButtonActionParameterProductItem struct {
+    ProductRetailerId string `json:"product_retailer_id" validate:"required"`
+}
+```
+
+<a name="TemplateMessageMultiProductButtonActionParameterSection"></a>
+## type TemplateMessageMultiProductButtonActionParameterSection
+
+
+
+```go
+type TemplateMessageMultiProductButtonActionParameterSection struct {
+    Title string `json:"title" validate:"required"`
+    // Upto 30 product items only
+    ProductItems []TemplateMessageMultiProductButtonActionParameterProductItem `json:"product_items" validate:"required"`
 }
 ```
 
@@ -1470,6 +1582,18 @@ type TemplateMessageParameterMedia struct {
 }
 ```
 
+<a name="TemplateMessageParameterProduct"></a>
+## type TemplateMessageParameterProduct
+
+
+
+```go
+type TemplateMessageParameterProduct struct {
+    ProductRetailerId string `json:"product_retailer_id" validate:"required"`
+    CatalogId         string `json:"catalog_id" validate:"required"`
+}
+```
+
 <a name="TemplateMessageParameterType"></a>
 ## type TemplateMessageParameterType
 
@@ -1483,13 +1607,15 @@ type TemplateMessageParameterType string
 
 ```go
 const (
-    TemplateMessageParameterTypeCurrency TemplateMessageParameterType = "currency"
-    TemplateMessageParameterTypeDateTime TemplateMessageParameterType = "date_time"
-    TemplateMessageParameterTypeDocument TemplateMessageParameterType = "document"
-    TemplateMessageParameterTypeImage    TemplateMessageParameterType = "image"
-    TemplateMessageParameterTypeText     TemplateMessageParameterType = "text"
-    TemplateMessageParameterTypeVideo    TemplateMessageParameterType = "video"
-    TemplateMessageParameterTypeLocation TemplateMessageParameterType = "location"
+    TemplateMessageParameterTypeCurrency         TemplateMessageParameterType = "currency"
+    TemplateMessageParameterTypeDateTime         TemplateMessageParameterType = "date_time"
+    TemplateMessageParameterTypeDocument         TemplateMessageParameterType = "document"
+    TemplateMessageParameterTypeImage            TemplateMessageParameterType = "image"
+    TemplateMessageParameterTypeText             TemplateMessageParameterType = "text"
+    TemplateMessageParameterTypeVideo            TemplateMessageParameterType = "video"
+    TemplateMessageParameterTypeLocation         TemplateMessageParameterType = "location"
+    TemplateMessageParameterTypeLimitedTimeOffer TemplateMessageParameterType = "limited_time_offer"
+    TemplateMessageParameterTypeProduct          TemplateMessageParameterType = "product"
 )
 ```
 

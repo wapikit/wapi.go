@@ -9,16 +9,6 @@ import (
 	"github.com/wapikit/wapi.go/internal/request_client"
 )
 
-// MessageTemplateType represents a generic type for message template components.
-type MessageTemplateType string
-
-const (
-	MessageTemplateTypeHeader MessageTemplateType = "HEADER"
-	MessageTemplateTypeBody   MessageTemplateType = "BODY"
-	MessageTemplateTypeButton MessageTemplateType = "BUTTONS"
-	MessageTemplateTypeFooter MessageTemplateType = "FOOTER"
-)
-
 // MessageTemplateStatus represents the status of a WhatsApp Business message template.
 type MessageTemplateStatus string
 
@@ -86,16 +76,19 @@ type WhatsAppBusinessTemplatesFetchResponseEdge struct {
 // TemplateMessageComponentCard represents a card component in a message template.
 type TemplateMessageComponentCard struct {
 	// Add card-specific fields if needed.
+	Components []WhatsAppBusinessHSMWhatsAppHSMComponent `json:"components,omitempty"`
 }
 
 // TemplateMessageButtonType represents the type of a button.
 type TemplateMessageButtonType string
 
 const (
-	TemplateMessageButtonTypeQuickReply  TemplateMessageButtonType = "QUICK_REPLY"
-	TemplateMessageButtonTypeUrl         TemplateMessageButtonType = "URL"
-	TemplateMessageButtonTypePhoneNumber TemplateMessageButtonType = "PHONE_NUMBER"
-	TemplateMessageButtonTypeCopyCode    TemplateMessageButtonType = "COPY_CODE"
+	TemplateMessageButtonTypeQuickReply          TemplateMessageButtonType = "QUICK_REPLY"
+	TemplateMessageButtonTypeUrl                 TemplateMessageButtonType = "URL"
+	TemplateMessageButtonTypePhoneNumber         TemplateMessageButtonType = "PHONE_NUMBER"
+	TemplateMessageButtonTypeCopyCode            TemplateMessageButtonType = "COPY_CODE"
+	TemplateMessageButtonTypeCatalog             TemplateMessageButtonType = "CATALOG"
+	TemplateMessageButtonTypeMultiProductMessage TemplateMessageButtonType = "MPM"
 )
 
 // TemplateMessageComponentButton represents a button component in a message template.
@@ -124,7 +117,8 @@ type TemplateMessageComponentExample struct {
 
 // TemplateMessageLimitedTimeOfferParameter represents a limited time offer parameter.
 type TemplateMessageLimitedTimeOfferParameter struct {
-	// Add fields as required.
+	Text          string `json:"text,omitempty"`
+	HasExpiration bool   `json:"has_expiration,omitempty"`
 }
 
 // MessageTemplateComponentType represents the type of a template component.
@@ -136,7 +130,7 @@ const (
 	MessageTemplateComponentTypeBody             MessageTemplateComponentType = "BODY"
 	MessageTemplateComponentTypeFooter           MessageTemplateComponentType = "FOOTER"
 	MessageTemplateComponentTypeButtons          MessageTemplateComponentType = "BUTTONS"
-	MessageTemplateComponentTypeCarousel         MessageTemplateComponentType = "CAROUSEL"
+	MessageTemplateComponentTypeCarousel         MessageTemplateComponentType = "CAROUSEL" // this appears in case of product caraousel
 	MessageTemplateComponentTypeLimitedTimeOffer MessageTemplateComponentType = "LIMITED_TIME_OFFER"
 )
 

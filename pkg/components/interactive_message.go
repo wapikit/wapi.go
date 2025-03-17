@@ -7,4 +7,5 @@ const (
 	InteractiveMessageTypeProduct     InteractiveMessageType = "product"
 	InteractiveMessageTypeProductList InteractiveMessageType = "product_list"
 	InteractiveMessageTypeList        InteractiveMessageType = "list"
+	InteractiveMessageTypeCatalog     InteractiveMessageType = "catalog_message"
 )

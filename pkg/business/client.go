@@ -19,6 +19,7 @@ type BusinessClient struct {
 	PhoneNumber       *manager.PhoneNumberManager
 	Template          *manager.TemplateManager
 	requester         *request_client.RequestClient
+	Catalog           *manager.CatalogManager
 }
 
 // BusinessClientConfig holds the configuration for BusinessClient.
@@ -41,6 +42,10 @@ func NewBusinessClient(config *BusinessClientConfig) *BusinessClient {
 		Template: manager.NewTemplateManager(&manager.TemplateManagerConfig{
 			BusinessAccountId: config.BusinessAccountId,
 			ApiAccessToken:    config.AccessToken,
+			Requester:         config.Requester,
+		}),
+		Catalog: manager.NewCatalogManager(&manager.CatalogManagerConfig{
+			BusinessAccountId: config.BusinessAccountId,
 			Requester:         config.Requester,
 		}),
 		requester: config.Requester,
@@ -313,26 +318,6 @@ func (client *BusinessClient) ConversationAnalytics(options ConversationAnalytic
 	fmt.Println("Response to return is", responseToReturn)
 
 	return &responseToReturn, nil
-}
-
-func (client *BusinessClient) FetchAllProductCatalogs() (string, error) {
-	// ! TODO: implement proper response struct
-	// https://developers.facebook.com/docs/graph-api/reference/whats-app-business-account/product_catalogs/#Reading
-	apiRequest := client.requester.NewApiRequest(strings.Join([]string{client.BusinessAccountId, "product_catalogs"}, "/"), http.MethodGet)
-	response, err := apiRequest.Execute()
-	return response, err
-}
-
-type CreateProductCatalogOptions struct {
-	Success string `json:"success,omitempty"`
-}
-
-func (client *BusinessClient) CreateNewProductCatalog() (CreateProductCatalogOptions, error) {
-	apiRequest := client.requester.NewApiRequest(strings.Join([]string{client.BusinessAccountId, "product_catalogs"}, "/"), http.MethodPost)
-	response, err := apiRequest.Execute()
-	var responseToReturn CreateProductCatalogOptions
-	json.Unmarshal([]byte(response), &responseToReturn)
-	return responseToReturn, err
 }
 
 type BusinessRole string

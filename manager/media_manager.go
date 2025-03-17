@@ -45,20 +45,15 @@ func (mm *MediaManager) GetMediaUrlById(id string) (string, error) {
 		return "", err
 	}
 
-	fmt.Println("rawResponse: ", rawResponse)
-
 	// Parse into a struct
 	var res MediaMetadata
 	if err := json.Unmarshal([]byte(rawResponse), &res); err != nil {
-
 		return "", fmt.Errorf("failed to parse media metadata: %w", err)
 	}
 
 	if res.Url == "" {
 		return "", fmt.Errorf("no media url found in response: %s", rawResponse)
 	}
-
-	fmt.Println("res.Url: ", res.Url)
 
 	return res.Url, nil
 }

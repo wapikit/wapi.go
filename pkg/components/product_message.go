@@ -11,6 +11,14 @@ type ProductMessageBody struct {
 	Text string `json:"text" validate:"required"`
 }
 
+type ProductMessageFooter struct {
+	Text string `json:"text" validate:"required"`
+}
+
+type ProductMessageHeader struct {
+	Text string `json:"text" validate:"required"`
+}
+
 type productMessageAction struct {
 	CatalogId         string `json:"catalog_id" validate:"required"`
 	ProductRetailerId string `json:"product_retailer_id" validate:"required"`
@@ -19,7 +27,9 @@ type productMessageAction struct {
 // ProductMessage represents a product message.
 type ProductMessage struct {
 	Type   InteractiveMessageType `json:"type" validate:"required"`
-	Body   ProductMessageBody     `json:"body" validate:"required"`
+	Body   *ProductMessageBody    `json:"body" validate:"required"`
+	Footer *ProductMessageFooter  `json:"footer,omitempty"`
+	Header *ProductMessageHeader  `json:"header,omitempty"`
 	Action productMessageAction   `json:"action" validate:"required"`
 }
 
@@ -36,11 +46,22 @@ type ProductMessageApiPayload struct {
 	Interactive ProductMessage `json:"interactive" validate:"required"`
 }
 
-func (m *ProductMessage) SetHeader() {
+func (m *ProductMessage) SetHeader(text string) {
+	m.Header = &ProductMessageHeader{
+		Text: text,
+	}
 }
 
-func (m *ProductMessage) SetBodyText(text string) {
-	m.Body.Text = text
+func (m *ProductMessage) SetBody(text string) {
+	m.Body = &ProductMessageBody{
+		Text: text,
+	}
+}
+
+func (m *ProductMessage) SetFooter(text string) {
+	m.Footer = &ProductMessageFooter{
+		Text: text,
+	}
 }
 
 func (m *ProductMessage) SetCatalogId(id string) {
@@ -58,7 +79,7 @@ func NewProductMessage(params ProductMessageParams) (*ProductMessage, error) {
 	}
 	return &ProductMessage{
 		Type: InteractiveMessageTypeProduct,
-		Body: ProductMessageBody{
+		Body: &ProductMessageBody{
 			Text: params.BodyText,
 		},
 		Action: productMessageAction{

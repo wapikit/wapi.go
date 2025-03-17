@@ -165,6 +165,105 @@ type BusinessCapabilityUpdateValue struct {
 }
 ```
 
+<a name="Catalog"></a>
+## type Catalog
+
+Update Catalog to use \[\]ProductItem for Products.
+
+```go
+type Catalog struct {
+    // Basic fields
+    Id           string `json:"id"`
+    Name         string `json:"name"`
+    ProductCount int    `json:"product_count"`
+    Vertical     string `json:"vertical,omitempty"`
+
+    // Edge relationships (represented as slices for brevity)
+    Agencies                      []interface{} `json:"agencies,omitempty"`
+    AssignedUsers                 []interface{} `json:"assigned_users,omitempty"`
+    AutomotiveModels              []interface{} `json:"automotive_models,omitempty"`
+    Categories                    []interface{} `json:"categories,omitempty"`
+    CheckBatchRequestStatus       []interface{} `json:"check_batch_request_status,omitempty"`
+    CollaborativeAdsShareSettings []interface{} `json:"collaborative_ads_share_settings,omitempty"`
+    DataSources                   []interface{} `json:"data_sources,omitempty"`
+    Destinations                  []interface{} `json:"destinations,omitempty"`
+    Diagnostics                   []interface{} `json:"diagnostics,omitempty"`
+    EventStats                    []interface{} `json:"event_stats,omitempty"`
+    ExternalEventSources          []interface{} `json:"external_event_sources,omitempty"`
+    Flights                       []interface{} `json:"flights,omitempty"`
+    HomeListings                  []interface{} `json:"home_listings,omitempty"`
+    HotelRoomsBatch               []interface{} `json:"hotel_rooms_batch,omitempty"`
+    Hotels                        []interface{} `json:"hotels,omitempty"`
+    PricingVariablesBatch         []interface{} `json:"pricing_variables_batch,omitempty"`
+    ProductGroups                 []interface{} `json:"product_groups,omitempty"`
+    ProductSets                   []interface{} `json:"product_sets,omitempty"`
+    ProductSetsBatch              []interface{} `json:"product_sets_batch,omitempty"`
+    Products                      []ProductItem `json:"products,omitempty"`
+    VehicleOffers                 []interface{} `json:"vehicle_offers,omitempty"`
+    Vehicles                      []interface{} `json:"vehicles,omitempty"`
+}
+```
+
+<a name="CatalogFetchResponseEdge"></a>
+## type CatalogFetchResponseEdge
+
+
+
+```go
+type CatalogFetchResponseEdge struct {
+    Data   []Catalog                                  `json:"data"`
+    Paging internal.WhatsAppBusinessApiPaginationMeta `json:"paging"`
+}
+```
+
+<a name="CatalogManager"></a>
+## type CatalogManager
+
+
+
+```go
+type CatalogManager struct {
+    requester         request_client.RequestClient
+    businessAccountId string
+}
+```
+
+<a name="NewCatalogManager"></a>
+### func NewCatalogManager
+
+```go
+func NewCatalogManager(businessAccountId string, requester request_client.RequestClient) *CatalogManager
+```
+
+
+
+<a name="CatalogManager.GetAllCatalogs"></a>
+### func \(\*CatalogManager\) GetAllCatalogs
+
+```go
+func (cm *CatalogManager) GetAllCatalogs() (*CatalogFetchResponseEdge, error)
+```
+
+
+
+<a name="CatalogManager.GetCatalogProducts"></a>
+### func \(\*CatalogManager\) GetCatalogProducts
+
+```go
+func (cm *CatalogManager) GetCatalogProducts(catalogId string) ([]CatalogProduct, error)
+```
+
+GetCatalogProducts retrieves the list of products for a given catalog.
+
+<a name="CatalogProduct"></a>
+## type CatalogProduct
+
+
+
+```go
+type CatalogProduct = ProductItem
+```
+
 <a name="Change"></a>
 ## type Change
 
@@ -232,6 +331,17 @@ DeleteQrCodeResponse represents the response of deleting a QR code.
 ```go
 type DeleteQrCodeResponse struct {
     Success bool `json:"success,omitempty"`
+}
+```
+
+<a name="DeleteSuccessResponse"></a>
+## type DeleteSuccessResponse
+
+
+
+```go
+type DeleteSuccessResponse struct {
+    Success bool `json:"success"`
 }
 ```
 
@@ -350,6 +460,7 @@ type HandleMessageSubscriptionEventPayload struct {
     Statuses          []Status                   `json:"statuses"`
     PhoneNumber       events.BusinessPhoneNumber `json:"phone_number_id"`     // * this is the phone number to which this event has bee sent to
     BusinessAccountId string                     `json:"business_account_id"` // * business account id to which this event has been sent to
+    SenderName        string                     `json:"sender_name"`
 }
 ```
 
@@ -369,6 +480,18 @@ const (
     NotificationTypeButtonReply InteractiveNotificationTypeEnum = "button_reply"
     NotificationTypeListReply   InteractiveNotificationTypeEnum = "list_reply"
 )
+```
+
+<a name="KeyValue"></a>
+## type KeyValue
+
+New helper type for key/value pairs.
+
+```go
+type KeyValue struct {
+    Key   string `json:"key"`
+    Value string `json:"value"`
+}
 ```
 
 <a name="MediaManager"></a>
@@ -398,7 +521,7 @@ NewMediaManager creates a new instance of MediaManager.
 func (mm *MediaManager) DeleteMedia(id string) (string, error)
 ```
 
-GetMediaIdByUrl retrieves the media ID by its URL.
+
 
 <a name="MediaManager.GetMediaUrlById"></a>
 ### func \(\*MediaManager\) GetMediaUrlById
@@ -407,7 +530,32 @@ GetMediaIdByUrl retrieves the media ID by its URL.
 func (mm *MediaManager) GetMediaUrlById(id string) (string, error)
 ```
 
-GetMediaUrlById retrieves the media URL by its ID.
+
+
+<a name="MediaManager.UploadMedia"></a>
+### func \(\*MediaManager\) UploadMedia
+
+```go
+func (mm *MediaManager) UploadMedia(phoneNumberId string, file io.Reader, filename, mimeType string) (string, error)
+```
+
+UploadMedia uploads a media file to WhatsApp's Cloud API.
+
+<a name="MediaMetadata"></a>
+## type MediaMetadata
+
+
+
+```go
+type MediaMetadata struct {
+    MessagingProduct string `json:"messaging_product"`
+    Url              string `json:"url"`
+    MimeType         string `json:"mime_type"`
+    Sha256           string `json:"sha256"`
+    FileSize         int    `json:"file_size"`
+    ID               string `json:"id"`
+}
+```
 
 <a name="Message"></a>
 ## type Message
@@ -602,7 +750,7 @@ const (
     MessageTemplateComponentTypeBody             MessageTemplateComponentType = "BODY"
     MessageTemplateComponentTypeFooter           MessageTemplateComponentType = "FOOTER"
     MessageTemplateComponentTypeButtons          MessageTemplateComponentType = "BUTTONS"
-    MessageTemplateComponentTypeCarousel         MessageTemplateComponentType = "CAROUSEL"
+    MessageTemplateComponentTypeCarousel         MessageTemplateComponentType = "CAROUSEL" // this appears in case of product caraousel
     MessageTemplateComponentTypeLimitedTimeOffer MessageTemplateComponentType = "LIMITED_TIME_OFFER"
 )
 ```
@@ -639,26 +787,6 @@ const (
 )
 ```
 
-<a name="MessageTemplateType"></a>
-## type MessageTemplateType
-
-MessageTemplateType represents a generic type for message template components.
-
-```go
-type MessageTemplateType string
-```
-
-<a name="MessageTemplateTypeHeader"></a>
-
-```go
-const (
-    MessageTemplateTypeHeader MessageTemplateType = "HEADER"
-    MessageTemplateTypeBody   MessageTemplateType = "BODY"
-    MessageTemplateTypeButton MessageTemplateType = "BUTTONS"
-    MessageTemplateTypeFooter MessageTemplateType = "FOOTER"
-)
-```
-
 <a name="MessagesValue"></a>
 ## type MessagesValue
 
@@ -684,6 +812,18 @@ type MessagesValue struct {
 type Metadata struct {
     DisplayPhoneNumber string `json:"display_phone_number"`
     PhoneNumberId      string `json:"phone_number_id"`
+}
+```
+
+<a name="NamedParamExample"></a>
+## type NamedParamExample
+
+NamedParamExample represents a single named parameter and its example value.
+
+```go
+type NamedParamExample struct {
+    ParamName string `json:"param_name"`
+    Example   string `json:"example"`
 }
 ```
 
@@ -1191,6 +1331,124 @@ type Pricing struct {
 }
 ```
 
+<a name="ProductItem"></a>
+## type ProductItem
+
+ProductItem represents a product in a catalog.
+
+```go
+type ProductItem struct {
+    Id                                                    string       `json:"id"`
+    AdditionalImageCdnUrls                                [][]KeyValue `json:"additional_image_cdn_urls,omitempty"`
+    AdditionalImageUrls                                   []string     `json:"additional_image_urls,omitempty"`
+    AdditionalVariantAttributes                           []KeyValue   `json:"additional_variant_attributes,omitempty"`
+    AgeGroup                                              string       `json:"age_group,omitempty"`
+    Applinks                                              string       `json:"applinks,omitempty"`
+    Availability                                          string       `json:"availability,omitempty"`
+    Brand                                                 string       `json:"brand,omitempty"`
+    CapabilityToReviewStatus                              []KeyValue   `json:"capability_to_review_status,omitempty"`
+    Category                                              string       `json:"category,omitempty"`
+    CategorySpecificFields                                string       `json:"category_specific_fields,omitempty"`
+    Color                                                 string       `json:"color,omitempty"`
+    CommerceInsights                                      string       `json:"commerce_insights,omitempty"`
+    Condition                                             string       `json:"condition,omitempty"`
+    Currency                                              string       `json:"currency,omitempty"`
+    CustomData                                            []KeyValue   `json:"custom_data,omitempty"`
+    CustomLabel0                                          string       `json:"custom_label_0,omitempty"`
+    CustomLabel1                                          string       `json:"custom_label_1,omitempty"`
+    CustomLabel2                                          string       `json:"custom_label_2,omitempty"`
+    CustomLabel3                                          string       `json:"custom_label_3,omitempty"`
+    CustomLabel4                                          string       `json:"custom_label_4,omitempty"`
+    CustomNumber0                                         string       `json:"custom_number_0,omitempty"`
+    CustomNumber1                                         string       `json:"custom_number_1,omitempty"`
+    CustomNumber2                                         string       `json:"custom_number_2,omitempty"`
+    CustomNumber3                                         string       `json:"custom_number_3,omitempty"`
+    CustomNumber4                                         string       `json:"custom_number_4,omitempty"`
+    Description                                           string       `json:"description,omitempty"`
+    Errors                                                []string     `json:"errors,omitempty"`
+    ExpirationDate                                        string       `json:"expiration_date,omitempty"`
+    FbProductCategory                                     string       `json:"fb_product_category,omitempty"`
+    Gender                                                string       `json:"gender,omitempty"`
+    Gtin                                                  string       `json:"gtin,omitempty"`
+    ImageCdnUrls                                          []KeyValue   `json:"image_cdn_urls,omitempty"`
+    ImageFetchStatus                                      string       `json:"image_fetch_status,omitempty"`
+    ImageUrl                                              string       `json:"image_url,omitempty"`
+    Images                                                []string     `json:"images,omitempty"`
+    ImporterAddress                                       string       `json:"importer_address,omitempty"`
+    ImporterName                                          string       `json:"importer_name,omitempty"`
+    InvalidationErrors                                    []string     `json:"invalidation_errors,omitempty"`
+    Inventory                                             int          `json:"inventory,omitempty"`
+    ManufacturerInfo                                      string       `json:"manufacturer_info,omitempty"`
+    ManufacturerPartNumber                                string       `json:"manufacturer_part_number,omitempty"`
+    MarkedForProductLaunch                                string       `json:"marked_for_product_launch,omitempty"`
+    Material                                              string       `json:"material,omitempty"`
+    MobileLink                                            string       `json:"mobile_link,omitempty"`
+    Name                                                  string       `json:"name,omitempty"`
+    OrderingIndex                                         int          `json:"ordering_index,omitempty"`
+    OriginCountry                                         string       `json:"origin_country,omitempty"`
+    ParentProductID                                       string       `json:"parent_product_id,omitempty"`
+    Pattern                                               string       `json:"pattern,omitempty"`
+    PostConversionSignalBasedEnforcementAppealEligibility bool         `json:"post_conversion_signal_based_enforcement_appeal_eligibility,omitempty"`
+    Price                                                 string       `json:"price,omitempty"`
+    ProductCatalog                                        string       `json:"product_catalog,omitempty"`
+    ProductFeed                                           string       `json:"product_feed,omitempty"`
+    ProductGroup                                          string       `json:"product_group,omitempty"`
+    ProductLocalInfo                                      string       `json:"product_local_info,omitempty"`
+    ProductType                                           string       `json:"product_type,omitempty"`
+    QuantityToSellOnFacebook                              int          `json:"quantity_to_sell_on_facebook,omitempty"`
+    RetailerId                                            string       `json:"retailer_id,omitempty"`
+    RetailerProductGroupID                                string       `json:"retailer_product_group_id,omitempty"`
+    ReviewRejectionReasons                                []string     `json:"review_rejection_reasons,omitempty"`
+    ReviewStatus                                          string       `json:"review_status,omitempty"`
+    SalePrice                                             string       `json:"sale_price,omitempty"`
+    SalePriceEndDate                                      string       `json:"sale_price_end_date,omitempty"`
+    SalePriceStartDate                                    string       `json:"sale_price_start_date,omitempty"`
+    ShippingWeightUnit                                    string       `json:"shipping_weight_unit,omitempty"`
+    ShippingWeightValue                                   float64      `json:"shipping_weight_value,omitempty"`
+    ShortDescription                                      string       `json:"short_description,omitempty"`
+    Size                                                  string       `json:"size,omitempty"`
+    StartDate                                             string       `json:"start_date,omitempty"`
+    Tags                                                  []string     `json:"tags,omitempty"`
+    Url                                                   string       `json:"url,omitempty"`
+    VendorId                                              string       `json:"vendor_id,omitempty"`
+    VideoFetchStatus                                      string       `json:"video_fetch_status,omitempty"`
+    Visibility                                            string       `json:"visibility,omitempty"`
+    WaComplianceCategory                                  string       `json:"wa_compliance_category,omitempty"`
+}
+```
+
+<a name="ProductSet"></a>
+## type ProductSet
+
+ProductSet represents a product set within a catalog.
+
+```go
+type ProductSet struct {
+    Id              string             `json:"id"`
+    AutoCreationUrl string             `json:"auto_creation_url,omitempty"`
+    Filter          string             `json:"filter,omitempty"`
+    LatestMetadata  ProductSetMetadata `json:"latest_metadata,omitempty"`
+    LiveMetadata    ProductSetMetadata `json:"live_metadata,omitempty"`
+    Name            string             `json:"name"`
+    // Omit full ProductCatalog to avoid cyclic properties; use catalog Id instead.
+    ProductCount uint32 `json:"product_count"`
+    RetailerId   string `json:"retailer_id,omitempty"`
+}
+```
+
+<a name="ProductSetMetadata"></a>
+## type ProductSetMetadata
+
+ProductSetMetadata represents metadata for a product set.
+
+```go
+type ProductSetMetadata struct {
+    // Define minimal metadata fields as needed.
+    // For example:
+    UpdateTime string `json:"update_time,omitempty"`
+}
+```
+
 <a name="Profile"></a>
 ## type Profile
 
@@ -1378,10 +1636,12 @@ type TemplateMessageButtonType string
 
 ```go
 const (
-    TemplateMessageButtonTypeQuickReply  TemplateMessageButtonType = "QUICK_REPLY"
-    TemplateMessageButtonTypeUrl         TemplateMessageButtonType = "URL"
-    TemplateMessageButtonTypePhoneNumber TemplateMessageButtonType = "PHONE_NUMBER"
-    TemplateMessageButtonTypeCopyCode    TemplateMessageButtonType = "COPY_CODE"
+    TemplateMessageButtonTypeQuickReply          TemplateMessageButtonType = "QUICK_REPLY"
+    TemplateMessageButtonTypeUrl                 TemplateMessageButtonType = "URL"
+    TemplateMessageButtonTypePhoneNumber         TemplateMessageButtonType = "PHONE_NUMBER"
+    TemplateMessageButtonTypeCopyCode            TemplateMessageButtonType = "COPY_CODE"
+    TemplateMessageButtonTypeCatalog             TemplateMessageButtonType = "CATALOG"
+    TemplateMessageButtonTypeMultiProductMessage TemplateMessageButtonType = "MPM"
 )
 ```
 
@@ -1407,6 +1667,8 @@ TemplateMessageComponentCard represents a card component in a message template.
 
 ```go
 type TemplateMessageComponentCard struct {
+    // Add card-specific fields if needed.
+    Components []WhatsAppBusinessHSMWhatsAppHSMComponent `json:"components,omitempty"`
 }
 ```
 
@@ -1417,9 +1679,11 @@ TemplateMessageComponentExample represents an example object for a template comp
 
 ```go
 type TemplateMessageComponentExample struct {
-    HeaderHandle []string   `json:"header_handle,omitempty"` // for media headers (IMAGE, VIDEO, DOCUMENT)
-    HeaderText   []string   `json:"header_text,omitempty"`   // for text headers (positional examples)
-    BodyText     [][]string `json:"body_text,omitempty"`     // for body components (array of arrays for positional examples)
+    HeaderHandle          []string            `json:"header_handle,omitempty"`            // for media headers (IMAGE, VIDEO, DOCUMENT)
+    HeaderTextNamedParams []NamedParamExample `json:"header_text_named_params,omitempty"` // for named header params
+    HeaderText            []string            `json:"header_text,omitempty"`              // for text headers (positional examples)
+    BodyText              [][]string          `json:"body_text,omitempty"`                // for body components (array of arrays for positional examples)
+    BodyTextNamedParams   []NamedParamExample `json:"body_text_named_params,omitempty"`
 }
 ```
 
@@ -1430,6 +1694,8 @@ TemplateMessageLimitedTimeOfferParameter represents a limited time offer paramet
 
 ```go
 type TemplateMessageLimitedTimeOfferParameter struct {
+    Text          string `json:"text,omitempty"`
+    HasExpiration bool   `json:"has_expiration,omitempty"`
 }
 ```
 
@@ -1855,15 +2121,15 @@ WhatsAppBusinessHSMWhatsAppHSMComponent represents a component in a message temp
 
 ```go
 type WhatsAppBusinessHSMWhatsAppHSMComponent struct {
-    AddSecurityRecommendation bool                                     `json:"add_security_recommendation,omitempty"`
-    Buttons                   []TemplateMessageComponentButton         `json:"buttons,omitempty"`
-    Cards                     []TemplateMessageComponentCard           `json:"cards,omitempty"`
-    CodeExpirationMinutes     int                                      `json:"code_expiration_minutes,omitempty"`
-    Example                   TemplateMessageComponentExample          `json:"example,omitempty"`
-    Format                    MessageTemplateComponentFormat           `json:"format,omitempty"`
-    LimitedTimeOffer          TemplateMessageLimitedTimeOfferParameter `json:"limited_time_offer,omitempty"`
-    Text                      string                                   `json:"text,omitempty"`
-    Type                      MessageTemplateComponentType             `json:"type,omitempty"`
+    AddSecurityRecommendation bool                                      `json:"add_security_recommendation,omitempty"`
+    Buttons                   []TemplateMessageComponentButton          `json:"buttons,omitempty"`
+    Cards                     []TemplateMessageComponentCard            `json:"cards,omitempty"`
+    CodeExpirationMinutes     int                                       `json:"code_expiration_minutes,omitempty"`
+    Example                   *TemplateMessageComponentExample          `json:"example,omitempty"`
+    Format                    MessageTemplateComponentFormat            `json:"format,omitempty"`
+    LimitedTimeOffer          *TemplateMessageLimitedTimeOfferParameter `json:"limited_time_offer,omitempty"`
+    Text                      string                                    `json:"text,omitempty"`
+    Type                      MessageTemplateComponentType              `json:"type,omitempty"`
 }
 ```
 
