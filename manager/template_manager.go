@@ -108,11 +108,11 @@ type NamedParamExample struct {
 
 // TemplateMessageComponentExample represents an example object for a template component.
 type TemplateMessageComponentExample struct {
-	HeaderHandle          []string            `json:"header_handle,omitempty"`            // for media headers (IMAGE, VIDEO, DOCUMENT)
-	HeaderTextNamedParams []NamedParamExample `json:"header_text_named_params,omitempty"` // for named header params
-	HeaderText            []string            `json:"header_text,omitempty"`              // for text headers (positional examples)
-	BodyText              [][]string          `json:"body_text,omitempty"`                // for body components (array of arrays for positional examples)
-	BodyTextNamedParams   []NamedParamExample `json:"body_text_named_params,omitempty"`
+	HeaderHandle          *[]string            `json:"header_handle,omitempty"`            // for media headers (IMAGE, VIDEO, DOCUMENT)
+	HeaderTextNamedParams *[]NamedParamExample `json:"header_text_named_params,omitempty"` // for named header params
+	HeaderText            *[]string            `json:"header_text,omitempty"`              // for text headers (positional examples)
+	BodyText              *[][]string          `json:"body_text,omitempty"`                // for body components (array of arrays for positional examples)
+	BodyTextNamedParams   *[]NamedParamExample `json:"body_text_named_params,omitempty"`
 }
 
 // TemplateMessageLimitedTimeOfferParameter represents a limited time offer parameter.

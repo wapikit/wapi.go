@@ -8,7 +8,7 @@ import (
 )
 
 type Product struct {
-	RetailerId string `json:"retailerId" validate:"required"`
+	RetailerId string `json:"product_retailer_id" validate:"required"`
 }
 
 func (p *Product) SetRetailerId(id string) {
@@ -17,7 +17,7 @@ func (p *Product) SetRetailerId(id string) {
 
 type ProductSection struct {
 	Title    string    `json:"title" validate:"required"`
-	Products []Product `json:"products" validate:"required"`
+	Products []Product `json:"product_items" validate:"required"`
 }
 
 func (ps *ProductSection) SetTitle(title string) {
@@ -46,9 +46,16 @@ type ProductListMessageFooter struct {
 	Text string `json:"text" validate:"required"`
 }
 
+type ProductListMessageHeaderType string
+
+const (
+	ProductListMessageHeaderTypeText ProductListMessageHeaderType = "text"
+)
+
 // ! TODO: support more header types
 type ProductListMessageHeader struct {
-	Text string `json:"text" validate:"required"`
+	Type ProductListMessageHeaderType `json:"type" validate:"required"`
+	Text string                       `json:"text" validate:"required"`
 }
 
 // ProductListMessage represents a product list message.
@@ -61,6 +68,7 @@ type ProductListMessage struct {
 }
 
 func (message *ProductListMessage) AddSection(section ProductSection) {
+	fmt.Println("message", message, "section", section)
 	message.Action.Sections = append(message.Action.Sections, section)
 }
 
@@ -86,6 +94,7 @@ func (message *ProductListMessage) SetFooter(text string) {
 
 func (message *ProductListMessage) SetHeader(text string) {
 	message.Header = ProductListMessageHeader{
+		Type: ProductListMessageHeaderTypeText,
 		Text: text,
 	}
 }
