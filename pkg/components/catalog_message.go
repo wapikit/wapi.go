@@ -7,8 +7,13 @@ import (
 	"github.com/wapikit/wapi.go/internal"
 )
 
+type CatalogMessageActionParameter struct {
+	ThumbnailProductRetailerId string `json:"thumbnail_product_retailer_id" validate:"required"`
+}
+
 type CatalogMessageAction struct {
-	CatalogId string `json:"catalog_id" validate:"required"`
+	Name       string                        `json:"name" validate:"required"`
+	Parameters CatalogMessageActionParameter `json:"parameters,omitempty"`
 }
 
 type CatalogMessageBody struct {
@@ -32,11 +37,14 @@ type CatalogMessage struct {
 	Header *CatalogMessageHeader  `json:"header,omitempty"`
 }
 
-func NewCatalogMessage(catalogId string) (*CatalogMessage, error) {
+func NewCatalogMessage(name, thumbnailProductRetailerId string) (*CatalogMessage, error) {
 	return &CatalogMessage{
 		Type: InteractiveMessageTypeCatalog,
 		Action: CatalogMessageAction{
-			CatalogId: catalogId,
+			Name: name,
+			Parameters: CatalogMessageActionParameter{
+				ThumbnailProductRetailerId: thumbnailProductRetailerId,
+			},
 		},
 	}, nil
 }
