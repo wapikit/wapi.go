@@ -402,6 +402,7 @@ type DeleteSuccessResponse struct {
 type Entry struct {
     Id      string   `json:"id"`
     Changes []Change `json:"changes"`
+    Time    *string  `json:"time"`
 }
 ```
 
@@ -1366,6 +1367,28 @@ type PhoneNumberNameUpdateValue struct {
 }
 ```
 
+<a name="PhoneNumberQualityUpdateCurrentLimitEnum"></a>
+## type PhoneNumberQualityUpdateCurrentLimitEnum
+
+
+
+```go
+type PhoneNumberQualityUpdateCurrentLimitEnum string
+```
+
+<a name="PhoneNumberQualityUpdateCurrentLimitEnumTier50"></a>
+
+```go
+const (
+    PhoneNumberQualityUpdateCurrentLimitEnumTier50        PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_50"
+    PhoneNumberQualityUpdateCurrentLimitEnumTier250       PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_250"
+    PhoneNumberQualityUpdateCurrentLimitEnumTier1K        PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_1K"
+    PhoneNumberQualityUpdateCurrentLimitEnumTier10K       PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_10K"
+    PhoneNumberQualityUpdateCurrentLimitEnumTier100K      PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_100K"
+    PhoneNumberQualityUpdateCurrentLimitEnumTierUnlimited PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_UNLIMITED"
+)
+```
+
 <a name="PhoneNumberQualityUpdateValue"></a>
 ## type PhoneNumberQualityUpdateValue
 
@@ -1373,9 +1396,9 @@ type PhoneNumberNameUpdateValue struct {
 
 ```go
 type PhoneNumberQualityUpdateValue struct {
-    DisplayPhoneNumber string `json:"display_phone_number"`
-    Event              string `json:"event"`
-    CurrentLimit       string `json:"current_limit"`
+    DisplayPhoneNumber string                                   `json:"display_phone_number"`
+    Event              string                                   `json:"event"`
+    CurrentLimit       PhoneNumberQualityUpdateCurrentLimitEnum `json:"current_limit"`
 }
 ```
 
@@ -1596,7 +1619,7 @@ const (
 
 ```go
 type TemplateCategoryUpdateValue struct {
-    MessageTemplateId       string                  `json:"message_template_id"`
+    MessageTemplateId       int64                   `json:"message_template_id"`
     MessageTemplateName     string                  `json:"message_template_name"`
     MessageTemplateLanguage string                  `json:"message_template_language"`
     PreviousCategory        MessageTemplateCategory `json:"previous_category"`
@@ -1895,7 +1918,7 @@ type TemplateMigrationResponse struct {
 type TemplateQualityUpdateValue struct {
     PreviousQualityScore    string `json:"previous_quality_score"`
     NewQualityScore         string `json:"new_quality_score"`
-    MessageTemplateId       string `json:"message_template_id"`
+    MessageTemplateId       int64  `json:"message_template_id"`
     MessageTemplateName     string `json:"message_template_name"`
     MessageTemplateLanguage string `json:"message_template_language"`
 }
@@ -1909,7 +1932,7 @@ type TemplateQualityUpdateValue struct {
 ```go
 type TemplateStatusUpdateValue struct {
     Event                   TemplateMessageStatusUpdateEventEnum   `json:"event"`
-    MessageTemplateId       string                                 `json:"message_template_id"`
+    MessageTemplateId       int64                                  `json:"message_template_id"`
     MessageTemplateName     string                                 `json:"message_template_name"`
     MessageTemplateLanguage string                                 `json:"message_template_language"`
     Reason                  TemplateMessageRejectionReasonEnum     `json:"reason"`
@@ -2050,7 +2073,7 @@ createEchoHttpServer creates a new instance of Echo HTTP server. This function i
 ### func \(\*WebhookManager\) handleAccountAlertsSubscriptionEvents
 
 ```go
-func (wh *WebhookManager) handleAccountAlertsSubscriptionEvents(value AccountAlertsValue) error
+func (wh *WebhookManager) handleAccountAlertsSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value AccountAlertsValue) error
 ```
 
 
@@ -2059,7 +2082,7 @@ func (wh *WebhookManager) handleAccountAlertsSubscriptionEvents(value AccountAle
 ### func \(\*WebhookManager\) handleAccountReviewSubscriptionEvents
 
 ```go
-func (wh *WebhookManager) handleAccountReviewSubscriptionEvents(value AccountReviewUpdateValue)
+func (wh *WebhookManager) handleAccountReviewSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value AccountReviewUpdateValue) error
 ```
 
 
@@ -2068,7 +2091,7 @@ func (wh *WebhookManager) handleAccountReviewSubscriptionEvents(value AccountRev
 ### func \(\*WebhookManager\) handleAccountUpdateSubscriptionEvents
 
 ```go
-func (wh *WebhookManager) handleAccountUpdateSubscriptionEvents(value AccountUpdateValue)
+func (wh *WebhookManager) handleAccountUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value AccountUpdateValue)
 ```
 
 
@@ -2077,7 +2100,7 @@ func (wh *WebhookManager) handleAccountUpdateSubscriptionEvents(value AccountUpd
 ### func \(\*WebhookManager\) handleBusinessCapabilitySubscriptionEvents
 
 ```go
-func (wh *WebhookManager) handleBusinessCapabilitySubscriptionEvents(value BusinessCapabilityUpdateValue)
+func (wh *WebhookManager) handleBusinessCapabilitySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value BusinessCapabilityUpdateValue) error
 ```
 
 
@@ -2086,7 +2109,7 @@ func (wh *WebhookManager) handleBusinessCapabilitySubscriptionEvents(value Busin
 ### func \(\*WebhookManager\) handleMessageTemplateQualitySubscriptionEvents
 
 ```go
-func (wh *WebhookManager) handleMessageTemplateQualitySubscriptionEvents(value TemplateQualityUpdateValue)
+func (wh *WebhookManager) handleMessageTemplateQualitySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateQualityUpdateValue) error
 ```
 
 
@@ -2095,7 +2118,7 @@ func (wh *WebhookManager) handleMessageTemplateQualitySubscriptionEvents(value T
 ### func \(\*WebhookManager\) handleMessageTemplateStatusSubscriptionEvents
 
 ```go
-func (wh *WebhookManager) handleMessageTemplateStatusSubscriptionEvents(value TemplateStatusUpdateValue)
+func (wh *WebhookManager) handleMessageTemplateStatusSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateStatusUpdateValue) error
 ```
 
 
@@ -2113,7 +2136,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 ### func \(\*WebhookManager\) handlePhoneNumberNameSubscriptionEvents
 
 ```go
-func (wh *WebhookManager) handlePhoneNumberNameSubscriptionEvents(value PhoneNumberNameUpdateValue)
+func (wh *WebhookManager) handlePhoneNumberNameSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value PhoneNumberNameUpdateValue) error
 ```
 
 
@@ -2122,7 +2145,7 @@ func (wh *WebhookManager) handlePhoneNumberNameSubscriptionEvents(value PhoneNum
 ### func \(\*WebhookManager\) handlePhoneNumberQualitySubscriptionEvents
 
 ```go
-func (wh *WebhookManager) handlePhoneNumberQualitySubscriptionEvents(value PhoneNumberQualityUpdateValue)
+func (wh *WebhookManager) handlePhoneNumberQualitySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value PhoneNumberQualityUpdateValue) error
 ```
 
 
@@ -2140,7 +2163,7 @@ func (wh *WebhookManager) handleSecuritySubscriptionEvents(value SecurityValue)
 ### func \(\*WebhookManager\) handleTemplateCategoryUpdateSubscriptionEvents
 
 ```go
-func (wh *WebhookManager) handleTemplateCategoryUpdateSubscriptionEvents(value TemplateCategoryUpdateValue)
+func (wh *WebhookManager) handleTemplateCategoryUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateCategoryUpdateValue) error
 ```
 
 
