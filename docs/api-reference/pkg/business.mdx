@@ -67,6 +67,7 @@ type BusinessClient struct {
     PhoneNumber       *manager.PhoneNumberManager
     Template          *manager.TemplateManager
     requester         *request_client.RequestClient
+    Catalog           *manager.CatalogManager
 }
 ```
 
@@ -88,32 +89,14 @@ func (client *BusinessClient) ConversationAnalytics(options ConversationAnalytic
 
 ConversationAnalytics fetches the conversation analytics for the business account.
 
-<a name="BusinessClient.CreateNewProductCatalog"></a>
-### func \(\*BusinessClient\) CreateNewProductCatalog
-
-```go
-func (client *BusinessClient) CreateNewProductCatalog() (CreateProductCatalogOptions, error)
-```
-
-
-
 <a name="BusinessClient.Fetch"></a>
 ### func \(\*BusinessClient\) Fetch
 
 ```go
-func (client *BusinessClient) Fetch() FetchBusinessAccountResponse
+func (client *BusinessClient) Fetch() (*FetchBusinessAccountResponse, error)
 ```
 
 This method fetches the business account details.
-
-<a name="BusinessClient.FetchAllProductCatalogs"></a>
-### func \(\*BusinessClient\) FetchAllProductCatalogs
-
-```go
-func (client *BusinessClient) FetchAllProductCatalogs() (string, error)
-```
-
-
 
 <a name="BusinessClient.FetchAnalytics"></a>
 ### func \(\*BusinessClient\) FetchAnalytics
@@ -298,17 +281,6 @@ const (
 )
 ```
 
-<a name="CreateProductCatalogOptions"></a>
-## type CreateProductCatalogOptions
-
-
-
-```go
-type CreateProductCatalogOptions struct {
-    Success string `json:"success,omitempty"`
-}
-```
-
 <a name="FetchBusinessAccountResponse"></a>
 ## type FetchBusinessAccountResponse
 
@@ -316,10 +288,14 @@ type CreateProductCatalogOptions struct {
 
 ```go
 type FetchBusinessAccountResponse struct {
-    Id                       string `json:"id" validate:"required"`
-    Name                     string `json:"name" validate:"required"`
-    TimezoneId               string `json:"timezone_id" validate:"required"`
-    MessageTemplateNamespace string `json:"message_template_namespace" validate:"required"`
+    Id                string `json:"id" validate:"required"`
+    Name              string `json:"name" validate:"required"`
+    TimezoneId        string `json:"timezone_id" validate:"required"`
+    Currency          string `json:"currency" validate:"required"`
+    OwnerBusinessInfo struct {
+        Name string `json:"name" validate:"required"`
+        Id   string `json:"id" validate:"required"`
+    }   `json:"owner_business_info" validate:"required"`
 }
 ```
 
