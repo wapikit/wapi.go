@@ -77,23 +77,27 @@ type WhatsappBusinessAccount struct {
 }
 
 type FetchBusinessAccountResponse struct {
-	Id                       string `json:"id" validate:"required"`
-	Name                     string `json:"name" validate:"required"`
-	TimezoneId               string `json:"timezone_id" validate:"required"`
-	MessageTemplateNamespace string `json:"message_template_namespace" validate:"required"`
+	Id                string `json:"id" validate:"required"`
+	Name              string `json:"name" validate:"required"`
+	TimezoneId        string `json:"timezone_id" validate:"required"`
+	Currency          string `json:"currency" validate:"required"`
+	OwnerBusinessInfo struct {
+		Name string `json:"name" validate:"required"`
+		Id   string `json:"id" validate:"required"`
+	} `json:"owner_business_info" validate:"required"`
 }
 
 // This method fetches the business account details.
-func (client *BusinessClient) Fetch() FetchBusinessAccountResponse {
+func (client *BusinessClient) Fetch() (*FetchBusinessAccountResponse, error) {
 	apiRequest := client.requester.NewApiRequest(client.BusinessAccountId, http.MethodGet)
 	response, err := apiRequest.Execute()
 	if err != nil {
-		// return wapi.go custom error here
 		fmt.Println("Error while fetching business account", err)
+		return nil, err
 	}
 	var responseToReturn FetchBusinessAccountResponse
 	json.Unmarshal([]byte(response), &responseToReturn)
-	return responseToReturn
+	return &responseToReturn, nil
 }
 
 type AnalyticsRequestGranularityType string

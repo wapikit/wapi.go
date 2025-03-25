@@ -126,7 +126,8 @@ func (bme BaseSystemEvent) GetEventType() string {
 }
 
 type BaseBusinessAccountEvent struct {
-	Timestamp string `json:"timestamp"`
+	BusinessAccountId string `json:"business_account_id"`
+	Timestamp         string `json:"timestamp"`
 }
 
 func (bme BaseBusinessAccountEvent) GetEventType() string {
