@@ -34,14 +34,15 @@ func NewPhoneNumberManager(config *PhoneNumberManagerConfig) *PhoneNumberManager
 
 // WhatsappBusinessAccountPhoneNumber represents a WhatsApp Business Account phone number.
 type WhatsappBusinessAccountPhoneNumber struct {
-	VerifiedName       string `json:"verified_name,omitempty"`
-	DisplayPhoneNumber string `json:"display_phone_number,omitempty"`
-	Id                 string `json:"id,omitempty"`
-	QualityRating      string `json:"quality_rating,omitempty"`
-	CodeVerification   struct {
-		Status string `json:"code_verification_status,omitempty"`
-	} `json:"code_verification_status,omitempty"`
-	PlatformType string `json:"platform_type,omitempty"`
+	VerifiedName           string `json:"verified_name,omitempty"`
+	DisplayPhoneNumber     string `json:"display_phone_number,omitempty"`
+	Id                     string `json:"id,omitempty"`
+	QualityRating          string `json:"quality_rating,omitempty"`
+	CodeVerificationStatus string `json:"code_verification_status,omitempty"`
+	Status                 string `json:"status,omitempty"` // CONNECTED
+	PlatformType           string `json:"platform_type,omitempty"`
+	CountryDialCode        string `json:"country_dial_code,omitempty"`
+	SearchVisibility       string `json:"search_visibility,omitempty"`
 }
 
 // WhatsappBusinessAccountPhoneNumberEdge represents a list of WhatsApp Business Account phone numbers.
