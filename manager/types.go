@@ -233,6 +233,7 @@ type WhatsappApiNotificationPayloadSchemaType struct {
 type Entry struct {
 	Id      string   `json:"id"`
 	Changes []Change `json:"changes"`
+	Time    *string  `json:"time"`
 }
 
 type WebhookFieldEnum string
@@ -281,7 +282,7 @@ const (
 
 type TemplateStatusUpdateValue struct {
 	Event                   TemplateMessageStatusUpdateEventEnum   `json:"event"`
-	MessageTemplateId       string                                 `json:"message_template_id"`
+	MessageTemplateId       int64                                 `json:"message_template_id"`
 	MessageTemplateName     string                                 `json:"message_template_name"`
 	MessageTemplateLanguage string                                 `json:"message_template_language"`
 	Reason                  TemplateMessageRejectionReasonEnum     `json:"reason"`
@@ -290,7 +291,7 @@ type TemplateStatusUpdateValue struct {
 }
 
 type TemplateCategoryUpdateValue struct {
-	MessageTemplateId       string                  `json:"message_template_id"`
+	MessageTemplateId       int64                  `json:"message_template_id"`
 	MessageTemplateName     string                  `json:"message_template_name"`
 	MessageTemplateLanguage string                  `json:"message_template_language"`
 	PreviousCategory        MessageTemplateCategory `json:"previous_category"`
@@ -301,7 +302,7 @@ type TemplateCategoryUpdateValue struct {
 type TemplateQualityUpdateValue struct {
 	PreviousQualityScore    string `json:"previous_quality_score"`
 	NewQualityScore         string `json:"new_quality_score"`
-	MessageTemplateId       string `json:"message_template_id"`
+	MessageTemplateId       int64 `json:"message_template_id"`
 	MessageTemplateName     string `json:"message_template_name"`
 	MessageTemplateLanguage string `json:"message_template_language"`
 }
@@ -313,10 +314,21 @@ type PhoneNumberNameUpdateValue struct {
 	RejectionReason       string `json:"rejection_reason"`
 }
 
+type PhoneNumberQualityUpdateCurrentLimitEnum string
+
+const (
+	PhoneNumberQualityUpdateCurrentLimitEnumTier50        PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_50"
+	PhoneNumberQualityUpdateCurrentLimitEnumTier250       PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_250"
+	PhoneNumberQualityUpdateCurrentLimitEnumTier1K        PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_1K"
+	PhoneNumberQualityUpdateCurrentLimitEnumTier10K       PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_10K"
+	PhoneNumberQualityUpdateCurrentLimitEnumTier100K      PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_100K"
+	PhoneNumberQualityUpdateCurrentLimitEnumTierUnlimited PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_UNLIMITED"
+)
+
 type PhoneNumberQualityUpdateValue struct {
-	DisplayPhoneNumber string `json:"display_phone_number"`
-	Event              string `json:"event"`
-	CurrentLimit       string `json:"current_limit"`
+	DisplayPhoneNumber string                                   `json:"display_phone_number"`
+	Event              string                                   `json:"event"`
+	CurrentLimit       PhoneNumberQualityUpdateCurrentLimitEnum `json:"current_limit"`
 }
 
 type AccountAlertSeverityEnum string

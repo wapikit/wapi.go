@@ -129,6 +129,134 @@ func NewBaseMessagePayload(to string, messageType MessageType) BaseMessagePayloa
 
 NewBaseMessagePayload creates a new instance of BaseMessagePayload.
 
+<a name="CatalogMessage"></a>
+## type CatalogMessage
+
+ProductMessage represents a product message.
+
+```go
+type CatalogMessage struct {
+    Type   InteractiveMessageType `json:"type" validate:"required"`
+    Action CatalogMessageAction   `json:"action" validate:"required"`
+    Body   CatalogMessageBody     `json:"body" validate:"required"`
+    Footer *CatalogMessageFooter  `json:"footer,omitempty"`
+    Header *CatalogMessageHeader  `json:"header,omitempty"`
+}
+```
+
+<a name="NewCatalogMessage"></a>
+### func NewCatalogMessage
+
+```go
+func NewCatalogMessage(name, thumbnailProductRetailerId string) (*CatalogMessage, error)
+```
+
+
+
+<a name="CatalogMessage.SetBody"></a>
+### func \(\*CatalogMessage\) SetBody
+
+```go
+func (m *CatalogMessage) SetBody(text string)
+```
+
+
+
+<a name="CatalogMessage.SetFooter"></a>
+### func \(\*CatalogMessage\) SetFooter
+
+```go
+func (m *CatalogMessage) SetFooter(text string)
+```
+
+
+
+<a name="CatalogMessage.SetHeader"></a>
+### func \(\*CatalogMessage\) SetHeader
+
+```go
+func (m *CatalogMessage) SetHeader(text string)
+```
+
+
+
+<a name="CatalogMessage.ToJson"></a>
+### func \(\*CatalogMessage\) ToJson
+
+```go
+func (m *CatalogMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]byte, error)
+```
+
+ToJson converts the product message to JSON with the given configurations.
+
+<a name="CatalogMessageAction"></a>
+## type CatalogMessageAction
+
+
+
+```go
+type CatalogMessageAction struct {
+    Name       string                        `json:"name" validate:"required"`
+    Parameters CatalogMessageActionParameter `json:"parameters,omitempty"`
+}
+```
+
+<a name="CatalogMessageActionParameter"></a>
+## type CatalogMessageActionParameter
+
+
+
+```go
+type CatalogMessageActionParameter struct {
+    ThumbnailProductRetailerId string `json:"thumbnail_product_retailer_id" validate:"required"`
+}
+```
+
+<a name="CatalogMessageApiPayload"></a>
+## type CatalogMessageApiPayload
+
+ProductMessageApiPayload represents the API payload for a product message.
+
+```go
+type CatalogMessageApiPayload struct {
+    BaseMessagePayload
+    Interactive CatalogMessage `json:"interactive" validate:"required"`
+}
+```
+
+<a name="CatalogMessageBody"></a>
+## type CatalogMessageBody
+
+
+
+```go
+type CatalogMessageBody struct {
+    Text string `json:"text" validate:"required"`
+}
+```
+
+<a name="CatalogMessageFooter"></a>
+## type CatalogMessageFooter
+
+
+
+```go
+type CatalogMessageFooter struct {
+    Text string `json:"text" validate:"required"`
+}
+```
+
+<a name="CatalogMessageHeader"></a>
+## type CatalogMessageHeader
+
+
+
+```go
+type CatalogMessageHeader struct {
+    Text string `json:"text" validate:"required"`
+}
+```
+
 <a name="Contact"></a>
 ## type Contact
 
@@ -536,6 +664,7 @@ const (
     InteractiveMessageTypeProduct     InteractiveMessageType = "product"
     InteractiveMessageTypeProductList InteractiveMessageType = "product_list"
     InteractiveMessageTypeList        InteractiveMessageType = "list"
+    InteractiveMessageTypeCatalog     InteractiveMessageType = "catalog_message"
 )
 ```
 
@@ -704,7 +833,7 @@ const (
 
 ```go
 type Product struct {
-    RetailerId string `json:"retailerId" validate:"required"`
+    RetailerId string `json:"product_retailer_id" validate:"required"`
 }
 ```
 
@@ -738,9 +867,11 @@ ProductListMessage represents a product list message.
 
 ```go
 type ProductListMessage struct {
-    Action ProductListMessageAction `json:"action" validate:"required"`
-    Body   ProductListMessageBody   `json:"body" validate:"required"`
-    Type   InteractiveMessageType   `json:"type" validate:"required"`
+    Action ProductListMessageAction  `json:"action" validate:"required"`
+    Body   ProductListMessageBody    `json:"body" validate:"required"`
+    Footer *ProductListMessageFooter `json:"footer,omitempty"`
+    Header ProductListMessageHeader  `json:"header,omitempty"`
+    Type   InteractiveMessageType    `json:"type" validate:"required"`
 }
 ```
 
@@ -762,6 +893,51 @@ func (message *ProductListMessage) AddSection(section ProductSection)
 
 
 
+<a name="ProductListMessage.SetBody"></a>
+### func \(\*ProductListMessage\) SetBody
+
+```go
+func (message *ProductListMessage) SetBody(text string)
+```
+
+
+
+<a name="ProductListMessage.SetCatalogId"></a>
+### func \(\*ProductListMessage\) SetCatalogId
+
+```go
+func (message *ProductListMessage) SetCatalogId(catalogId string)
+```
+
+
+
+<a name="ProductListMessage.SetFooter"></a>
+### func \(\*ProductListMessage\) SetFooter
+
+```go
+func (message *ProductListMessage) SetFooter(text string)
+```
+
+
+
+<a name="ProductListMessage.SetHeader"></a>
+### func \(\*ProductListMessage\) SetHeader
+
+```go
+func (message *ProductListMessage) SetHeader(text string)
+```
+
+
+
+<a name="ProductListMessage.SetProductRetailerId"></a>
+### func \(\*ProductListMessage\) SetProductRetailerId
+
+```go
+func (message *ProductListMessage) SetProductRetailerId(productRetailerId string)
+```
+
+
+
 <a name="ProductListMessage.ToJson"></a>
 ### func \(\*ProductListMessage\) ToJson
 
@@ -778,9 +954,9 @@ ToJson converts the product list message to JSON.
 
 ```go
 type ProductListMessageAction struct {
-    Sections          []ProductSection `json:"sections" validate:"required"`
-    CatalogId         string           `json:"catalogId" validate:"required"`
-    ProductRetailerId string           `json:"productRetailerId" validate:"required"`
+    Sections          []ProductSection `json:"sections" validate:"required"` // minimum 1 and maximum 10
+    CatalogId         string           `json:"catalog_id" validate:"required"`
+    ProductRetailerId string           `json:"product_retailer_id" validate:"required"`
 }
 ```
 
@@ -816,6 +992,46 @@ type ProductListMessageBody struct {
 }
 ```
 
+<a name="ProductListMessageFooter"></a>
+## type ProductListMessageFooter
+
+
+
+```go
+type ProductListMessageFooter struct {
+    Text string `json:"text" validate:"required"`
+}
+```
+
+<a name="ProductListMessageHeader"></a>
+## type ProductListMessageHeader
+
+\! TODO: support more header types
+
+```go
+type ProductListMessageHeader struct {
+    Type ProductListMessageHeaderType `json:"type" validate:"required"`
+    Text string                       `json:"text" validate:"required"`
+}
+```
+
+<a name="ProductListMessageHeaderType"></a>
+## type ProductListMessageHeaderType
+
+
+
+```go
+type ProductListMessageHeaderType string
+```
+
+<a name="ProductListMessageHeaderTypeText"></a>
+
+```go
+const (
+    ProductListMessageHeaderTypeText ProductListMessageHeaderType = "text"
+)
+```
+
 <a name="ProductListMessageParams"></a>
 ## type ProductListMessageParams
 
@@ -838,7 +1054,9 @@ ProductMessage represents a product message.
 ```go
 type ProductMessage struct {
     Type   InteractiveMessageType `json:"type" validate:"required"`
-    Body   ProductMessageBody     `json:"body" validate:"required"`
+    Body   *ProductMessageBody    `json:"body" validate:"required"`
+    Footer *ProductMessageFooter  `json:"footer,omitempty"`
+    Header *ProductMessageHeader  `json:"header,omitempty"`
     Action productMessageAction   `json:"action" validate:"required"`
 }
 ```
@@ -852,11 +1070,11 @@ func NewProductMessage(params ProductMessageParams) (*ProductMessage, error)
 
 NewProductMessage creates a new product message with the given parameters.
 
-<a name="ProductMessage.SetBodyText"></a>
-### func \(\*ProductMessage\) SetBodyText
+<a name="ProductMessage.SetBody"></a>
+### func \(\*ProductMessage\) SetBody
 
 ```go
-func (m *ProductMessage) SetBodyText(text string)
+func (m *ProductMessage) SetBody(text string)
 ```
 
 
@@ -870,11 +1088,20 @@ func (m *ProductMessage) SetCatalogId(id string)
 
 
 
+<a name="ProductMessage.SetFooter"></a>
+### func \(\*ProductMessage\) SetFooter
+
+```go
+func (m *ProductMessage) SetFooter(text string)
+```
+
+
+
 <a name="ProductMessage.SetHeader"></a>
 ### func \(\*ProductMessage\) SetHeader
 
 ```go
-func (m *ProductMessage) SetHeader()
+func (m *ProductMessage) SetHeader(text string)
 ```
 
 
@@ -920,6 +1147,28 @@ type ProductMessageBody struct {
 }
 ```
 
+<a name="ProductMessageFooter"></a>
+## type ProductMessageFooter
+
+
+
+```go
+type ProductMessageFooter struct {
+    Text string `json:"text" validate:"required"`
+}
+```
+
+<a name="ProductMessageHeader"></a>
+## type ProductMessageHeader
+
+
+
+```go
+type ProductMessageHeader struct {
+    Text string `json:"text" validate:"required"`
+}
+```
+
 <a name="ProductMessageParams"></a>
 ## type ProductMessageParams
 
@@ -941,7 +1190,7 @@ type ProductMessageParams struct {
 ```go
 type ProductSection struct {
     Title    string    `json:"title" validate:"required"`
-    Products []Product `json:"products" validate:"required"`
+    Products []Product `json:"product_items" validate:"required"`
 }
 ```
 
@@ -1269,7 +1518,7 @@ TemplateMessageButtonParameter represents a parameter for a button component.
 
 ```go
 type TemplateMessageButtonParameter struct {
-    Type       TemplateMessageButtonParameterType    `json:"type" validate:"required"` // e.g., "payload" or "text"
+    Type       TemplateMessageButtonParameterType    `json:"type" validate:"required"` // e.g., "payload" or "text" or "action"
     Payload    *string                               `json:"payload,omitempty"`        // Required for quick_reply buttons.
     Text       *string                               `json:"text,omitempty"`           // Required for URL buttons.
     Action     *TemplateMessageButtonParameterAction `json:"action,omitempty"`         // Required for catalog buttons.
@@ -1326,7 +1575,7 @@ const (
 ```go
 type TemplateMessageCaraouselCard struct {
     CardIndex  int                        `json:"card_index" validate:"required"`
-    Components []TemplateMessageComponent `json:"components" validate:"required"` // only headder, buttons and body
+    Components []TemplateMessageComponent `json:"components" validate:"required"` // only header, buttons and body
 }
 ```
 

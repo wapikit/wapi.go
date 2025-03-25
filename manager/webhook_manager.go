@@ -131,7 +131,10 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &accountReviewValue); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid accountReviewValue JSON: %v", err))
 				}
-				wh.handleAccountReviewSubscriptionEvents(accountReviewValue)
+				err = wh.handleAccountReviewSubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         *entry.Time,
+				}, accountReviewValue)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -146,7 +149,10 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &accountAlertValue); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid accountAlertValue JSON: %v", err))
 				}
-				wh.handleAccountAlertsSubscriptionEvents(accountAlertValue)
+				err = wh.handleAccountAlertsSubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         *entry.Time,
+				}, accountAlertValue)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -161,7 +167,10 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &accountUpdate); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid accountUpdate JSON: %v", err))
 				}
-				wh.handleAccountUpdateSubscriptionEvents(accountUpdate)
+				wh.handleAccountUpdateSubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         *entry.Time,
+				}, accountUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -176,7 +185,10 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &templateCategoryUpdate); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid templateCategoryUpdate JSON: %v", err))
 				}
-				wh.handleTemplateCategoryUpdateSubscriptionEvents(templateCategoryUpdate)
+				wh.handleTemplateCategoryUpdateSubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         *entry.Time,
+				}, templateCategoryUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -191,7 +203,10 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &qualityUpdate); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid qualityUpdate JSON: %v", err))
 				}
-				wh.handleMessageTemplateQualitySubscriptionEvents(qualityUpdate)
+				wh.handleMessageTemplateQualitySubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         *entry.Time,
+				}, qualityUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -206,7 +221,10 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &statusUpdate); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid statusUpdate JSON: %v", err))
 				}
-				wh.handleMessageTemplateStatusSubscriptionEvents(statusUpdate)
+				wh.handleMessageTemplateStatusSubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         *entry.Time,
+				}, statusUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -221,7 +239,10 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &nameUpdate); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid nameUpdate JSON: %v", err))
 				}
-				wh.handlePhoneNumberNameSubscriptionEvents(nameUpdate)
+				wh.handlePhoneNumberNameSubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         *entry.Time,
+				}, nameUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -236,7 +257,10 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &qualityUpdate); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid qualityUpdate JSON: %v", err))
 				}
-				wh.handlePhoneNumberQualitySubscriptionEvents(qualityUpdate)
+				wh.handlePhoneNumberQualitySubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         *entry.Time,
+				}, qualityUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -251,7 +275,10 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				if err := json.Unmarshal(valueBytes, &capabilityUpdate); err != nil {
 					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid capabilityUpdate JSON: %v", err))
 				}
-				wh.handleBusinessCapabilitySubscriptionEvents(capabilityUpdate)
+				wh.handleBusinessCapabilitySubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         *entry.Time,
+				}, capabilityUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
 					c.String(500, "Internal server error")
@@ -582,8 +609,16 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 	return nil
 }
 
-func (wh *WebhookManager) handleAccountAlertsSubscriptionEvents(value AccountAlertsValue) error {
-	wh.EventManager.Publish(events.AccountAlertsEventType, events.AccountAlertEvent{})
+func (wh *WebhookManager) handleAccountAlertsSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value AccountAlertsValue) error {
+	wh.EventManager.Publish(events.AccountAlertsEventType, events.NewAccountAlertEvent(
+		&baseEvent,
+		value.EntityType,
+		value.EntityId,
+		events.AccountAlertSeverityEnum(value.AlertSeverity),
+		events.AccountAlertStatusEnum(value.AlertStatus),
+		value.AlertType,
+		value.AlertDescription,
+	))
 	return nil
 }
 
@@ -592,42 +627,91 @@ func (wh *WebhookManager) handleSecuritySubscriptionEvents(value SecurityValue) 
 
 }
 
-func (wh *WebhookManager) handleAccountUpdateSubscriptionEvents(value AccountUpdateValue) {
-	wh.EventManager.Publish(events.AccountAlertsEventType, events.AccountUpdateEvent{})
+func (wh *WebhookManager) handleAccountUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value AccountUpdateValue) {
+
+	wh.EventManager.Publish(events.AccountAlertsEventType, events.NewAccountUpdateEvent(
+		&baseEvent,
+		events.AccountUpdateEventEnum(value.Event),
+		value.PhoneNumber,
+	))
 
 }
 
-func (wh *WebhookManager) handleAccountReviewSubscriptionEvents(value AccountReviewUpdateValue) {
-	wh.EventManager.Publish(events.AccountAlertsEventType, events.AccountReviewUpdateEvent{})
+func (wh *WebhookManager) handleAccountReviewSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value AccountReviewUpdateValue) error {
+	wh.EventManager.Publish(events.AccountAlertsEventType, events.NewAccountReviewUpdateEvent(
+		&baseEvent,
+		events.AccountReviewUpdateEventEnum(value.Decision),
+	))
+	return nil
 
 }
 
-func (wh *WebhookManager) handleBusinessCapabilitySubscriptionEvents(value BusinessCapabilityUpdateValue) {
-	wh.EventManager.Publish(events.AccountAlertsEventType, events.BusinessCapabilityUpdateEvent{})
+func (wh *WebhookManager) handleBusinessCapabilitySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value BusinessCapabilityUpdateValue) error {
+	wh.EventManager.Publish(events.AccountAlertsEventType, events.NewBusinessCapabilityUpdateEvent(
+		&baseEvent,
+		int64(value.MaxDailyConversationPerPhone),
+		int64(value.MaxPhoneNumbersPerBusiness),
+	))
+	return nil
 
 }
 
-func (wh *WebhookManager) handleMessageTemplateQualitySubscriptionEvents(value TemplateQualityUpdateValue) {
-	wh.EventManager.Publish(events.AccountAlertsEventType, events.MessageTemplateQualityUpdateEvent{})
+func (wh *WebhookManager) handleMessageTemplateQualitySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateQualityUpdateValue) error {
+	wh.EventManager.Publish(events.AccountAlertsEventType, events.NewMessageTemplateQualityUpdateEvent(
+		&baseEvent,
+		events.MessageTemplateQualityUpdateQualityScoreEnum(value.PreviousQualityScore),
+		events.MessageTemplateQualityUpdateQualityScoreEnum(value.NewQualityScore),
+		value.MessageTemplateId,
+		value.MessageTemplateName,
+		value.MessageTemplateLanguage,
+	))
+
+	return nil
 
 }
 
-func (wh *WebhookManager) handleMessageTemplateStatusSubscriptionEvents(value TemplateStatusUpdateValue) {
-	wh.EventManager.Publish(events.AccountAlertsEventType, events.MessageTemplateStatusUpdateEvent{})
+func (wh *WebhookManager) handleMessageTemplateStatusSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateStatusUpdateValue) error {
+	wh.EventManager.Publish(events.AccountAlertsEventType, events.NewMessageTemplateStatusUpdateEvent(
+		&baseEvent,
+		events.MessageTemplateStatusUpdateEventEnum(value.Event),
+		value.MessageTemplateId,
+		value.MessageTemplateName,
+		value.MessageTemplateLanguage,
+		events.MessageTemplateStatusUpdateReason(value.Reason),
+	))
+	return nil
 
 }
 
-func (wh *WebhookManager) handlePhoneNumberNameSubscriptionEvents(value PhoneNumberNameUpdateValue) {
-	wh.EventManager.Publish(events.AccountAlertsEventType, events.PhoneNumberNameUpdateEvent{})
-
+func (wh *WebhookManager) handlePhoneNumberNameSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value PhoneNumberNameUpdateValue) error {
+	wh.EventManager.Publish(events.AccountAlertsEventType, events.NewPhoneNumberNameUpdateEvent(
+		&baseEvent,
+		value.DisplayPhoneNumber,
+		value.RequestedVerifiedName,
+		value.Decision,
+		&value.RejectionReason,
+	))
+	return nil
 }
 
-func (wh *WebhookManager) handlePhoneNumberQualitySubscriptionEvents(value PhoneNumberQualityUpdateValue) {
-	wh.EventManager.Publish(events.AccountAlertsEventType, events.PhoneNumberQualityUpdateEvent{})
-
+func (wh *WebhookManager) handlePhoneNumberQualitySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value PhoneNumberQualityUpdateValue) error {
+	wh.EventManager.Publish(events.AccountAlertsEventType, events.NewPhoneNumberQualityUpdateEvent(
+		&baseEvent,
+		value.DisplayPhoneNumber,
+		events.PhoneNumberUpdateEventEnum(value.Event),
+		events.PhoneNumberQualityUpdateCurrentLimitEnum(value.CurrentLimit),
+	))
+	return nil
 }
 
-func (wh *WebhookManager) handleTemplateCategoryUpdateSubscriptionEvents(value TemplateCategoryUpdateValue) {
-	wh.EventManager.Publish(events.AccountAlertsEventType, events.TemplateCategoryUpdateEvent{})
-
+func (wh *WebhookManager) handleTemplateCategoryUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateCategoryUpdateValue) error {
+	wh.EventManager.Publish(events.AccountAlertsEventType, events.NewMessageTemplateCategoryUpdateEvent(
+		&baseEvent,
+		value.MessageTemplateId,
+		value.MessageTemplateName,
+		value.MessageTemplateLanguage,
+		events.MessageTemplateCategoryEnum(value.PreviousCategory),
+		events.MessageTemplateCategoryEnum(value.NewCategory),
+	))
+	return nil
 }

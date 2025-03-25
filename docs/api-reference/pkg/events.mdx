@@ -12,6 +12,12 @@ import "github.com/wapikit/wapi.go/pkg/events"
 ```go
 type AccountAlertEvent struct {
     BaseBusinessAccountEvent
+    EntityType       string
+    EntityId         string
+    AlertSeverity    AccountAlertSeverityEnum
+    AlertStatus      AccountAlertStatusEnum
+    AlertType        string
+    AlertDescription string
 }
 ```
 
@@ -19,10 +25,46 @@ type AccountAlertEvent struct {
 ### func NewAccountAlertEvent
 
 ```go
-func NewAccountAlertEvent() *AccountAlertEvent
+func NewAccountAlertEvent(baseEvent *BaseBusinessAccountEvent, entityType string, entityId string, alertSeverity AccountAlertSeverityEnum, alertStatus AccountAlertStatusEnum, alertType string, alertDescription string) *AccountAlertEvent
 ```
 
 
+
+<a name="AccountAlertSeverityEnum"></a>
+## type AccountAlertSeverityEnum
+
+
+
+```go
+type AccountAlertSeverityEnum string
+```
+
+<a name="AccountAlertSeverityEnumCritical"></a>
+
+```go
+const (
+    AccountAlertSeverityEnumCritical AccountAlertSeverityEnum = "CRITICAL"
+    AccountAlertSeverityEnumWarning  AccountAlertSeverityEnum = "WARNING"
+)
+```
+
+<a name="AccountAlertStatusEnum"></a>
+## type AccountAlertStatusEnum
+
+
+
+```go
+type AccountAlertStatusEnum string
+```
+
+<a name="AccountAlertStatusEnumActive"></a>
+
+```go
+const (
+    AccountAlertStatusEnumActive   AccountAlertStatusEnum = "ACTIVE"
+    AccountAlertStatusEnumResolved AccountAlertStatusEnum = "RESOLVED"
+)
+```
 
 <a name="AccountReviewUpdateEvent"></a>
 ## type AccountReviewUpdateEvent
@@ -32,6 +74,7 @@ func NewAccountAlertEvent() *AccountAlertEvent
 ```go
 type AccountReviewUpdateEvent struct {
     BaseBusinessAccountEvent
+    Decision AccountReviewUpdateEventEnum
 }
 ```
 
@@ -39,10 +82,28 @@ type AccountReviewUpdateEvent struct {
 ### func NewAccountReviewUpdateEvent
 
 ```go
-func NewAccountReviewUpdateEvent() *AccountReviewUpdateEvent
+func NewAccountReviewUpdateEvent(baseEvent *BaseBusinessAccountEvent, decision AccountReviewUpdateEventEnum) *AccountReviewUpdateEvent
 ```
 
 
+
+<a name="AccountReviewUpdateEventEnum"></a>
+## type AccountReviewUpdateEventEnum
+
+
+
+```go
+type AccountReviewUpdateEventEnum string
+```
+
+<a name="AccountReviewUpdateEventEnumApproved"></a>
+
+```go
+const (
+    AccountReviewUpdateEventEnumApproved AccountReviewUpdateEventEnum = "APPROVED"
+    AccountReviewUpdateEventEnumRejected AccountReviewUpdateEventEnum = "REJECTED"
+)
+```
 
 <a name="AccountUpdateEvent"></a>
 ## type AccountUpdateEvent
@@ -52,6 +113,11 @@ func NewAccountReviewUpdateEvent() *AccountReviewUpdateEvent
 ```go
 type AccountUpdateEvent struct {
     BaseBusinessAccountEvent
+    StatusUpdate    AccountUpdateEventEnum
+    PhoneNumber     string
+    BanInfo         *BanInfo
+    ViolationInfo   *ViolationInfo
+    RestrictionInfo []RestrictionInfo
 }
 ```
 
@@ -59,10 +125,32 @@ type AccountUpdateEvent struct {
 ### func NewAccountUpdateEvent
 
 ```go
-func NewAccountUpdateEvent() *AccountUpdateEvent
+func NewAccountUpdateEvent(baseEvent *BaseBusinessAccountEvent, statusUpdate AccountUpdateEventEnum, phoneNumber string) *AccountUpdateEvent
 ```
 
 
+
+<a name="AccountUpdateEventEnum"></a>
+## type AccountUpdateEventEnum
+
+
+
+```go
+type AccountUpdateEventEnum string
+```
+
+<a name="AccountUpdateEventEnumVerifiedAccount"></a>
+
+```go
+const (
+    AccountUpdateEventEnumVerifiedAccount    AccountUpdateEventEnum = "VERIFIED_ACCOUNT"
+    AccountUpdateEventEnumDisabledAccount    AccountUpdateEventEnum = "DISABLED_UPDATE"
+    AccountUpdateEventEnumAccountViolation   AccountUpdateEventEnum = "ACCOUNT_VIOLATION"
+    AccountUpdateEventEnumAccountRestriction AccountUpdateEventEnum = "ACCOUNT_RESTRICTION"
+    AccountUpdateEventEnumAccountDeleted     AccountUpdateEventEnum = "ACCOUNT_DELETED"
+    AccountUpdateEventEnumPartnerRemoved     AccountUpdateEventEnum = "PARTNER_REMOVED"
+)
+```
 
 <a name="AdInteractionEvent"></a>
 ## type AdInteractionEvent
@@ -166,6 +254,18 @@ func NewAudioMessageEvent(baseMessageEvent BaseMessageEvent, audio components.Au
 
 NewAudioMessageEvent creates a new AudioMessageEvent instance.
 
+<a name="BanInfo"></a>
+## type BanInfo
+
+
+
+```go
+type BanInfo struct {
+    WabaBanState string
+    WabaBanDate  string
+}
+```
+
 <a name="BaseBusinessAccountEvent"></a>
 ## type BaseBusinessAccountEvent
 
@@ -173,7 +273,8 @@ NewAudioMessageEvent creates a new AudioMessageEvent instance.
 
 ```go
 type BaseBusinessAccountEvent struct {
-    Timestamp string `json:"timestamp"`
+    BusinessAccountId string `json:"business_account_id"`
+    Timestamp         string `json:"timestamp"`
 }
 ```
 
@@ -348,6 +449,8 @@ type BaseSystemEventInterface interface {
 ```go
 type BusinessCapabilityUpdateEvent struct {
     BaseBusinessAccountEvent
+    MaxDailyConversationPerPhone int64
+    MaxPhoneNumbersPerBusiness   int64
 }
 ```
 
@@ -355,7 +458,7 @@ type BusinessCapabilityUpdateEvent struct {
 ### func NewBusinessCapabilityUpdateEvent
 
 ```go
-func NewBusinessCapabilityUpdateEvent() *BusinessCapabilityUpdateEvent
+func NewBusinessCapabilityUpdateEvent(baseEvent *BaseBusinessAccountEvent, maxDailyConversationPerPhone int64, maxPhoneNumbersPerBusiness int64) *BusinessCapabilityUpdateEvent
 ```
 
 
@@ -659,6 +762,27 @@ func NewMessageSentEvent(baseSystemEvent BaseSystemEvent, messageId, sendTo stri
 
 NewMessageSentEvent creates a new instance of MessageSentEvent.
 
+<a name="MessageTemplateCategoryEnum"></a>
+## type MessageTemplateCategoryEnum
+
+
+
+```go
+type MessageTemplateCategoryEnum string
+```
+
+<a name="MessageTemplateCategoryEnumMarketing"></a>
+
+```go
+const (
+    MessageTemplateCategoryEnumMarketing      MessageTemplateCategoryEnum = "MARKETING"
+    MessageTemplateCategoryEnumOtp            MessageTemplateCategoryEnum = "OTP"
+    MessageTemplateCategoryEnumTransactional  MessageTemplateCategoryEnum = "TRANSACTIONAL"
+    MessageTemplateCategoryEnumAuthentication MessageTemplateCategoryEnum = "AUTHENTICATION"
+    MessageTemplateCategoryEnumUtility        MessageTemplateCategoryEnum = "UTILITY"
+)
+```
+
 <a name="MessageTemplateQualityUpdateEvent"></a>
 ## type MessageTemplateQualityUpdateEvent
 
@@ -667,6 +791,11 @@ NewMessageSentEvent creates a new instance of MessageSentEvent.
 ```go
 type MessageTemplateQualityUpdateEvent struct {
     BaseBusinessAccountEvent
+    PreviousQualityScore    MessageTemplateQualityUpdateQualityScoreEnum
+    NewQualityScore         MessageTemplateQualityUpdateQualityScoreEnum
+    MessageTemplateId       int64
+    MessageTemplateName     string
+    MessageTemplateLanguage string
 }
 ```
 
@@ -674,10 +803,30 @@ type MessageTemplateQualityUpdateEvent struct {
 ### func NewMessageTemplateQualityUpdateEvent
 
 ```go
-func NewMessageTemplateQualityUpdateEvent() *MessageTemplateQualityUpdateEvent
+func NewMessageTemplateQualityUpdateEvent(baseEvent *BaseBusinessAccountEvent, previousQualityScore MessageTemplateQualityUpdateQualityScoreEnum, newQualityScore MessageTemplateQualityUpdateQualityScoreEnum, messageTemplateId int64, messageTemplateName string, messageTemplateLanguage string) *MessageTemplateQualityUpdateEvent
 ```
 
 
+
+<a name="MessageTemplateQualityUpdateQualityScoreEnum"></a>
+## type MessageTemplateQualityUpdateQualityScoreEnum
+
+
+
+```go
+type MessageTemplateQualityUpdateQualityScoreEnum string
+```
+
+<a name="MessageTemplateQualityUpdateQualityScoreEnumGreen"></a>
+
+```go
+const (
+    MessageTemplateQualityUpdateQualityScoreEnumGreen   MessageTemplateQualityUpdateQualityScoreEnum = "GREEN"
+    MessageTemplateQualityUpdateQualityScoreEnumRed     MessageTemplateQualityUpdateQualityScoreEnum = "RED"
+    MessageTemplateQualityUpdateQualityScoreEnumUnknown MessageTemplateQualityUpdateQualityScoreEnum = "UNKNOWN"
+    MessageTemplateQualityUpdateQualityScoreEnumYellow  MessageTemplateQualityUpdateQualityScoreEnum = "YELLOW"
+)
+```
 
 <a name="MessageTemplateStatusUpdateEvent"></a>
 ## type MessageTemplateStatusUpdateEvent
@@ -687,6 +836,11 @@ func NewMessageTemplateQualityUpdateEvent() *MessageTemplateQualityUpdateEvent
 ```go
 type MessageTemplateStatusUpdateEvent struct {
     BaseBusinessAccountEvent
+    Event                   MessageTemplateStatusUpdateEventEnum
+    MessageTemplateId       int64
+    MessageTemplateName     string
+    MessageTemplateLanguage string
+    Reason                  MessageTemplateStatusUpdateReason
 }
 ```
 
@@ -694,10 +848,54 @@ type MessageTemplateStatusUpdateEvent struct {
 ### func NewMessageTemplateStatusUpdateEvent
 
 ```go
-func NewMessageTemplateStatusUpdateEvent() *MessageTemplateStatusUpdateEvent
+func NewMessageTemplateStatusUpdateEvent(baseEvent *BaseBusinessAccountEvent, event MessageTemplateStatusUpdateEventEnum, messageTemplateId int64, messageTemplateName string, messageTemplateLanguage string, reason MessageTemplateStatusUpdateReason) *MessageTemplateStatusUpdateEvent
 ```
 
 
+
+<a name="MessageTemplateStatusUpdateEventEnum"></a>
+## type MessageTemplateStatusUpdateEventEnum
+
+
+
+```go
+type MessageTemplateStatusUpdateEventEnum string
+```
+
+<a name="MessageTemplateStatusUpdateEventEnumApproved"></a>
+
+```go
+const (
+    MessageTemplateStatusUpdateEventEnumApproved   MessageTemplateStatusUpdateEventEnum = "APPROVED"
+    MessageTemplateStatusUpdateEventEnumDisabled   MessageTemplateStatusUpdateEventEnum = "DISABLED"
+    MessageTemplateStatusUpdateEventEnumInAppeal   MessageTemplateStatusUpdateEventEnum = "IN_APPEAL"
+    MessageTemplateStatusUpdateEventEnumPending    MessageTemplateStatusUpdateEventEnum = "PENDING"
+    MessageTemplateStatusUpdateEventEnumReinstated MessageTemplateStatusUpdateEventEnum = "REINSTATED"
+    MessageTemplateStatusUpdateEventEnumRejected   MessageTemplateStatusUpdateEventEnum = "REJECTED"
+    MessageTemplateStatusUpdateEventEnumFlagged    MessageTemplateStatusUpdateEventEnum = "FLAGGED"
+)
+```
+
+<a name="MessageTemplateStatusUpdateReason"></a>
+## type MessageTemplateStatusUpdateReason
+
+
+
+```go
+type MessageTemplateStatusUpdateReason string
+```
+
+<a name="MessageTemplateStatusUpdateReasonAbusiveContent"></a>
+
+```go
+const (
+    MessageTemplateStatusUpdateReasonAbusiveContent    MessageTemplateStatusUpdateReason = "ABUSIVE_CONTENT"
+    MessageTemplateStatusUpdateReasonIncorrectCategory MessageTemplateStatusUpdateReason = "INCORRECT_CATEGORY"
+    MessageTemplateStatusUpdateReasonInvalidFormat     MessageTemplateStatusUpdateReason = "INVALID_FORMAT"
+    MessageTemplateStatusUpdateReasonNone              MessageTemplateStatusUpdateReason = "NONE"
+    MessageTemplateStatusUpdateReasonScam              MessageTemplateStatusUpdateReason = "SCAM"
+)
+```
 
 <a name="MessageUndeliveredEvent"></a>
 ## type MessageUndeliveredEvent
@@ -750,6 +948,10 @@ NewOrderEvent creates a new OrderEvent instance.
 ```go
 type PhoneNumberNameUpdateEvent struct {
     BaseBusinessAccountEvent
+    PhoneNumber     string
+    Name            string
+    Decision        string
+    RejectionReason *string
 }
 ```
 
@@ -757,10 +959,32 @@ type PhoneNumberNameUpdateEvent struct {
 ### func NewPhoneNumberNameUpdateEvent
 
 ```go
-func NewPhoneNumberNameUpdateEvent() *PhoneNumberNameUpdateEvent
+func NewPhoneNumberNameUpdateEvent(baseEvent *BaseBusinessAccountEvent, phoneNumber string, name string, decision string, reason *string) *PhoneNumberNameUpdateEvent
 ```
 
 
+
+<a name="PhoneNumberQualityUpdateCurrentLimitEnum"></a>
+## type PhoneNumberQualityUpdateCurrentLimitEnum
+
+
+
+```go
+type PhoneNumberQualityUpdateCurrentLimitEnum string
+```
+
+<a name="PhoneNumberQualityUpdateCurrentLimitEnumTier50"></a>
+
+```go
+const (
+    PhoneNumberQualityUpdateCurrentLimitEnumTier50        PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_50"
+    PhoneNumberQualityUpdateCurrentLimitEnumTier250       PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_250"
+    PhoneNumberQualityUpdateCurrentLimitEnumTier1K        PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_1K"
+    PhoneNumberQualityUpdateCurrentLimitEnumTier10K       PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_10K"
+    PhoneNumberQualityUpdateCurrentLimitEnumTier100K      PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_100K"
+    PhoneNumberQualityUpdateCurrentLimitEnumTierUnlimited PhoneNumberQualityUpdateCurrentLimitEnum = "TIER_UNLIMITED"
+)
+```
 
 <a name="PhoneNumberQualityUpdateEvent"></a>
 ## type PhoneNumberQualityUpdateEvent
@@ -770,6 +994,9 @@ func NewPhoneNumberNameUpdateEvent() *PhoneNumberNameUpdateEvent
 ```go
 type PhoneNumberQualityUpdateEvent struct {
     BaseBusinessAccountEvent
+    DisplayPhoneNumber string
+    Event              PhoneNumberUpdateEventEnum
+    CurrentLimit       PhoneNumberQualityUpdateCurrentLimitEnum
 }
 ```
 
@@ -777,10 +1004,31 @@ type PhoneNumberQualityUpdateEvent struct {
 ### func NewPhoneNumberQualityUpdateEvent
 
 ```go
-func NewPhoneNumberQualityUpdateEvent() *PhoneNumberQualityUpdateEvent
+func NewPhoneNumberQualityUpdateEvent(baseEvent *BaseBusinessAccountEvent, displayPhoneNumber string, event PhoneNumberUpdateEventEnum, currentLimit PhoneNumberQualityUpdateCurrentLimitEnum) *PhoneNumberQualityUpdateEvent
 ```
 
 
+
+<a name="PhoneNumberUpdateEventEnum"></a>
+## type PhoneNumberUpdateEventEnum
+
+
+
+```go
+type PhoneNumberUpdateEventEnum string
+```
+
+<a name="PhoneNumberUpdateEventEnumDowngrade"></a>
+
+```go
+const (
+    PhoneNumberUpdateEventEnumDowngrade  PhoneNumberUpdateEventEnum = "DOWNGRADE"
+    PhoneNumberUpdateEventEnumFlagged    PhoneNumberUpdateEventEnum = "FLAGGED"
+    PhoneNumberUpdateEventEnumOnboarding PhoneNumberUpdateEventEnum = "ONBOARDING"
+    PhoneNumberUpdateEventEnumUnflagged  PhoneNumberUpdateEventEnum = "UNFLAGGED"
+    PhoneNumberUpdateEventEnumUpgrade    PhoneNumberUpdateEventEnum = "UPGRADE"
+)
+```
 
 <a name="ProductInquiryEvent"></a>
 ## type ProductInquiryEvent
@@ -890,6 +1138,18 @@ func NewReplyButtonInteractionEvent(baseMessageEvent BaseMessageEvent, title, bu
 
 NewReplyButtonInteractionEvent creates a new instance of ReplyButtonInteractionEvent.
 
+<a name="RestrictionInfo"></a>
+## type RestrictionInfo
+
+
+
+```go
+type RestrictionInfo struct {
+    RestrictionType string
+    Expiration      string
+}
+```
+
 <a name="SecurityEvent"></a>
 ## type SecurityEvent
 
@@ -939,6 +1199,11 @@ NewStickerMessageEvent creates a new StickerMessageEvent instance.
 ```go
 type TemplateCategoryUpdateEvent struct {
     BaseBusinessAccountEvent
+    MessageTemplateId       int64
+    MessageTemplateName     string
+    MessageTemplateLanguage string
+    PreviousCategory        MessageTemplateCategoryEnum
+    NewCategory             MessageTemplateCategoryEnum
 }
 ```
 
@@ -946,7 +1211,7 @@ type TemplateCategoryUpdateEvent struct {
 ### func NewMessageTemplateCategoryUpdateEvent
 
 ```go
-func NewMessageTemplateCategoryUpdateEvent() *TemplateCategoryUpdateEvent
+func NewMessageTemplateCategoryUpdateEvent(baseEvent *BaseBusinessAccountEvent, messageTemplateId int64, messageTemplateName string, messageTemplateLanguage string, previousCategory MessageTemplateCategoryEnum, newCategory MessageTemplateCategoryEnum) *TemplateCategoryUpdateEvent
 ```
 
 
@@ -992,4 +1257,15 @@ func NewVideoMessageEvent(baseMessageEvent BaseMessageEvent, video components.Vi
 ```
 
 NewVideoMessageEvent creates a new VideoMessageEvent instance.
+
+<a name="ViolationInfo"></a>
+## type ViolationInfo
+
+
+
+```go
+type ViolationInfo struct {
+    ViolationType string
+}
+```
 
