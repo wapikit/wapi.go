@@ -5,6 +5,11 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
+  "analytics": {
+    "gtm": {
+      "tagId": "G-7756LGPVG9"
+    }
+  },
   "metadata": {
     "title": "Wapi.go",
     "description": "Wapi.go is a Golang SDK, developed to build whatsapp business apps with ease and faster.",
