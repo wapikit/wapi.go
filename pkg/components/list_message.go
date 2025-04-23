@@ -7,26 +7,26 @@ import (
 	"github.com/wapikit/wapi.go/internal"
 )
 
-// listSection represents a section in the list message.
-type listSection struct {
+// ListSection represents a section in the list message.
+type ListSection struct {
 	Title string           `json:"title" validate:"required"` // Title of the section.
 	Rows  []listSectionRow `json:"rows" validate:"required"`  // Rows in the section.
 }
 
 // NewListSection creates a new list section with the given title.
-func NewListSection(title string) (*listSection, error) {
-	return &listSection{
+func NewListSection(title string) (*ListSection, error) {
+	return &ListSection{
 		Title: title,
 	}, nil
 }
 
 // AddRow adds a new row to the list section.
-func (section *listSection) AddRow(row *listSectionRow) {
+func (section *ListSection) AddRow(row *listSectionRow) {
 	section.Rows = append(section.Rows, *row)
 }
 
 // SetTitle sets the title of the list section.
-func (section *listSection) SetTitle(title string) {
+func (section *ListSection) SetTitle(title string) {
 	section.Title = title
 }
 
@@ -64,7 +64,7 @@ func (row *listSectionRow) SetId(id string) {
 // listMessageAction represents the action of the list message.
 type listMessageAction struct {
 	ButtonText string        `json:"button" validate:"required"`   // Text of the button.
-	Sections   []listSection `json:"sections" validate:"required"` // Sections in the list message.
+	Sections   []ListSection `json:"sections" validate:"required"` // Sections in the list message.
 }
 
 // ListMessageBody represents the body of the list message.
@@ -109,12 +109,12 @@ type ListMessageApiPayload struct {
 }
 
 // AddSection adds a new section to the list message.
-func (m *listMessage) AddSection(section *listSection) {
+func (m *listMessage) AddSection(section *ListSection) {
 	m.Action.Sections = append(m.Action.Sections, *section)
 }
 
 // SetBodyText sets the body text of the list message.
-func (m *listMessage) SetBodyText(section *listSection) {
+func (m *listMessage) SetBodyText(section *ListSection) {
 	m.Body.Text = section.Title
 }
 

@@ -352,20 +352,20 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 				{
 					wh.EventManager.Publish(events.MessageDeliveredEventType, events.NewMessageDeliveredEvent(events.BaseSystemEvent{
 						Timestamp: status.Timestamp,
-					}, status.Conversation.Id, status.RecipientId))
+					}, status.Id, status.RecipientId))
 				}
 
 			case string(MessageStatusRead):
 				{
 					wh.EventManager.Publish(events.MessageReadEventType, events.NewMessageReadEvent(events.BaseSystemEvent{
 						Timestamp: status.Timestamp,
-					}, status.Conversation.Id, status.RecipientId))
+					}, status.Id, status.RecipientId))
 				}
 			case string(MessageStatusSent):
 				{
 					wh.EventManager.Publish(events.MessageSentEventType, events.NewMessageSentEvent(events.BaseSystemEvent{
 						Timestamp: status.Timestamp,
-					}, status.Conversation.Id, status.RecipientId))
+					}, status.Id, status.RecipientId))
 				}
 			case string(MessageStatusFailed):
 				{

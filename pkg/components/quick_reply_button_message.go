@@ -72,7 +72,6 @@ func (m *QuickReplyButtonMessage) AddButton(id, title string) error {
 		return fmt.Errorf("error creating quick reply button: %v", err)
 	}
 	m.Action.Buttons = append(m.Action.Buttons, *button)
-
 	return nil
 }
 

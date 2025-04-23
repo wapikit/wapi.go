@@ -282,7 +282,7 @@ const (
 
 type TemplateStatusUpdateValue struct {
 	Event                   TemplateMessageStatusUpdateEventEnum   `json:"event"`
-	MessageTemplateId       int64                                 `json:"message_template_id"`
+	MessageTemplateId       int64                                  `json:"message_template_id"`
 	MessageTemplateName     string                                 `json:"message_template_name"`
 	MessageTemplateLanguage string                                 `json:"message_template_language"`
 	Reason                  TemplateMessageRejectionReasonEnum     `json:"reason"`
@@ -291,7 +291,7 @@ type TemplateStatusUpdateValue struct {
 }
 
 type TemplateCategoryUpdateValue struct {
-	MessageTemplateId       int64                  `json:"message_template_id"`
+	MessageTemplateId       int64                   `json:"message_template_id"`
 	MessageTemplateName     string                  `json:"message_template_name"`
 	MessageTemplateLanguage string                  `json:"message_template_language"`
 	PreviousCategory        MessageTemplateCategory `json:"previous_category"`
@@ -302,7 +302,7 @@ type TemplateCategoryUpdateValue struct {
 type TemplateQualityUpdateValue struct {
 	PreviousQualityScore    string `json:"previous_quality_score"`
 	NewQualityScore         string `json:"new_quality_score"`
-	MessageTemplateId       int64 `json:"message_template_id"`
+	MessageTemplateId       int64  `json:"message_template_id"`
 	MessageTemplateName     string `json:"message_template_name"`
 	MessageTemplateLanguage string `json:"message_template_language"`
 }
@@ -412,6 +412,7 @@ type Metadata struct {
 }
 
 type Status struct {
+	Id           string       `json:"id"`
 	Conversation Conversation `json:"conversation,omitempty"`
 	Errors       []Error      `json:"errors,omitempty"`
 	Status       string       `json:"status"`
