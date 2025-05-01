@@ -703,6 +703,45 @@ type ListMessageParams struct {
 }
 ```
 
+<a name="ListSection"></a>
+## type ListSection
+
+ListSection represents a section in the list message.
+
+```go
+type ListSection struct {
+    Title string           `json:"title" validate:"required"` // Title of the section.
+    Rows  []listSectionRow `json:"rows" validate:"required"`  // Rows in the section.
+}
+```
+
+<a name="NewListSection"></a>
+### func NewListSection
+
+```go
+func NewListSection(title string) (*ListSection, error)
+```
+
+NewListSection creates a new list section with the given title.
+
+<a name="ListSection.AddRow"></a>
+### func \(\*ListSection\) AddRow
+
+```go
+func (section *ListSection) AddRow(row *listSectionRow)
+```
+
+AddRow adds a new row to the list section.
+
+<a name="ListSection.SetTitle"></a>
+### func \(\*ListSection\) SetTitle
+
+```go
+func (section *ListSection) SetTitle(title string)
+```
+
+SetTitle sets the title of the list section.
+
 <a name="LocationMessage"></a>
 ## type LocationMessage
 
@@ -2000,7 +2039,7 @@ NewListMessage creates a new list message with the given parameters.
 ### func \(\*listMessage\) AddSection
 
 ```go
-func (m *listMessage) AddSection(section *listSection)
+func (m *listMessage) AddSection(section *ListSection)
 ```
 
 AddSection adds a new section to the list message.
@@ -2009,7 +2048,7 @@ AddSection adds a new section to the list message.
 ### func \(\*listMessage\) SetBodyText
 
 ```go
-func (m *listMessage) SetBodyText(section *listSection)
+func (m *listMessage) SetBodyText(section *ListSection)
 ```
 
 SetBodyText sets the body text of the list message.
@@ -2031,48 +2070,9 @@ listMessageAction represents the action of the list message.
 ```go
 type listMessageAction struct {
     ButtonText string        `json:"button" validate:"required"`   // Text of the button.
-    Sections   []listSection `json:"sections" validate:"required"` // Sections in the list message.
+    Sections   []ListSection `json:"sections" validate:"required"` // Sections in the list message.
 }
 ```
-
-<a name="listSection"></a>
-## type listSection
-
-listSection represents a section in the list message.
-
-```go
-type listSection struct {
-    Title string           `json:"title" validate:"required"` // Title of the section.
-    Rows  []listSectionRow `json:"rows" validate:"required"`  // Rows in the section.
-}
-```
-
-<a name="NewListSection"></a>
-### func NewListSection
-
-```go
-func NewListSection(title string) (*listSection, error)
-```
-
-NewListSection creates a new list section with the given title.
-
-<a name="listSection.AddRow"></a>
-### func \(\*listSection\) AddRow
-
-```go
-func (section *listSection) AddRow(row *listSectionRow)
-```
-
-AddRow adds a new row to the list section.
-
-<a name="listSection.SetTitle"></a>
-### func \(\*listSection\) SetTitle
-
-```go
-func (section *listSection) SetTitle(title string)
-```
-
-SetTitle sets the title of the list section.
 
 <a name="listSectionRow"></a>
 ## type listSectionRow

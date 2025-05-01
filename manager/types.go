@@ -459,7 +459,13 @@ type Message struct {
 }
 
 type Error struct {
-	// Add fields for error details
+	Code      int    `json:"code"`
+	Title     string `json:"title"`
+	Message   string `json:"message"`
+	Href      string `json:"href"`
+	ErrorData struct {
+		Details string `json:"details"`
+	} `json:"error_data"`
 }
 
 type MessageStatusCategoryEnum string

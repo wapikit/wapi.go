@@ -369,7 +369,17 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 				}
 			case string(MessageStatusFailed):
 				{
-					// ! TODO: check and properly emit the error event here.
+					failedReason := ""
+					if len(status.Errors) > 0 {
+						for _, err := range status.Errors {
+							failedReason = err.Message
+							break
+						}
+					}
+
+					wh.EventManager.Publish(events.MessageFailedEventType, events.NewMessageFailedEvent(events.BaseSystemEvent{
+						Timestamp: status.Timestamp,
+					}, status.Id, status.RecipientId, failedReason))
 				}
 			}
 

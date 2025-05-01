@@ -413,6 +413,13 @@ type Entry struct {
 
 ```go
 type Error struct {
+    Code      int    `json:"code"`
+    Title     string `json:"title"`
+    Message   string `json:"message"`
+    Href      string `json:"href"`
+    ErrorData struct {
+        Details string `json:"details"`
+    }   `json:"error_data"`
 }
 ```
 
@@ -1585,6 +1592,7 @@ type SecurityValue struct {
 
 ```go
 type Status struct {
+    Id           string       `json:"id"`
     Conversation Conversation `json:"conversation,omitempty"`
     Errors       []Error      `json:"errors,omitempty"`
     Status       string       `json:"status"`
