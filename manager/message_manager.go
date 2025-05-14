@@ -50,6 +50,40 @@ type MessageSendError struct {
 	FbtraceID    string `json:"fbtrace_id"`
 }
 
+// Reply sends a reply message using the provided BaseMessage and returns a structured response.
+// If the API response contains an error, it returns that error.
+func (mm *MessageManager) Reply(message components.BaseMessage, phoneNumber string, replyTo string) (*MessageSendResponse, error) {
+	body, err := message.ToJson(components.ApiCompatibleJsonConverterConfigs{
+		SendToPhoneNumber: phoneNumber,
+		ReplyToMessageId:  replyTo,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error converting message to json: %v", err)
+	}
+
+	// Build the API request.
+	apiRequest := mm.requester.NewApiRequest(strings.Join([]string{mm.PhoneNumberId, "messages"}, "/"), http.MethodPost)
+	apiRequest.SetBody(string(body))
+	responseStr, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the API response.
+	var sendResponse MessageSendResponse
+	err = json.Unmarshal([]byte(responseStr), &sendResponse)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling response: %v", err)
+	}
+
+	// If an error object is present in the response, return it.
+	if sendResponse.Error != nil {
+		return &sendResponse, fmt.Errorf("error sending message: %s", sendResponse.Error.Message)
+	}
+
+	return &sendResponse, nil
+}
+
 // Send sends a message using the provided BaseMessage and returns a structured response.
 // If the API response contains an error, it returns that error.
 func (mm *MessageManager) Send(message components.BaseMessage, phoneNumber string) (*MessageSendResponse, error) {

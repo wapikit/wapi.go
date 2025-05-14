@@ -547,7 +547,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 			}
 		case NotificationMessageTypeInteractive:
 			{
-				if message.Interactive.Type == "list" {
+				if message.Interactive.Type == "list_reply" {
 					wh.EventManager.Publish(events.ListInteractionMessageEventType, events.NewListInteractionEvent(
 						baseMessageEvent,
 						message.Interactive.ListReply.Title,
@@ -558,9 +558,10 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 					wh.EventManager.Publish(events.ReplyButtonInteractionEventType, events.NewReplyButtonInteractionEvent(
 						baseMessageEvent,
 						message.Interactive.ButtonReply.Title,
-						message.Interactive.ButtonReply.ReplyId,
+						message.Interactive.ButtonReply.Id,
 					))
 				}
+
 			}
 		case NotificationMessageTypeReaction:
 			{
@@ -582,10 +583,25 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 			}
 		case NotificationMessageTypeOrder:
 			{
-				wh.EventManager.Publish(events.OrderReceivedEventType, events.NewTextMessageEvent(
+
+				productItems := make([]components.ProductItem, len(message.Order.ProductItems))
+				for i, item := range message.Order.ProductItems {
+					productItems[i] = components.ProductItem{
+						Currency:          item.Currency,
+						ItemPrice:         item.ItemPrice,
+						ProductRetailerID: item.ProductRetailerId,
+						Quantity:          item.Quantity,
+					}
+				}
+
+				wh.EventManager.Publish(events.OrderReceivedEventType, events.NewOrderEvent(
 					baseMessageEvent,
-					message.Text.Body),
-				)
+					components.Order{
+						CatalogID:    message.Order.CatalogId,
+						ProductItems: productItems,
+						Text:         message.Order.Text,
+					},
+				))
 			}
 		case NotificationMessageTypeSystem:
 			{

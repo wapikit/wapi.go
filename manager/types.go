@@ -83,11 +83,12 @@ type NotificationPayloadOrderMessageSchemaType struct {
 	Order struct {
 		CatalogId    string `json:"catalog_id"`
 		ProductItems []struct {
-			ProductRetailerId string `json:"product_retailer_id"`
-			Quantity          string `json:"quantity"`
-			ItemPrice         string `json:"item_price"`
-			Currency          string `json:"currency"`
+			ProductRetailerId string  `json:"product_retailer_id"`
+			Quantity          int     `json:"quantity"`
+			ItemPrice         float64 `json:"item_price"`
+			Currency          string  `json:"currency"`
 		} `json:"product_items"`
+		Text *string `json:"text,omitempty"`
 	} `json:"order,omitempty"`
 }
 
@@ -142,8 +143,8 @@ type NotificationPayloadInteractionMessageSchemaType struct {
 
 type NotificationPayloadButtonInteractionMessageSchemaType struct {
 	ButtonReply struct {
-		ReplyId string `json:"reply_id"`
-		Title   string `json:"title"`
+		Id    string `json:"id"`
+		Title string `json:"title"`
 	} `json:"button_reply,omitempty"`
 }
 
