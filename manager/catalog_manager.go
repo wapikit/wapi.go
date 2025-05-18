@@ -57,6 +57,12 @@ type ProductGroup struct {
 	RetailerID string `json:"retailer_id"`
 }
 
+type ProductFeed struct {
+	Id       string `json:"id"`
+	FileName string `json:"file_name"`
+	Name     string `json:"name"`
+}
+
 // ProductItem represents a product in a catalog.
 
 type ProductItem struct {
@@ -112,7 +118,7 @@ type ProductItem struct {
 	Pattern                                               string        `json:"pattern,omitempty"`
 	PostConversionSignalBasedEnforcementAppealEligibility bool          `json:"post_conversion_signal_based_enforcement_appeal_eligibility,omitempty"`
 	Price                                                 string        `json:"price,omitempty"`
-	ProductFeed                                           string        `json:"product_feed,omitempty"`
+	ProductFeed                                           *ProductFeed  `json:"product_feed,omitempty"`
 	ProductGroup                                          *ProductGroup `json:"product_group,omitempty"`
 	ProductLocalInfo                                      string        `json:"product_local_info,omitempty"`
 	ProductType                                           string        `json:"product_type,omitempty"`
