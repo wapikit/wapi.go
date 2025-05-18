@@ -72,11 +72,23 @@ type ListMessageBody struct {
 	Text string `json:"text" validate:"required"` // Text of the body.
 }
 
+// ListMessageFooter represents the footer of the list message.
+type ListMessageFooter struct {
+	Text string `json:"text" validate:"required"` // Text of the footer.
+}
+
+type ListMessageHeader struct {
+	Type string `json:"type" validate:"required"` // Type of the header.
+	Text string `json:"text" validate:"required"` // Text of the header.
+}
+
 // listMessage represents an interactive list message.
 type listMessage struct {
 	Type   InteractiveMessageType `json:"type" validate:"required"`   // Type of the message.
 	Action listMessageAction      `json:"action" validate:"required"` // Action of the message.
 	Body   ListMessageBody        `json:"body,omitempty"`             // Body of the message.
+	Footer *ListMessageFooter     `json:"footer,omitempty"`           // Footer of the message.
+	Header *ListMessageHeader     `json:"header,omitempty"`           // Header of the message.
 }
 
 // ListMessageParams represents the parameters for creating a list message.
@@ -116,6 +128,19 @@ func (m *listMessage) AddSection(section *ListSection) {
 // SetBodyText sets the body text of the list message.
 func (m *listMessage) SetBodyText(section *ListSection) {
 	m.Body.Text = section.Title
+}
+
+func (m *listMessage) SetFooterText(footerText string) {
+	m.Footer = &ListMessageFooter{
+		Text: footerText,
+	}
+}
+
+func (m *listMessage) SetHeaderText(headerText string) {
+	m.Header = &ListMessageHeader{
+		Type: "text", // only text is supported
+		Text: headerText,
+	}
 }
 
 // ToJson converts the list message to JSON.

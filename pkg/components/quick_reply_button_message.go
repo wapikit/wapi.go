@@ -40,11 +40,23 @@ type QuickReplyButtonMessageBody struct {
 	Text string `json:"text" validate:"required"` // Text of the quick reply button message.
 }
 
+// QuickReplyButtonMessageFooter represents the footer of a quick reply button message.
+type QuickReplyButtonMessageFooter struct {
+	Text string `json:"text" validate:"required"` // Text of the quick reply button message footer.
+}
+
+type QuickReplyButtonMessageHeader struct {
+	Type string `json:"type" validate:"required"` // Type of the quick reply button message header.
+	Text string `json:"text" validate:"required"` // Text of the quick reply button message header.
+}
+
 // QuickReplyButtonMessage represents a quick reply button message.
 type QuickReplyButtonMessage struct {
-	Type   InteractiveMessageType        `json:"type" validate:"required"`   // Type of the quick reply button message.
-	Body   QuickReplyButtonMessageBody   `json:"body" validate:"required"`   // Body of the quick reply button message.
-	Action QuickReplyButtonMessageAction `json:"action" validate:"required"` // Action of the quick reply button message.
+	Type   InteractiveMessageType         `json:"type" validate:"required"`   // Type of the quick reply button message.
+	Body   QuickReplyButtonMessageBody    `json:"body" validate:"required"`   // Body of the quick reply button message.
+	Action QuickReplyButtonMessageAction  `json:"action" validate:"required"` // Action of the quick reply button message.
+	Footer *QuickReplyButtonMessageFooter `json:"footer,omitempty"`           // Footer of the quick reply button message.
+	Header *QuickReplyButtonMessageHeader `json:"header,omitempty"`           // Header of the quick reply button message.
 }
 
 // QuickReplyButtonMessageApiPayload represents the API payload for a quick reply button message.
@@ -73,6 +85,19 @@ func (m *QuickReplyButtonMessage) AddButton(id, title string) error {
 	}
 	m.Action.Buttons = append(m.Action.Buttons, *button)
 	return nil
+}
+
+func (m *QuickReplyButtonMessage) SetFooter(text string) {
+	m.Footer = &QuickReplyButtonMessageFooter{
+		Text: text,
+	}
+}
+
+func (m *QuickReplyButtonMessage) SetHeader(text string) {
+	m.Header = &QuickReplyButtonMessageHeader{
+		Type: "text", // only text is supported
+		Text: text,
+	}
 }
 
 // ToJson converts the quick reply button message to JSON.
