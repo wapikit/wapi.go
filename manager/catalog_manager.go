@@ -328,6 +328,9 @@ func (cm *CatalogManager) GetCatalogProducts(catalogId string) ([]ProductItem, e
 		})
 	}
 
+	// ! TODO: proper pagination must be implemented here
+	apiRequest.AddQueryParam("limit", "1000")
+
 	response, err := apiRequest.Execute()
 	if err != nil {
 		return nil, err
