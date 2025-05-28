@@ -152,8 +152,6 @@ type ProductItem struct {
 
 // ProductSetMetadata represents metadata for a product set.
 type ProductSetMetadata struct {
-	// Define minimal metadata fields as needed.
-	// For example:
 	UpdateTime string `json:"update_time,omitempty"`
 }
 
