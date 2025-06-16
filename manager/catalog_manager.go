@@ -83,7 +83,7 @@ type ProductItem struct {
 	Brand                                                 string         `json:"brand,omitempty"`
 	CapabilityToReviewStatus                              []KeyValue     `json:"capability_to_review_status,omitempty"`
 	Category                                              string         `json:"category,omitempty"`
-	CategorySpecificFields                                string         `json:"category_specific_fields,omitempty"`
+	CategorySpecificFields                                interface{}    `json:"category_specific_fields,omitempty"`
 	Color                                                 string         `json:"color,omitempty"`
 	CommerceInsights                                      string         `json:"commerce_insights,omitempty"`
 	Condition                                             string         `json:"condition,omitempty"`

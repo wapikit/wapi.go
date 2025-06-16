@@ -660,11 +660,12 @@ type InteractiveMessageType string
 
 ```go
 const (
-    InteractiveMessageTypeButton      InteractiveMessageType = "button"
-    InteractiveMessageTypeProduct     InteractiveMessageType = "product"
-    InteractiveMessageTypeProductList InteractiveMessageType = "product_list"
-    InteractiveMessageTypeList        InteractiveMessageType = "list"
-    InteractiveMessageTypeCatalog     InteractiveMessageType = "catalog_message"
+    InteractiveMessageTypeButton          InteractiveMessageType = "button"
+    InteractiveMessageTypeProduct         InteractiveMessageType = "product"
+    InteractiveMessageTypeProductList     InteractiveMessageType = "product_list"
+    InteractiveMessageTypeList            InteractiveMessageType = "list"
+    InteractiveMessageTypeCatalog         InteractiveMessageType = "catalog_message"
+    InteractiveMessageTypeLocationRequest InteractiveMessageType = "location_request_message"
 )
 ```
 
@@ -688,6 +689,29 @@ ListMessageBody represents the body of the list message.
 ```go
 type ListMessageBody struct {
     Text string `json:"text" validate:"required"` // Text of the body.
+}
+```
+
+<a name="ListMessageFooter"></a>
+## type ListMessageFooter
+
+ListMessageFooter represents the footer of the list message.
+
+```go
+type ListMessageFooter struct {
+    Text string `json:"text" validate:"required"` // Text of the footer.
+}
+```
+
+<a name="ListMessageHeader"></a>
+## type ListMessageHeader
+
+
+
+```go
+type ListMessageHeader struct {
+    Type string `json:"type" validate:"required"` // Type of the header.
+    Text string `json:"text" validate:"required"` // Text of the header.
 }
 ```
 
@@ -804,6 +828,80 @@ type LocationMessageApiPayload struct {
 }
 ```
 
+<a name="LocationRequestMessage"></a>
+## type LocationRequestMessage
+
+
+
+```go
+type LocationRequestMessage struct {
+    Type   InteractiveMessageType     `json:"type" validate:"required"`   // Type of the message.
+    Action locationMessageAction      `json:"action" validate:"required"` // Action of the message.
+    Body   LocationRequestMessageBody `json:"body,omitempty"`             // Body of the message.
+}
+```
+
+<a name="NewLocationRequestMessage"></a>
+### func NewLocationRequestMessage
+
+```go
+func NewLocationRequestMessage(params LocationRequestMessageParams) (*LocationRequestMessage, error)
+```
+
+
+
+<a name="LocationRequestMessage.SetBodyText"></a>
+### func \(\*LocationRequestMessage\) SetBodyText
+
+```go
+func (m *LocationRequestMessage) SetBodyText(bodyText string)
+```
+
+SetBodyText sets the body text of the list message.
+
+<a name="LocationRequestMessage.ToJson"></a>
+### func \(\*LocationRequestMessage\) ToJson
+
+```go
+func (m *LocationRequestMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]byte, error)
+```
+
+ToJson converts the list message to JSON.
+
+<a name="LocationRequestMessageApiPayload"></a>
+## type LocationRequestMessageApiPayload
+
+
+
+```go
+type LocationRequestMessageApiPayload struct {
+    BaseMessagePayload
+    Interactive LocationRequestMessage `json:"interactive" validate:"required"` // Interactive message.
+}
+```
+
+<a name="LocationRequestMessageBody"></a>
+## type LocationRequestMessageBody
+
+
+
+```go
+type LocationRequestMessageBody struct {
+    Text string `json:"text" validate:"required"` // Text of the body.
+}
+```
+
+<a name="LocationRequestMessageParams"></a>
+## type LocationRequestMessageParams
+
+
+
+```go
+type LocationRequestMessageParams struct {
+    BodyText string `json:"-" validate:"required"` // Text of the body.
+}
+```
+
 <a name="MessageType"></a>
 ## type MessageType
 
@@ -840,7 +938,7 @@ Order represents an order in the system.
 type Order struct {
     CatalogID    string        `json:"catalog_id"`    // CatalogID is the ID of the catalog associated with the order.
     ProductItems []ProductItem `json:"product_items"` // ProductItems is a list of product items in the order.
-    Text         string        `json:"text"`          // Text is an additional text associated with the order.
+    Text         *string       `json:"text"`          // Text is an additional text associated with the order.
 }
 ```
 
@@ -892,10 +990,10 @@ ProductItem represents a product item in an order.
 
 ```go
 type ProductItem struct {
-    Currency          string `json:"currency"`            // Currency is the currency of the product item.
-    ItemPrice         string `json:"item_price"`          // ItemPrice is the price of the product item.
-    ProductRetailerID string `json:"product_retailer_id"` // ProductRetailerID is the ID of the retailer associated with the product item.
-    Quantity          string `json:"quantity"`            // Quantity is the quantity of the product item.
+    Currency          string  `json:"currency"`            // Currency is the currency of the product item.
+    ItemPrice         float64 `json:"item_price"`          // ItemPrice is the price of the product item.
+    ProductRetailerID string  `json:"product_retailer_id"` // ProductRetailerID is the ID of the retailer associated with the product item.
+    Quantity          int     `json:"quantity"`            // Quantity is the quantity of the product item.
 }
 ```
 
@@ -1258,9 +1356,11 @@ QuickReplyButtonMessage represents a quick reply button message.
 
 ```go
 type QuickReplyButtonMessage struct {
-    Type   InteractiveMessageType        `json:"type" validate:"required"`   // Type of the quick reply button message.
-    Body   QuickReplyButtonMessageBody   `json:"body" validate:"required"`   // Body of the quick reply button message.
-    Action QuickReplyButtonMessageAction `json:"action" validate:"required"` // Action of the quick reply button message.
+    Type   InteractiveMessageType         `json:"type" validate:"required"`   // Type of the quick reply button message.
+    Body   QuickReplyButtonMessageBody    `json:"body" validate:"required"`   // Body of the quick reply button message.
+    Action QuickReplyButtonMessageAction  `json:"action" validate:"required"` // Action of the quick reply button message.
+    Footer *QuickReplyButtonMessageFooter `json:"footer,omitempty"`           // Footer of the quick reply button message.
+    Header *QuickReplyButtonMessageHeader `json:"header,omitempty"`           // Header of the quick reply button message.
 }
 ```
 
@@ -1278,6 +1378,24 @@ NewQuickReplyButtonMessage creates a new quick reply button message with the giv
 
 ```go
 func (m *QuickReplyButtonMessage) AddButton(id, title string) error
+```
+
+
+
+<a name="QuickReplyButtonMessage.SetFooter"></a>
+### func \(\*QuickReplyButtonMessage\) SetFooter
+
+```go
+func (m *QuickReplyButtonMessage) SetFooter(text string)
+```
+
+
+
+<a name="QuickReplyButtonMessage.SetHeader"></a>
+### func \(\*QuickReplyButtonMessage\) SetHeader
+
+```go
+func (m *QuickReplyButtonMessage) SetHeader(text string)
 ```
 
 
@@ -1322,6 +1440,29 @@ QuickReplyButtonMessageBody represents the body of a quick reply button message.
 ```go
 type QuickReplyButtonMessageBody struct {
     Text string `json:"text" validate:"required"` // Text of the quick reply button message.
+}
+```
+
+<a name="QuickReplyButtonMessageFooter"></a>
+## type QuickReplyButtonMessageFooter
+
+QuickReplyButtonMessageFooter represents the footer of a quick reply button message.
+
+```go
+type QuickReplyButtonMessageFooter struct {
+    Text string `json:"text" validate:"required"` // Text of the quick reply button message footer.
+}
+```
+
+<a name="QuickReplyButtonMessageHeader"></a>
+## type QuickReplyButtonMessageHeader
+
+
+
+```go
+type QuickReplyButtonMessageHeader struct {
+    Type string `json:"type" validate:"required"` // Type of the quick reply button message header.
+    Text string `json:"text" validate:"required"` // Text of the quick reply button message header.
 }
 ```
 
@@ -2023,6 +2164,8 @@ type listMessage struct {
     Type   InteractiveMessageType `json:"type" validate:"required"`   // Type of the message.
     Action listMessageAction      `json:"action" validate:"required"` // Action of the message.
     Body   ListMessageBody        `json:"body,omitempty"`             // Body of the message.
+    Footer *ListMessageFooter     `json:"footer,omitempty"`           // Footer of the message.
+    Header *ListMessageHeader     `json:"header,omitempty"`           // Header of the message.
 }
 ```
 
@@ -2052,6 +2195,24 @@ func (m *listMessage) SetBodyText(section *ListSection)
 ```
 
 SetBodyText sets the body text of the list message.
+
+<a name="listMessage.SetFooterText"></a>
+### func \(\*listMessage\) SetFooterText
+
+```go
+func (m *listMessage) SetFooterText(footerText string)
+```
+
+
+
+<a name="listMessage.SetHeaderText"></a>
+### func \(\*listMessage\) SetHeaderText
+
+```go
+func (m *listMessage) SetHeaderText(headerText string)
+```
+
+
 
 <a name="listMessage.ToJson"></a>
 ### func \(\*listMessage\) ToJson
@@ -2122,6 +2283,17 @@ func (row *listSectionRow) SetTitle(title string)
 ```
 
 SetTitle sets the title of the list section row.
+
+<a name="locationMessageAction"></a>
+## type locationMessageAction
+
+
+
+```go
+type locationMessageAction struct {
+    Name string `json:"name" validate:"required"` // Name of the action.
+}
+```
 
 <a name="productMessageAction"></a>
 ## type productMessageAction
