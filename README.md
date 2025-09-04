@@ -92,12 +92,6 @@ whatsappClient, err := wapi.New(wapi.ClientConfig{
 
 For detailed guidelines, check [Contributing.md](./CONTRIBUTING.md).
 
-# TODOs'
-
-- Handle errors gracefully
-- Handle template and interactive messages gracefully
-- Add support for more interactive message types like address input.
-
 ## License
 
 Distributed under the Apache 2.0 License. View [LICENSE](./LICENSE).
