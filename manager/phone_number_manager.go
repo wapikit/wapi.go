@@ -164,7 +164,10 @@ func (manager *PhoneNumberManager) FetchAll(getSandBoxNumbers bool) (*WhatsappBu
 	}
 
 	var responseToReturn WhatsappBusinessAccountPhoneNumberEdge
-	json.Unmarshal([]byte(response), &responseToReturn)
+	err = json.Unmarshal([]byte(response), &responseToReturn)
+	if err != nil {
+		return nil, err
+	}
 
 	return &responseToReturn, nil
 }
@@ -180,7 +183,10 @@ func (manager *PhoneNumberManager) Fetch(phoneNumberId string) (*WhatsappBusines
 	}
 
 	var responseToReturn WhatsappBusinessAccountPhoneNumber
-	json.Unmarshal([]byte(response), &responseToReturn)
+	err = json.Unmarshal([]byte(response), &responseToReturn)
+	if err != nil {
+		return nil, err
+	}
 
 	return &responseToReturn, nil
 }
@@ -195,8 +201,11 @@ func (manager *PhoneNumberManager) Create(phoneNumber, verifiedName, countryCode
 	apiRequest.AddQueryParam("cc", countryCode)
 	apiRequest.AddQueryParam("verified_name", verifiedName)
 	response, err := apiRequest.Execute()
+	if err != nil {
+		return CreatePhoneNumberResponse{}, err
+	}
 	responseToReturn := CreatePhoneNumberResponse{}
-	json.Unmarshal([]byte(response), &responseToReturn)
+	err = json.Unmarshal([]byte(response), &responseToReturn)
 	return responseToReturn, err
 }
 
