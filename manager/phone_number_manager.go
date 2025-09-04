@@ -155,7 +155,7 @@ type WhatsappBusinessAccountPhoneNumberEdge struct {
 func (manager *PhoneNumberManager) FetchAll(getSandBoxNumbers bool) (*WhatsappBusinessAccountPhoneNumberEdge, error) {
 	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{manager.businessAccountId, "/", "phone_numbers"}, ""), http.MethodGet)
 
-	apiRequest.AddQueryParam("fields", "id,account_mode,certificate,code_verification_status,conversational_automation,display_phone_number,health_status,eligibility_for_api_business_global_search,id,is_official_business_account,is_on_biz_app,is_pin_enabled,is_preverified_number,last_onboarded_time,messaging_limit_tier,name_status,new_certificate,new_display_name,new_name_status,official_business_account,platform_type,quality_score,search_visibility,status,throughput,verified_name")
+	apiRequest.AddQueryParam("fields", "id,account_mode,certificate,code_verification_status,conversational_automation,display_phone_number,health_status,eligibility_for_api_business_global_search,is_official_business_account,is_on_biz_app,is_pin_enabled,is_preverified_number,last_onboarded_time,messaging_limit_tier,name_status,new_certificate,new_display_name,new_name_status,official_business_account,platform_type,quality_score,search_visibility,status,throughput,verified_name")
 	apiRequest.AddQueryParam("filtering", `[{"field":"account_mode","operator":"EQUAL","value":"LIVE"}]`)
 	response, err := apiRequest.Execute()
 
@@ -175,7 +175,7 @@ func (manager *PhoneNumberManager) FetchAll(getSandBoxNumbers bool) (*WhatsappBu
 // Fetch fetches a phone number by its ID.
 func (manager *PhoneNumberManager) Fetch(phoneNumberId string) (*WhatsappBusinessAccountPhoneNumber, error) {
 	apiRequest := manager.requester.NewApiRequest(phoneNumberId, http.MethodGet)
-	apiRequest.AddQueryParam("fields", "id,account_mode,certificate,code_verification_status,conversational_automation,display_phone_number,health_status,eligibility_for_api_business_global_search,id,is_official_business_account,is_on_biz_app,is_pin_enabled,is_preverified_number,last_onboarded_time,messaging_limit_tier,name_status,new_certificate,new_display_name,new_name_status,official_business_account,platform_type,quality_score,search_visibility,status,throughput,verified_name")
+	apiRequest.AddQueryParam("fields", "id,account_mode,certificate,code_verification_status,conversational_automation,display_phone_number,health_status,eligibility_for_api_business_global_search,is_official_business_account,is_on_biz_app,is_pin_enabled,is_preverified_number,last_onboarded_time,messaging_limit_tier,name_status,new_certificate,new_display_name,new_name_status,official_business_account,platform_type,quality_score,search_visibility,status,throughput,verified_name")
 	response, err := apiRequest.Execute()
 
 	if err != nil {
