@@ -87,8 +87,7 @@ func (message *CtaMessage) SetAction(params CtaMessageActionParams) {
 
 // CtaMessageParams represents the parameters for creating a cta message.
 type CtaMessageParams struct {
-	BodyText string  `validate:"required"`
-	Footer   *string `validate:"required"`
+	BodyText string `validate:"required"`
 }
 
 // CtaMessageApiPayload represents the API payload for a cta message.
