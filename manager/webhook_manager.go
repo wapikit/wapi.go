@@ -370,30 +370,38 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 			case string(MessageStatusFailed):
 				{
 					failedReason := ""
+					errorCode := 0
+					errorMessage := ""
 					if len(status.Errors) > 0 {
 						for _, err := range status.Errors {
 							failedReason = err.Title
+							errorCode = err.Code
+							errorMessage = err.Message
 							break
 						}
 					}
 
 					wh.EventManager.Publish(events.MessageFailedEventType, events.NewMessageFailedEvent(events.BaseSystemEvent{
 						Timestamp: status.Timestamp,
-					}, status.Id, status.RecipientId, failedReason))
+					}, status.Id, status.RecipientId, failedReason, errorCode, errorMessage))
 				}
 			case string(MessageStatusUnDelivered):
 				{
 					undeliveredReason := ""
+					errorCode := 0
+					errorMessage := ""
 					if len(status.Errors) > 0 {
 						for _, err := range status.Errors {
 							undeliveredReason = err.Title
+							errorCode = err.Code
+							errorMessage = err.Message
 							break
 						}
 					}
 
 					wh.EventManager.Publish(events.MessageUndeliveredEventType, events.NewMessageUndeliveredEvent(events.BaseSystemEvent{
 						Timestamp: status.Timestamp,
-					}, status.Id, status.RecipientId, undeliveredReason))
+					}, status.Id, status.RecipientId, undeliveredReason, errorCode, errorMessage))
 				}
 			}
 
