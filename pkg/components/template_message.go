@@ -183,8 +183,11 @@ type TemplateMessageMultiProductButtonActionParameterSection struct {
 	ProductItems []TemplateMessageMultiProductButtonActionParameterProductItem `json:"product_items" validate:"required"`
 }
 
+// TemplateMessageButtonParameterAction represents the action parameters for catalog buttons.
+// Per WhatsApp API docs, thumbnail_product_retailer_id is optional - if omitted, WhatsApp
+// automatically uses the first product in the catalog as the thumbnail.
 type TemplateMessageButtonParameterAction struct {
-	ThumbnailProductRetailerId string                                                     `json:"thumbnail_product_retailer_id" validate:"required"`
+	ThumbnailProductRetailerId string                                                     `json:"thumbnail_product_retailer_id,omitempty"`
 	Sections                   *[]TemplateMessageMultiProductButtonActionParameterSection `json:"sections,omitempty"` // Required for MPM buttons. UPTO 10 sections in a buttons parameter
 }
 
@@ -323,6 +326,9 @@ func (m *TemplateMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]b
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling json: %v", err)
 	}
+
+	// Debug logging: print the actual JSON being sent
+	fmt.Printf("[DEBUG] Template Message JSON: %s\n", string(jsonToReturn))
 
 	return jsonToReturn, nil
 }
