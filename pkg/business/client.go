@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	_ "strings"
+
 	"time"
 
 	"github.com/wapikit/wapi.go/internal"

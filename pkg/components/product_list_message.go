@@ -53,17 +53,17 @@ const (
 
 // ! TODO: support more header types
 type ProductListMessageHeader struct {
-	Type ProductListMessageHeaderType `json:"type" validate:"required"`
-	Text string                       `json:"text" validate:"required"`
+    Type ProductListMessageHeaderType `json:"type" validate:"required"`
+    Text string                       `json:"text" validate:"required"`
 }
 
 // ProductListMessage represents a product list message.
 type ProductListMessage struct {
-	Action ProductListMessageAction  `json:"action" validate:"required"`
-	Body   ProductListMessageBody    `json:"body" validate:"required"`
-	Footer *ProductListMessageFooter `json:"footer,omitempty"`
-	Header ProductListMessageHeader  `json:"header,omitempty"`
-	Type   InteractiveMessageType    `json:"type" validate:"required"`
+    Action ProductListMessageAction  `json:"action" validate:"required"`
+    Body   ProductListMessageBody    `json:"body" validate:"required"`
+    Footer *ProductListMessageFooter `json:"footer,omitempty"`
+    Header *ProductListMessageHeader `json:"header,omitempty"`
+    Type   InteractiveMessageType    `json:"type" validate:"required"`
 }
 
 func (message *ProductListMessage) AddSection(section ProductSection) {
@@ -94,10 +94,10 @@ func (message *ProductListMessage) SetFooter(text string) {
 }
 
 func (message *ProductListMessage) SetHeader(text string) {
-	message.Header = ProductListMessageHeader{
-		Type: ProductListMessageHeaderTypeText,
-		Text: text,
-	}
+    message.Header = &ProductListMessageHeader{
+        Type: ProductListMessageHeaderTypeText,
+        Text: text,
+    }
 }
 
 // ProductListMessageParams represents the parameters for creating a product list message.
