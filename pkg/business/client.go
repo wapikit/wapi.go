@@ -7,9 +7,9 @@ import (
 
 	"time"
 
-	"github.com/wapikit/wapi.go/internal"
-	"github.com/wapikit/wapi.go/internal/request_client"
-	"github.com/wapikit/wapi.go/manager"
+	"github.com/gTahidi/wapi.go/internal"
+	"github.com/gTahidi/wapi.go/internal/request_client"
+	"github.com/gTahidi/wapi.go/manager"
 )
 
 // BusinessClient is responsible for managing business account related operations.

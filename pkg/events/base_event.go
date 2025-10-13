@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/wapikit/wapi.go/internal/request_client"
-	"github.com/wapikit/wapi.go/pkg/components"
+	"github.com/gTahidi/wapi.go/internal/request_client"
+	"github.com/gTahidi/wapi.go/pkg/components"
 )
 
 type MessageContext struct {

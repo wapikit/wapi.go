@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/wapikit/wapi.go/internal"
+	"github.com/gTahidi/wapi.go/internal"
 )
 
 // TemplateMessageComponentType represents the type of a template message component.

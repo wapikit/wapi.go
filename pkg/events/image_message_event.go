@@ -1,6 +1,6 @@
 package events
 
-import "github.com/wapikit/wapi.go/pkg/components"
+import "github.com/gTahidi/wapi.go/pkg/components"
 
 // ImageMessageEvent represents an event for an image message.
 type ImageMessageEvent struct {

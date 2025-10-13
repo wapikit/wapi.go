@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/wapikit/wapi.go/internal/request_client"
+	"github.com/gTahidi/wapi.go/internal/request_client"
 )
 
 // MediaManager is responsible for managing media related operations.

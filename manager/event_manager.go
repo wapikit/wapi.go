@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/wapikit/wapi.go/pkg/events"
+	"github.com/gTahidi/wapi.go/pkg/events"
 )
 
 // ChannelEvent represents an event that can be published and subscribed to.

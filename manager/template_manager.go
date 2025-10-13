@@ -6,8 +6,8 @@ import (
     "net/http"
     "strings"
 
-    "github.com/wapikit/wapi.go/internal"
-    "github.com/wapikit/wapi.go/internal/request_client"
+    "github.com/gTahidi/wapi.go/internal"
+    "github.com/gTahidi/wapi.go/internal/request_client"
 )
 
 // MessageTemplateStatus represents the status of a WhatsApp Business message template.
