@@ -659,6 +659,30 @@ func (cm *CatalogManager) CreateScheduledProductFeed(
 	return &res, nil
 }
 
+// CreateProductFeed creates a product feed without a schedule (for immediate CSV uploads).
+// Use UploadFeedCSV or UploadFeedCSVFromURL afterwards to ingest data.
+func (cm *CatalogManager) CreateProductFeed(catalogId string, name string) (*ProductFeed, error) {
+    apiPath := strings.Join([]string{catalogId, "product_feeds"}, "/")
+    apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodPost)
+    body := map[string]interface{}{
+        "name": name,
+    }
+    payload, err := json.Marshal(body)
+    if err != nil {
+        return nil, fmt.Errorf("failed to marshal feed body: %w", err)
+    }
+    apiRequest.SetBody(string(payload))
+    response, err := apiRequest.Execute()
+    if err != nil {
+        return nil, err
+    }
+    var res ProductFeed
+    if err := json.Unmarshal([]byte(response), &res); err != nil {
+        return nil, err
+    }
+    return &res, nil
+}
+
 // UpsertProductItem updates or creates a product item using Meta’s format.
 // fields should include at least retailer_id, name, price, currency, image_url, availability, etc.
 func (cm *CatalogManager) UpsertProductItem(catalogId string, fields map[string]interface{}) (*ProductItem, error) {
