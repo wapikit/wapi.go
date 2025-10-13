@@ -399,18 +399,18 @@ type CreateProductCatalogOptions struct {
 }
 
 func (cm *CatalogManager) CreateNewProductCatalog() (CreateProductCatalogOptions, error) {
-    apiRequest := cm.requester.NewApiRequest(strings.Join([]string{cm.businessAccountId, "product_catalogs"}, "/"), http.MethodPost)
-    response, err := apiRequest.Execute()
-    if err != nil {
-        // Return immediately on execution error; do not attempt to decode
-        return CreateProductCatalogOptions{}, fmt.Errorf("create catalog request failed: %w", err)
-    }
-    var responseToReturn CreateProductCatalogOptions
-    if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
-        // Return zero-value options with decoding context for callers
-        return CreateProductCatalogOptions{}, fmt.Errorf("decode create catalog response failed: %w", err)
-    }
-    return responseToReturn, nil
+	apiRequest := cm.requester.NewApiRequest(strings.Join([]string{cm.businessAccountId, "product_catalogs"}, "/"), http.MethodPost)
+	response, err := apiRequest.Execute()
+	if err != nil {
+		// Return immediately on execution error; do not attempt to decode
+		return CreateProductCatalogOptions{}, fmt.Errorf("create catalog request failed: %w", err)
+	}
+	var responseToReturn CreateProductCatalogOptions
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		// Return zero-value options with decoding context for callers
+		return CreateProductCatalogOptions{}, fmt.Errorf("decode create catalog response failed: %w", err)
+	}
+	return responseToReturn, nil
 }
 
 // ListProductFeeds lists product feeds for a given catalog.
@@ -430,7 +430,8 @@ func (cm *CatalogManager) ListProductFeeds(catalogId string) ([]ProductFeed, err
 	return res.Data, nil
 }
 
-// CreateProductFeed creates a product feed for CSV ingestion. Meta format is assumed.
+// CreateProductFeed creates a product feed for CSV ingestion. We are using metas base accepted format, for more info check the meta docs
+// meta whatsapp catalogs: https://developers.facebook.com/docs/commerce-platform/catalog/fields
 // name: Human-readable feed name
 // fileFormat: e.g., "CSV"
 // fileName: default file name reference (optional)
@@ -444,7 +445,10 @@ func (cm *CatalogManager) CreateProductFeed(catalogId, name, fileFormat, fileNam
 	if fileName != "" {
 		body["file_name"] = fileName
 	}
-	payload, _ := json.Marshal(body)
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal create feed body: %w", err)
+	}
 	apiRequest.SetBody(string(payload))
 	response, err := apiRequest.Execute()
 	if err != nil {
@@ -509,7 +513,10 @@ func (cm *CatalogManager) UploadFeedCSVFromURL(feedId, csvURL string, updateOnly
 		"url":         csvURL,
 		"update_only": updateOnly,
 	}
-	payload, _ := json.Marshal(body)
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal hosted feed body: %w", err)
+	}
 	apiRequest.SetBody(string(payload))
 	response, err := apiRequest.Execute()
 	if err != nil {
@@ -636,7 +643,10 @@ func (cm *CatalogManager) CreateScheduledProductFeed(
 	if len(primaryFeedIds) > 0 {
 		body["primary_feed_ids"] = primaryFeedIds
 	}
-	payload, _ := json.Marshal(body)
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal scheduled feed body: %w", err)
+	}
 	apiRequest.SetBody(string(payload))
 	response, err := apiRequest.Execute()
 	if err != nil {
@@ -656,7 +666,7 @@ func (cm *CatalogManager) UpsertProductItem(catalogId string, fields map[string]
 	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodPost)
 	payload, err := json.Marshal(fields)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshall product fields: %W", err)
+		return nil, fmt.Errorf("failed to marshall product fields: %w", err)
 
 	}
 	apiRequest.SetBody(string(payload))
