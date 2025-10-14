@@ -430,37 +430,6 @@ func (cm *CatalogManager) ListProductFeeds(catalogId string) ([]ProductFeed, err
 	return res.Data, nil
 }
 
-// CreateProductFeed creates a product feed for CSV ingestion. We are using metas base accepted format, for more info check the meta docs
-// meta whatsapp catalogs: https://developers.facebook.com/docs/commerce-platform/catalog/fields
-// name: Human-readable feed name
-// fileFormat: e.g., "CSV"
-// fileName: default file name reference (optional)
-func (cm *CatalogManager) CreateProductFeed(catalogId, name, fileFormat, fileName string) (*ProductFeed, error) {
-	apiPath := strings.Join([]string{catalogId, "product_feeds"}, "/")
-	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodPost)
-	body := map[string]string{
-		"name":        name,
-		"file_format": fileFormat,
-	}
-	if fileName != "" {
-		body["file_name"] = fileName
-	}
-	payload, err := json.Marshal(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal create feed body: %w", err)
-	}
-	apiRequest.SetBody(string(payload))
-	response, err := apiRequest.Execute()
-	if err != nil {
-		return nil, err
-	}
-	var res ProductFeed
-	if err := json.Unmarshal([]byte(response), &res); err != nil {
-		return nil, err
-	}
-	return &res, nil
-}
-
 // UploadFeedCSV uploads a CSV file to a product feed using multipart/form-data.
 func (cm *CatalogManager) UploadFeedCSV(feedId string, file io.Reader, filename, mimeType string, updateOnly bool) (*FeedUploadResponse, error) {
 	// Prepare multipart body with update_only and a single file part
