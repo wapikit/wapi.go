@@ -183,6 +183,10 @@ func (manager *TemplateManager) FetchAll() (*WhatsAppBusinessTemplatesFetchRespo
 		})
 	}
 
+	// for now add a default 1000 limit on templates fetch
+	// ! TODO: add proper pagination
+	apiRequest.AddQueryParam("limit", "1000")
+
 	response, err := apiRequest.Execute()
 	if err != nil {
 		return nil, err
