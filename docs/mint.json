@@ -34,12 +34,12 @@
   "topbarLinks": [
     {
       "name": "Report Bugs",
-      "url": "https://github.com/wapikit/wapi.go/issues/new"
+      "url": "https://github.com/gTahidi/wapi.go/issues/new"
     }
   ],
   "topbarCtaButton": {
     "name": "Github",
-    "url": "https://github.com/wapikit/wapi.go"
+    "url": "https://github.com/gTahidi/wapi.go"
   },
   "tabs": [
     {
@@ -51,7 +51,7 @@
     {
       "name": "Star us on GitHub",
       "icon": "github",
-      "url": "https://github.com/wapikit/wapi.go"
+      "url": "https://github.com/gTahidi/wapi.go"
     },
     {
       "name": "Sign up for WapiKit",
@@ -122,7 +122,7 @@
   ],
   "footerSocials": {
     "x": "https://x.com/wapikit",
-    "github": "https://github.com/wapikit/wapi.go",
+    "github": "https://github.com/gTahidi/wapi.go",
     "linkedin": "https://www.linkedin.com/company/wapikit"
   }
 }

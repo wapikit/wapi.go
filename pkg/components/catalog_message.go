@@ -1,10 +1,10 @@
 package components
 
 import (
-	"encoding/json"
-	"fmt"
+    "encoding/json"
+    "fmt"
 
-	"github.com/wapikit/wapi.go/internal"
+    "github.com/gTahidi/wapi.go/internal"
 )
 
 type CatalogMessageActionParameter struct {
@@ -38,15 +38,21 @@ type CatalogMessage struct {
 }
 
 func NewCatalogMessage(name, thumbnailProductRetailerId string) (*CatalogMessage, error) {
-	return &CatalogMessage{
-		Type: InteractiveMessageTypeCatalog,
-		Action: CatalogMessageAction{
-			Name: name,
-			Parameters: CatalogMessageActionParameter{
-				ThumbnailProductRetailerId: thumbnailProductRetailerId,
-			},
-		},
-	}, nil
+    if thumbnailProductRetailerId == "" {
+        return nil, fmt.Errorf("thumbnail_product_retailer_id is required for catalog_message")
+    }
+    if name == "" {
+        name = "catalog_message"
+    }
+    return &CatalogMessage{
+        Type: InteractiveMessageTypeCatalog,
+        Action: CatalogMessageAction{
+            Name: name,
+            Parameters: CatalogMessageActionParameter{
+                ThumbnailProductRetailerId: thumbnailProductRetailerId,
+            },
+        },
+    }, nil
 }
 
 func (m *CatalogMessage) SetHeader(text string) {
@@ -75,9 +81,13 @@ type CatalogMessageApiPayload struct {
 
 // ToJson converts the product message to JSON with the given configurations.
 func (m *CatalogMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]byte, error) {
-	if err := internal.GetValidator().Struct(configs); err != nil {
-		return nil, fmt.Errorf("error validating configs: %v", err)
-	}
+    if err := internal.GetValidator().Struct(configs); err != nil {
+        return nil, fmt.Errorf("error validating configs: %v", err)
+    }
+    // Validate message structure and required fields as well
+    if err := internal.GetValidator().Struct(m); err != nil {
+        return nil, fmt.Errorf("error validating catalog message: %v", err)
+    }
 
 	jsonData := CatalogMessageApiPayload{
 		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeInteractive),
@@ -90,7 +100,7 @@ func (m *CatalogMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]by
 		}
 	}
 
-	jsonToReturn, err := json.Marshal(jsonData)
+    jsonToReturn, err := json.Marshal(jsonData)
 
 	if err != nil {
 		return nil, fmt.Errorf("error marshalling json: %v", err)

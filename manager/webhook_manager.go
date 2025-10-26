@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/wapikit/wapi.go/internal"
-	"github.com/wapikit/wapi.go/internal/request_client"
-	"github.com/wapikit/wapi.go/pkg/components"
-	"github.com/wapikit/wapi.go/pkg/events"
+	"github.com/gTahidi/wapi.go/internal"
+	"github.com/gTahidi/wapi.go/internal/request_client"
+	"github.com/gTahidi/wapi.go/pkg/components"
+	"github.com/gTahidi/wapi.go/pkg/events"
 )
 
 // WebhookManager represents a manager for handling webhooks.

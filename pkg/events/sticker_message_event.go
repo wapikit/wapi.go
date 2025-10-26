@@ -1,6 +1,6 @@
 package events
 
-import "github.com/wapikit/wapi.go/pkg/components"
+import "github.com/gTahidi/wapi.go/pkg/components"
 
 // StickerMessageEvent represents an event for a sticker message.
 type StickerMessageEvent struct {

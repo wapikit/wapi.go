@@ -1,4 +1,4 @@
-module github.com/wapikit/wapi.go
+module github.com/gTahidi/wapi.go
 
 go 1.21.3
 

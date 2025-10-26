@@ -1,6 +1,6 @@
 package events
 
-import "github.com/wapikit/wapi.go/pkg/components"
+import "github.com/gTahidi/wapi.go/pkg/components"
 
 // LocationMessageEvent represents an event that contains a location message.
 type LocationMessageEvent struct {

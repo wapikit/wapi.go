@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
+
 	"time"
 
-	"github.com/wapikit/wapi.go/internal"
-	"github.com/wapikit/wapi.go/internal/request_client"
-	"github.com/wapikit/wapi.go/manager"
+	"github.com/gTahidi/wapi.go/internal"
+	"github.com/gTahidi/wapi.go/internal/request_client"
+	"github.com/gTahidi/wapi.go/manager"
 )
 
 // BusinessClient is responsible for managing business account related operations.
@@ -151,15 +151,24 @@ func (client *BusinessClient) FetchAnalytics(options AccountAnalyticsOptions) (W
 	analyticsField.AddFilter("granularity", string(options.Granularity))
 
 	if len(options.PhoneNumbers) > 0 {
-		// get specific phone numbers
-		analyticsField.AddFilter("phone_numbers", strings.Join(options.PhoneNumbers, ","))
+		// Pass as JSON array literal per Graph API (e.g., ["123","456"])
+		if b, err := json.Marshal(options.PhoneNumbers); err == nil {
+			analyticsField.AddFilter("phone_numbers", string(b))
+		} else {
+			// Fallback to empty (all)
+			analyticsField.AddFilter("phone_numbers", "[]")
+		}
 	} else {
 		// get all phone numbers
 		analyticsField.AddFilter("phone_numbers", "[]")
 	}
 
 	if len(options.CountryCodes) > 0 {
-		analyticsField.AddFilter("country_codes", strings.Join(options.CountryCodes, ","))
+		if b, err := json.Marshal(options.CountryCodes); err == nil {
+			analyticsField.AddFilter("country_codes", string(b))
+		} else {
+			analyticsField.AddFilter("country_codes", "[]")
+		}
 	} else {
 		// get all country codes
 		analyticsField.AddFilter("country_codes", "[]")
@@ -222,22 +231,23 @@ type ConversationAnalyticsOptions struct {
 	Granularity  ConversationAnalyticsGranularityType `json:"granularity" validate:"required"`
 	PhoneNumbers []string                             `json:"phone_numbers,omitempty"`
 
-	ConversationCategory  []ConversationCategoryType  `json:"conversation_category,omitempty"`
-	ConversationTypes     []ConversationCategoryType  `json:"conversation_types,omitempty"`
-	ConversationDirection []ConversationDirection     `json:"conversation_direction,omitempty"`
+	// Use plural filter names to align with Graph API
+	ConversationCategory  []ConversationCategoryType  `json:"conversation_categories,omitempty"`
+	ConversationTypes     []ConversationType          `json:"conversation_types,omitempty"`
+	ConversationDirection []ConversationDirection     `json:"conversation_directions,omitempty"`
 	Dimensions            []ConversationDimensionType `json:"dimensions,omitempty"`
 }
 
 type WhatsAppConversationAnalyticsNode struct {
-	Start                 int    `json:"start" validate:"required"`
-	End                   int    `json:"end,omitempty" validate:"required"`
-	Conversation          int    `json:"conversation,omitempty"`
-	PhoneNumber           string `json:"phone_number,omitempty"`
-	Country               string `json:"country,omitempty"`
-	ConversationType      string `json:"conversation_type,omitempty"`
-	ConversationDirection string `json:"conversation_direction,omitempty"`
-	ConversationCategory  string `json:"conversation_category,omitempty"`
-	Cost                  int    `json:"cost,omitempty"`
+	Start                 int     `json:"start" validate:"required"`
+	End                   int     `json:"end,omitempty" validate:"required"`
+	Conversation          int     `json:"conversation,omitempty"`
+	PhoneNumber           string  `json:"phone_number,omitempty"`
+	Country               string  `json:"country,omitempty"`
+	ConversationType      string  `json:"conversation_type,omitempty"`
+	ConversationDirection string  `json:"conversation_direction,omitempty"`
+	ConversationCategory  string  `json:"conversation_category,omitempty"`
+	Cost                  float64 `json:"cost,omitempty"`
 }
 
 type WhatsAppConversationAnalyticsEdge struct {
@@ -263,8 +273,12 @@ func (client *BusinessClient) ConversationAnalytics(options ConversationAnalytic
 	analyticsField.AddFilter("granularity", string(options.Granularity))
 
 	if len(options.PhoneNumbers) > 0 {
-		// get specific phone numbers
-		analyticsField.AddFilter("phone_numbers", strings.Join(options.PhoneNumbers, ","))
+		// Pass as JSON array literal per Graph API
+		if b, err := json.Marshal(options.PhoneNumbers); err == nil {
+			analyticsField.AddFilter("phone_numbers", string(b))
+		} else {
+			analyticsField.AddFilter("phone_numbers", "[]")
+		}
 	} else {
 		// get all phone numbers
 		analyticsField.AddFilter("phone_numbers", "[]")
@@ -275,9 +289,13 @@ func (client *BusinessClient) ConversationAnalytics(options ConversationAnalytic
 		for i, category := range options.ConversationCategory {
 			categoryStrings[i] = string(category)
 		}
-		analyticsField.AddFilter("conversation_category", strings.Join(categoryStrings, ","))
+		if b, err := json.Marshal(categoryStrings); err == nil {
+			analyticsField.AddFilter("conversation_categories", string(b))
+		} else {
+			analyticsField.AddFilter("conversation_categories", "[]")
+		}
 	} else {
-		analyticsField.AddFilter("conversation_category", "[]") // Empty slice
+		analyticsField.AddFilter("conversation_categories", "[]") // Empty slice
 	}
 
 	if len(options.ConversationTypes) > 0 {
@@ -285,7 +303,11 @@ func (client *BusinessClient) ConversationAnalytics(options ConversationAnalytic
 		for i, ctype := range options.ConversationTypes {
 			typeStrings[i] = string(ctype)
 		}
-		analyticsField.AddFilter("conversation_types", strings.Join(typeStrings, ","))
+		if b, err := json.Marshal(typeStrings); err == nil {
+			analyticsField.AddFilter("conversation_types", string(b))
+		} else {
+			analyticsField.AddFilter("conversation_types", "[]")
+		}
 	} else {
 		analyticsField.AddFilter("conversation_types", "[]") // Empty slice
 	}
@@ -295,9 +317,13 @@ func (client *BusinessClient) ConversationAnalytics(options ConversationAnalytic
 		for i, direction := range options.ConversationDirection {
 			directionStrings[i] = string(direction)
 		}
-		analyticsField.AddFilter("conversation_direction", strings.Join(directionStrings, ","))
+		if b, err := json.Marshal(directionStrings); err == nil {
+			analyticsField.AddFilter("conversation_directions", string(b))
+		} else {
+			analyticsField.AddFilter("conversation_directions", "[]")
+		}
 	} else {
-		analyticsField.AddFilter("conversation_direction", "[]") // Empty slice
+		analyticsField.AddFilter("conversation_directions", "[]") // Empty slice
 	}
 
 	if len(options.Dimensions) > 0 {
@@ -305,9 +331,12 @@ func (client *BusinessClient) ConversationAnalytics(options ConversationAnalytic
 		for i, dim := range options.Dimensions {
 			dimensionsStrings[i] = string(dim)
 		}
-		analyticsField.AddFilter("dimensions", strings.Join(dimensionsStrings, ","))
+		if b, err := json.Marshal(dimensionsStrings); err == nil {
+			analyticsField.AddFilter("dimensions", string(b))
+		} else {
+			analyticsField.AddFilter("dimensions", "[]")
+		}
 	} else {
-		// get all country codes
 		analyticsField.AddFilter("dimensions", "[]")
 	}
 

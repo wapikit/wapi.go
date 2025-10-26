@@ -10,7 +10,7 @@ Visit the documentation of the SDK [here](https://golang.wapikit.com)
 
 ## Status
 
-Beta Version - This SDK is not stable right now. It is currently in beta version. Report issues [here](https://github.com/wapikit/wapi.go/issues).
+Beta Version - This SDK is not stable right now. It is currently in beta version. Report issues [here](https://github.com/gTahidi/wapi.go/issues).
 
 This SDK is part of a technical suite built to support the WhatsApp Business Application Development ecosystem. This SDK also has a Node.js version, you can check it out [here](https://wapikit/wapi.js/js).
 
@@ -40,7 +40,7 @@ This assumes you already have a working Go environment, if not please see
 `go get` _will always pull the latest tagged release from the master branch._
 
 ```sh
-go get github.com/wapikit/wapi.go
+go get github.com/gTahidi/wapi.go
 ```
 
 > Note: This SDK is not affiliated with the official WhatsApp Cloud API or does not act as any official solution provided the the Meta Inclusive Private Limited, this is just a open source SDK built for developers to support them in building whatsapp cloud api based chat bots easily.
@@ -54,13 +54,13 @@ You can check out the example WhatsApp bot here. [Example Chatbot](./example-cha
 Import the package into your project.
 This repository has three packages exported:
 
-- github.com/wapikit/wapi.go/components
-- github.com/wapikit/wapi.go/wapi/wapi
-- github.com/wapikit/wapi.go/wapi/business
-- github.com/wapikit/wapi.go/wapi/events
+- github.com/gTahidi/wapi.go/components
+- github.com/gTahidi/wapi.go/wapi/wapi
+- github.com/gTahidi/wapi.go/wapi/business
+- github.com/gTahidi/wapi.go/wapi/events
 
 ```go
-import "github.com/wapikit/wapi.go/wapi/wapi"
+import "github.com/gTahidi/wapi.go/wapi/wapi"
 ```
 
 Construct a new Wapi Client to access the managers in order to send messages and listen to incoming notifications.

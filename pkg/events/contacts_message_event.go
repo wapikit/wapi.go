@@ -1,6 +1,6 @@
 package events
 
-import "github.com/wapikit/wapi.go/pkg/components"
+import "github.com/gTahidi/wapi.go/pkg/components"
 
 // ContactsMessageEvent represents an event that occurs when a message with contacts is received.
 type ContactsMessageEvent struct {

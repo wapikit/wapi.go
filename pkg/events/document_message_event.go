@@ -1,6 +1,6 @@
 package events
 
-import "github.com/wapikit/wapi.go/pkg/components"
+import "github.com/gTahidi/wapi.go/pkg/components"
 
 // DocumentMessageEvent represents an event that occurs when a document message is received.
 type DocumentMessageEvent struct {

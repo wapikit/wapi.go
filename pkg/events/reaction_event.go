@@ -1,6 +1,6 @@
 package events
 
-import "github.com/wapikit/wapi.go/pkg/components"
+import "github.com/gTahidi/wapi.go/pkg/components"
 
 // ReactionMessageEvent represents an event that occurs when a reaction is added to a message.
 type ReactionMessageEvent struct {

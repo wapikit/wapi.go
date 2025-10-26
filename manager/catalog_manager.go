@@ -1,13 +1,18 @@
 package manager
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
+	"path/filepath"
 	"strings"
 
-	"github.com/wapikit/wapi.go/internal"
-	"github.com/wapikit/wapi.go/internal/request_client"
+	"github.com/gTahidi/wapi.go/internal"
+	"github.com/gTahidi/wapi.go/internal/request_client"
 )
 
 type CatalogManager struct {
@@ -61,6 +66,58 @@ type ProductFeed struct {
 	Id       string `json:"id"`
 	FileName string `json:"file_name"`
 	Name     string `json:"name"`
+}
+
+// FeedUpload represents a single upload attempt and its status/diagnostics.
+type FeedUpload struct {
+	Id           string   `json:"id,omitempty"`
+	Status       string   `json:"status,omitempty"`
+	Errors       []string `json:"errors,omitempty"`
+	ErrorMessage string   `json:"error_message,omitempty"`
+	CreatedTime  string   `json:"created_time,omitempty"`
+	LastUpdated  string   `json:"last_updated_time,omitempty"`
+}
+
+// FeedUploadResponse wraps basic responses for CSV upload operations.
+type FeedUploadResponse struct {
+	Id     string `json:"id,omitempty"`
+	Status string `json:"status,omitempty"`
+}
+
+// FeedUploadSession represents an upload session listing entry (start/end time).
+type FeedUploadSession struct {
+	Id        string `json:"id"`
+	StartTime string `json:"start_time,omitempty"`
+	EndTime   string `json:"end_time,omitempty"`
+}
+
+// FeedUploadErrorSample represents a row sample in an error entry.
+type FeedUploadErrorSample struct {
+	RowNumber  int    `json:"row_number"`
+	RetailerId string `json:"retailer_id"`
+	Id         string `json:"id"`
+}
+
+// FeedUploadError represents an individual ingestion error/warning.
+type FeedUploadError struct {
+	Id          string `json:"id"`
+	Summary     string `json:"summary"`
+	Description string `json:"description"`
+	Severity    string `json:"severity"` // fatal | warning
+	Samples     struct {
+		Data []FeedUploadErrorSample `json:"data"`
+	} `json:"samples"`
+}
+
+// FeedUploadErrorReport represents the generated error report metadata.
+type FeedUploadErrorReport struct {
+	ReportStatus string `json:"report_status,omitempty"`
+	FileHandle   string `json:"file_handle,omitempty"`
+}
+
+type FeedUploadErrorReportResponse struct {
+	ErrorReport FeedUploadErrorReport `json:"error_report,omitempty"`
+	Id          string                `json:"id,omitempty"`
 }
 
 type ProductError struct {
@@ -344,7 +401,301 @@ type CreateProductCatalogOptions struct {
 func (cm *CatalogManager) CreateNewProductCatalog() (CreateProductCatalogOptions, error) {
 	apiRequest := cm.requester.NewApiRequest(strings.Join([]string{cm.businessAccountId, "product_catalogs"}, "/"), http.MethodPost)
 	response, err := apiRequest.Execute()
+	if err != nil {
+		// Return immediately on execution error; do not attempt to decode
+		return CreateProductCatalogOptions{}, fmt.Errorf("create catalog request failed: %w", err)
+	}
 	var responseToReturn CreateProductCatalogOptions
-	json.Unmarshal([]byte(response), &responseToReturn)
-	return responseToReturn, err
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		// Return zero-value options with decoding context for callers
+		return CreateProductCatalogOptions{}, fmt.Errorf("decode create catalog response failed: %w", err)
+	}
+	return responseToReturn, nil
+}
+
+// ListProductFeeds lists product feeds for a given catalog.
+func (cm *CatalogManager) ListProductFeeds(catalogId string) ([]ProductFeed, error) {
+	apiPath := strings.Join([]string{catalogId, "product_feeds"}, "/")
+	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodGet)
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+	var res struct {
+		Data []ProductFeed `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(response), &res); err != nil {
+		return nil, err
+	}
+	return res.Data, nil
+}
+
+// UploadFeedCSV uploads a CSV file to a product feed using multipart/form-data.
+func (cm *CatalogManager) UploadFeedCSV(feedId string, file io.Reader, filename, mimeType string, updateOnly bool) (*FeedUploadResponse, error) {
+	// Prepare multipart body with update_only and a single file part
+	bodyBuf := new(bytes.Buffer)
+	writer := multipart.NewWriter(bodyBuf)
+	// update_only as string field
+	if err := writer.WriteField("update_only", func() string {
+		if updateOnly {
+			return "true"
+		}
+		return "false"
+	}()); err != nil {
+		return nil, fmt.Errorf("failed to write update_only: %w", err)
+	}
+	// file part
+	partHeader := make(textproto.MIMEHeader)
+	partHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="file"; filename="%s"`, filepath.Base(filename)))
+	partHeader.Set("Content-Type", mimeType)
+	filePart, err := writer.CreatePart(partHeader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create multipart part: %w", err)
+	}
+	if _, err := io.Copy(filePart, file); err != nil {
+		return nil, fmt.Errorf("failed to copy csv into part: %w", err)
+	}
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close writer: %w", err)
+	}
+
+	apiPath := strings.Join([]string{feedId, "uploads"}, "/")
+	contentType := writer.FormDataContentType()
+	responseBody, err := cm.requester.RequestMultipart(http.MethodPost, apiPath, bodyBuf, contentType)
+	if err != nil {
+		return nil, fmt.Errorf("error uploading CSV: %w", err)
+	}
+
+	var res FeedUploadResponse
+	if err := json.Unmarshal([]byte(responseBody), &res); err != nil {
+		return nil, fmt.Errorf("failed to parse upload response: %w", err)
+	}
+	return &res, nil
+}
+
+// UploadFeedCSVFromURL triggers a feed ingestion from a hosted CSV URL.
+func (cm *CatalogManager) UploadFeedCSVFromURL(feedId, csvURL string, updateOnly bool) (*FeedUploadResponse, error) {
+	apiPath := strings.Join([]string{feedId, "uploads"}, "/")
+	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodPost)
+	body := map[string]interface{}{
+		// Meta docs show using 'url' for hosted feed uploads
+		"url":         csvURL,
+		"update_only": updateOnly,
+	}
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal hosted feed body: %w", err)
+	}
+	apiRequest.SetBody(string(payload))
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+	var res FeedUploadResponse
+	if err := json.Unmarshal([]byte(response), &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// ListFeedUploads lists uploads for a product feed.
+func (cm *CatalogManager) ListFeedUploads(feedId string) ([]FeedUploadSession, error) {
+	apiPath := strings.Join([]string{feedId, "uploads"}, "/")
+	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodGet)
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+	var res struct {
+		Data []FeedUploadSession `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(response), &res); err != nil {
+		return nil, err
+	}
+	return res.Data, nil
+}
+
+// GetFeedUploadStatus fetches a single upload’s status/diagnostics.
+func (cm *CatalogManager) GetFeedUploadStatus(uploadId string) (*FeedUploadErrorReportResponse, error) {
+	apiRequest := cm.requester.NewApiRequest(uploadId, http.MethodGet)
+	// include error_report field for convenience
+	apiRequest.AddField(request_client.ApiRequestQueryParamField{Name: "error_report", Filters: map[string]string{}})
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+	var res FeedUploadErrorReportResponse
+	if err := json.Unmarshal([]byte(response), &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// GetFeedUploadErrors fetches a sampling of errors/warnings for an upload session.
+func (cm *CatalogManager) GetFeedUploadErrors(uploadId string) ([]FeedUploadError, error) {
+	apiPath := strings.Join([]string{uploadId, "errors"}, "/")
+	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodGet)
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+	var res struct {
+		Data []FeedUploadError `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(response), &res); err != nil {
+		return nil, err
+	}
+	return res.Data, nil
+}
+
+// RequestFeedUploadErrorReport triggers generation of a full error report.
+func (cm *CatalogManager) RequestFeedUploadErrorReport(uploadId string) (bool, error) {
+	apiPath := strings.Join([]string{uploadId, "error_report"}, "/")
+	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodPost)
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return false, err
+	}
+	var res struct {
+		Success bool `json:"success"`
+	}
+	if err := json.Unmarshal([]byte(response), &res); err != nil {
+		return false, err
+	}
+	return res.Success, nil
+}
+
+// GetFeedUploadErrorReport fetches the error_report field of an upload session.
+func (cm *CatalogManager) GetFeedUploadErrorReport(uploadId string) (*FeedUploadErrorReportResponse, error) {
+	apiRequest := cm.requester.NewApiRequest(uploadId, http.MethodGet)
+	apiRequest.AddField(request_client.ApiRequestQueryParamField{Name: "error_report", Filters: map[string]string{}})
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+	var res FeedUploadErrorReportResponse
+	if err := json.Unmarshal([]byte(response), &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// ProductFeedSchedule represents schedule config for Google Sheets or hosted feeds.
+type ProductFeedSchedule struct {
+	Url      string `json:"url"`
+	Interval string `json:"interval"` // e.g., HOURLY, DAILY; Meta specific values
+	Hour     *int   `json:"hour,omitempty"`
+}
+
+// CreateScheduledProductFeed creates a scheduled feed that fetches from a URL (Google Sheets supported via shareable link).
+// When updateOnly is true, the feed behaves in update-only mode.
+// ingestionSourceType: "PRIMARY_FEED" or "SUPPLEMENTARY_FEED" (optional)
+// primaryFeedIds required for Supplementary feeds.
+func (cm *CatalogManager) CreateScheduledProductFeed(
+	catalogId string,
+	name string,
+	schedule ProductFeedSchedule,
+	updateOnly bool,
+	ingestionSourceType string,
+	primaryFeedIds []string,
+) (*ProductFeed, error) {
+	apiPath := strings.Join([]string{catalogId, "product_feeds"}, "/")
+	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodPost)
+	body := map[string]interface{}{
+		"name":        name,
+		"schedule":    schedule,
+		"update_only": updateOnly,
+	}
+	if ingestionSourceType != "" {
+		body["ingestion_source_type"] = ingestionSourceType
+	}
+	if len(primaryFeedIds) > 0 {
+		body["primary_feed_ids"] = primaryFeedIds
+	}
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal scheduled feed body: %w", err)
+	}
+	apiRequest.SetBody(string(payload))
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+	var res ProductFeed
+	if err := json.Unmarshal([]byte(response), &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// CreateProductFeed creates a product feed without a schedule (for immediate CSV uploads).
+// Use UploadFeedCSV or UploadFeedCSVFromURL afterwards to ingest data.
+func (cm *CatalogManager) CreateProductFeed(catalogId string, name string) (*ProductFeed, error) {
+    apiPath := strings.Join([]string{catalogId, "product_feeds"}, "/")
+    apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodPost)
+    body := map[string]interface{}{
+        "name": name,
+    }
+    payload, err := json.Marshal(body)
+    if err != nil {
+        return nil, fmt.Errorf("failed to marshal feed body: %w", err)
+    }
+    apiRequest.SetBody(string(payload))
+    response, err := apiRequest.Execute()
+    if err != nil {
+        return nil, err
+    }
+    var res ProductFeed
+    if err := json.Unmarshal([]byte(response), &res); err != nil {
+        return nil, err
+    }
+    return &res, nil
+}
+
+// UpsertProductItem updates or creates a product item using Meta’s format.
+// fields should include at least retailer_id, name, price, currency, image_url, availability, etc.
+func (cm *CatalogManager) UpsertProductItem(catalogId string, fields map[string]interface{}) (*ProductItem, error) {
+	apiPath := strings.Join([]string{catalogId, "products"}, "/")
+	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodPost)
+	payload, err := json.Marshal(fields)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshall product fields: %w", err)
+
+	}
+	apiRequest.SetBody(string(payload))
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+	var res ProductItem
+	if err := json.Unmarshal([]byte(response), &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+// BatchUpsertProductItems performs multiple upserts sequentially.
+// Returns the successfully upserted items and a map of index->error for failures.
+func (cm *CatalogManager) BatchUpsertProductItems(catalogId string, items []map[string]interface{}) ([]ProductItem, map[int]error) {
+	var results []ProductItem
+	errs := make(map[int]error)
+	for i, fields := range items {
+		item, err := cm.UpsertProductItem(catalogId, fields)
+		if err != nil {
+			errs[i] = err
+			continue
+		}
+		results = append(results, *item)
+	}
+	return results, errs
+}
+
+// UpdateProductImages updates image_url and additional_image_urls for a retailer_id.
+func (cm *CatalogManager) UpdateProductImages(catalogId, retailerId, imageURL string, additionalImageURLs []string) (*ProductItem, error) {
+	fields := map[string]interface{}{
+		"retailer_id":           retailerId,
+		"image_url":             imageURL,
+		"additional_image_urls": additionalImageURLs,
+	}
+	return cm.UpsertProductItem(catalogId, fields)
 }
