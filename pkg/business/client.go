@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wapikit/wapi.go/internal"
 	"github.com/wapikit/wapi.go/internal/request_client"
 	"github.com/wapikit/wapi.go/manager"
 )
@@ -244,7 +243,7 @@ type WhatsAppConversationAnalyticsEdge struct {
 	Data []struct {
 		DataPoints []WhatsAppConversationAnalyticsNode `json:"data_points,omitempty"`
 	} `json:"data,omitempty"`
-	Paging internal.WhatsAppBusinessApiPaginationMeta `json:"paging,omitempty"`
+	Paging manager.PaginationDetails `json:"paging,omitempty"`
 }
 
 type WhatsAppConversationAnalyticsResponse struct {

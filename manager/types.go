@@ -484,3 +484,49 @@ const (
 	MessageStatusFailed      MessageStatusEnum = "failed"
 	MessageStatusSent        MessageStatusEnum = "sent"
 )
+
+// PaginationCursors represents the before/after cursors used in cursor-based pagination
+type PaginationCursors struct {
+	Before string `json:"before,omitempty"`
+	After  string `json:"after,omitempty"`
+}
+
+// PaginationDetails contains the pagination metadata returned by WhatsApp API
+type PaginationDetails struct {
+	Cursors  PaginationCursors `json:"cursors,omitempty"`
+	Next     string            `json:"next,omitempty"`
+	Previous string            `json:"previous,omitempty"`
+}
+
+// PaginationInput represents the pagination parameters that can be passed to API calls
+type PaginationInput struct {
+	Limit  int    `json:"limit,omitempty"`  // Number of results per page
+	After  string `json:"after,omitempty"`  // Cursor for next page
+	Before string `json:"before,omitempty"` // Cursor for previous page
+}
+
+// PaginatedResponse is a generic wrapper for paginated responses
+type PaginatedResponse[T any] struct {
+	Data   []T               `json:"data"`
+	Paging PaginationDetails `json:"paging,omitempty"`
+}
+
+// HasNextPage checks if there's a next page available
+func (pd *PaginationDetails) HasNextPage() bool {
+	return pd.Cursors.After != "" || pd.Next != ""
+}
+
+// HasPreviousPage checks if there's a previous page available
+func (pd *PaginationDetails) HasPreviousPage() bool {
+	return pd.Cursors.Before != "" || pd.Previous != ""
+}
+
+// GetNextCursor returns the cursor for the next page
+func (pd *PaginationDetails) GetNextCursor() string {
+	return pd.Cursors.After
+}
+
+// GetPreviousCursor returns the cursor for the previous page
+func (pd *PaginationDetails) GetPreviousCursor() string {
+	return pd.Cursors.Before
+}

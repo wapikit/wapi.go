@@ -3,9 +3,9 @@ package manager
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/wapikit/wapi.go/internal"
 	"github.com/wapikit/wapi.go/internal/request_client"
 )
 
@@ -69,8 +69,8 @@ func NewTemplateManager(config *TemplateManagerConfig) *TemplateManager {
 
 // WhatsAppBusinessTemplatesFetchResponseEdge represents the response structure for fetching templates.
 type WhatsAppBusinessTemplatesFetchResponseEdge struct {
-	Data   []WhatsAppBusinessMessageTemplateNode      `json:"data,omitempty"`
-	Paging internal.WhatsAppBusinessApiPaginationMeta `json:"paging,omitempty"`
+	Data   []WhatsAppBusinessMessageTemplateNode `json:"data,omitempty"`
+	Paging PaginationDetails                     `json:"paging,omitempty"`
 }
 
 // TemplateMessageComponentCard represents a card component in a message template.
@@ -163,61 +163,7 @@ type WhatsAppBusinessHSMWhatsAppHSMComponent struct {
 type TemplateMessageQualityScore struct {
 	Date    int      `json:"date,omitempty"`
 	Reasons []string `json:"reasons,omitempty"`
-	Score   int      `json:"score,omitempty"`
-}
-
-// FetchAll fetches all WhatsApp Business message templates.
-func (manager *TemplateManager) FetchAll() (*WhatsAppBusinessTemplatesFetchResponseEdge, error) {
-	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{manager.businessAccountId, "/", "message_templates"}, ""), http.MethodGet)
-
-	fields := []string{
-		"id", "category", "components", "correct_category", "cta_url_link_tracking_opted_out",
-		"language", "library_template_name", "message_send_ttl_seconds", "name", "previous_category",
-		"quality_score", "rejected_reason", "status", "sub_category",
-	}
-
-	for _, field := range fields {
-		apiRequest.AddField(request_client.ApiRequestQueryParamField{
-			Name:    field,
-			Filters: map[string]string{},
-		})
-	}
-
-	// for now add a default 1000 limit on templates fetch
-	// ! TODO: add proper pagination
-	apiRequest.AddQueryParam("limit", "1000")
-
-	response, err := apiRequest.Execute()
-	if err != nil {
-		return nil, err
-	}
-
-	var responseToReturn WhatsAppBusinessTemplatesFetchResponseEdge
-	json.Unmarshal([]byte(response), &responseToReturn)
-	return &responseToReturn, nil
-}
-
-// Fetch fetches a single WhatsApp Business message template by its ID.
-func (manager *TemplateManager) Fetch(Id string) (*WhatsAppBusinessMessageTemplateNode, error) {
-	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{Id}, ""), http.MethodGet)
-	fields := []string{
-		"id", "category", "components", "correct_category", "cta_url_link_tracking_opted_out",
-		"language", "library_template_name", "message_send_ttl_seconds", "name", "previous_category",
-		"quality_score", "rejected_reason", "status", "sub_category",
-	}
-	for _, field := range fields {
-		apiRequest.AddField(request_client.ApiRequestQueryParamField{
-			Name:    field,
-			Filters: map[string]string{},
-		})
-	}
-	response, err := apiRequest.Execute()
-	if err != nil {
-		return nil, err
-	}
-	var responseToReturn WhatsAppBusinessMessageTemplateNode
-	json.Unmarshal([]byte(response), &responseToReturn)
-	return &responseToReturn, nil
+	Score   string   `json:"score,omitempty"`
 }
 
 // WhatsappMessageTemplateButtonCreateRequestBody represents the request body for creating a button.
@@ -337,8 +283,8 @@ type TemplateMessagePreviewNode struct {
 
 // TemplateMessagePreviewEdge represents the preview response.
 type TemplateMessagePreviewEdge struct {
-	Data   []TemplateMessagePreviewNode               `json:"data,omitempty"`
-	Paging internal.WhatsAppBusinessApiPaginationMeta `json:"paging,omitempty"`
+	Data   []TemplateMessagePreviewNode `json:"data,omitempty"`
+	Paging PaginationDetails            `json:"paging,omitempty"`
 }
 
 // TemplateMigrationResponse represents the migration response.
@@ -358,5 +304,151 @@ func (manager *TemplateManager) MigrateFromOtherBusinessAccount(sourcePageNumber
 	}
 	var responseToReturn TemplateMigrationResponse
 	json.Unmarshal([]byte(response), &responseToReturn)
+	return &responseToReturn, nil
+}
+
+// FetchAllWithPagination fetches WhatsApp Business message templates with pagination support
+func (manager *TemplateManager) FetchAllWithPagination(paginationInput ...*PaginationInput) (*PaginatedResponse[WhatsAppBusinessMessageTemplateNode], error) {
+	apiRequest := manager.requester.NewApiRequest(
+		strings.Join([]string{manager.businessAccountId, "/", "message_templates"}, ""),
+		http.MethodGet,
+	)
+
+	fields := []string{
+		"id", "category", "components", "correct_category", "cta_url_link_tracking_opted_out",
+		"language", "library_template_name", "message_send_ttl_seconds", "name", "previous_category",
+		"quality_score", "rejected_reason", "status", "sub_category",
+	}
+
+	for _, field := range fields {
+		apiRequest.AddField(request_client.ApiRequestQueryParamField{
+			Name:    field,
+			Filters: map[string]string{},
+		})
+	}
+
+	// Apply pagination parameters
+	if len(paginationInput) > 0 && paginationInput[0] != nil {
+		input := paginationInput[0]
+		if input.Limit > 0 {
+			apiRequest.AddQueryParam("limit", strconv.Itoa(input.Limit))
+		}
+		if input.After != "" {
+			apiRequest.AddQueryParam("after", input.After)
+		}
+		if input.Before != "" {
+			apiRequest.AddQueryParam("before", input.Before)
+		}
+	} else {
+		// Default limit
+		apiRequest.AddQueryParam("limit", "100")
+	}
+
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	var result PaginatedResponse[WhatsAppBusinessMessageTemplateNode]
+	if err := json.Unmarshal([]byte(response), &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// Deprecated: Use FetchAllWithPagination for better control
+func (manager *TemplateManager) FetchAll() (*WhatsAppBusinessTemplatesFetchResponseEdge, error) {
+	apiRequest := manager.requester.NewApiRequest(
+		strings.Join([]string{manager.businessAccountId, "/", "message_templates"}, ""),
+		http.MethodGet,
+	)
+
+	fields := []string{
+		"id", "category", "components", "correct_category", "cta_url_link_tracking_opted_out",
+		"language", "library_template_name", "message_send_ttl_seconds", "name", "previous_category",
+		"quality_score", "rejected_reason", "status", "sub_category",
+	}
+
+	for _, field := range fields {
+		apiRequest.AddField(request_client.ApiRequestQueryParamField{
+			Name:    field,
+			Filters: map[string]string{},
+		})
+	}
+
+	// High limit for backwards compatibility
+	apiRequest.AddQueryParam("limit", "1000")
+
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	var responseToReturn WhatsAppBusinessTemplatesFetchResponseEdge
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, err
+	}
+
+	return &responseToReturn, nil
+}
+
+// GetAllTemplates fetches all templates across all pages
+// This is a helper method that handles pagination automatically
+func (manager *TemplateManager) GetAllTemplates(limit ...int) ([]WhatsAppBusinessMessageTemplateNode, error) {
+	pageLimit := 100
+	if len(limit) > 0 && limit[0] > 0 {
+		pageLimit = limit[0]
+	}
+
+	var allTemplates []WhatsAppBusinessMessageTemplateNode
+	var nextCursor string
+
+	for {
+		input := &PaginationInput{
+			Limit: pageLimit,
+			After: nextCursor,
+		}
+
+		result, err := manager.FetchAllWithPagination(input)
+		if err != nil {
+			return nil, err
+		}
+
+		allTemplates = append(allTemplates, result.Data...)
+
+		// Check if there's a next page
+		if !result.Paging.HasNextPage() {
+			break
+		}
+
+		nextCursor = result.Paging.GetNextCursor()
+	}
+
+	return allTemplates, nil
+}
+
+// Fetch fetches a single WhatsApp Business message template by its ID (no changes needed)
+func (manager *TemplateManager) Fetch(Id string) (*WhatsAppBusinessMessageTemplateNode, error) {
+	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{Id}, ""), http.MethodGet)
+	fields := []string{
+		"id", "category", "components", "correct_category", "cta_url_link_tracking_opted_out",
+		"language", "library_template_name", "message_send_ttl_seconds", "name", "previous_category",
+		"quality_score", "rejected_reason", "status", "sub_category",
+	}
+	for _, field := range fields {
+		apiRequest.AddField(request_client.ApiRequestQueryParamField{
+			Name:    field,
+			Filters: map[string]string{},
+		})
+	}
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+	var responseToReturn WhatsAppBusinessMessageTemplateNode
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, err
+	}
 	return &responseToReturn, nil
 }

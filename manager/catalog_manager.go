@@ -2,11 +2,10 @@ package manager
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
-	"github.com/wapikit/wapi.go/internal"
 	"github.com/wapikit/wapi.go/internal/request_client"
 )
 
@@ -71,83 +70,82 @@ type ProductError struct {
 }
 
 // ProductItem represents a product in a catalog.
-
 type ProductItem struct {
-	Id                                                    string         `json:"id"`
-	AdditionalImageCdnUrls                                []ImageCdnUrl  `json:"additional_image_cdn_urls,omitempty"`
-	AdditionalImageUrls                                   []string       `json:"additional_image_urls,omitempty"`
-	AdditionalVariantAttributes                           []KeyValue     `json:"additional_variant_attributes,omitempty"`
-	AgeGroup                                              string         `json:"age_group,omitempty"`
-	Applinks                                              *Applinks      `json:"applinks,omitempty"`
-	Availability                                          string         `json:"availability,omitempty"`
-	Brand                                                 string         `json:"brand,omitempty"`
-	CapabilityToReviewStatus                              []KeyValue     `json:"capability_to_review_status,omitempty"`
-	Category                                              string         `json:"category,omitempty"`
-	CategorySpecificFields                                interface{}    `json:"category_specific_fields,omitempty"`
-	Color                                                 string         `json:"color,omitempty"`
-	CommerceInsights                                      string         `json:"commerce_insights,omitempty"`
-	Condition                                             string         `json:"condition,omitempty"`
-	Currency                                              string         `json:"currency,omitempty"`
-	CustomData                                            []KeyValue     `json:"custom_data,omitempty"`
-	CustomLabel0                                          string         `json:"custom_label_0,omitempty"`
-	CustomLabel1                                          string         `json:"custom_label_1,omitempty"`
-	CustomLabel2                                          string         `json:"custom_label_2,omitempty"`
-	CustomLabel3                                          string         `json:"custom_label_3,omitempty"`
-	CustomLabel4                                          string         `json:"custom_label_4,omitempty"`
-	CustomNumber0                                         string         `json:"custom_number_0,omitempty"`
-	CustomNumber1                                         string         `json:"custom_number_1,omitempty"`
-	CustomNumber2                                         string         `json:"custom_number_2,omitempty"`
-	CustomNumber3                                         string         `json:"custom_number_3,omitempty"`
-	CustomNumber4                                         string         `json:"custom_number_4,omitempty"`
-	Description                                           string         `json:"description,omitempty"`
-	Errors                                                []ProductError `json:"errors,omitempty"`
-	ExpirationDate                                        string         `json:"expiration_date,omitempty"`
-	FbProductCategory                                     string         `json:"fb_product_category,omitempty"`
-	Gender                                                string         `json:"gender,omitempty"`
-	Gtin                                                  string         `json:"gtin,omitempty"`
-	ImageCdnUrls                                          []ImageCdnUrl  `json:"image_cdn_urls,omitempty"`
-	ImageFetchStatus                                      string         `json:"image_fetch_status,omitempty"`
-	ImageUrl                                              string         `json:"image_url,omitempty"`
-	Images                                                []string       `json:"images,omitempty"`
-	ImporterAddress                                       string         `json:"importer_address,omitempty"`
-	ImporterName                                          string         `json:"importer_name,omitempty"`
-	InvalidationErrors                                    []string       `json:"invalidation_errors,omitempty"`
-	Inventory                                             int            `json:"inventory,omitempty"`
-	ManufacturerInfo                                      string         `json:"manufacturer_info,omitempty"`
-	ManufacturerPartNumber                                string         `json:"manufacturer_part_number,omitempty"`
-	MarkedForProductLaunch                                string         `json:"marked_for_product_launch,omitempty"`
-	Material                                              string         `json:"material,omitempty"`
-	MobileLink                                            string         `json:"mobile_link,omitempty"`
-	Name                                                  string         `json:"name,omitempty"`
-	OrderingIndex                                         int            `json:"ordering_index,omitempty"`
-	OriginCountry                                         string         `json:"origin_country,omitempty"`
-	ParentProductID                                       string         `json:"parent_product_id,omitempty"`
-	Pattern                                               string         `json:"pattern,omitempty"`
-	PostConversionSignalBasedEnforcementAppealEligibility bool           `json:"post_conversion_signal_based_enforcement_appeal_eligibility,omitempty"`
-	Price                                                 string         `json:"price,omitempty"`
-	ProductFeed                                           *ProductFeed   `json:"product_feed,omitempty"`
-	ProductGroup                                          *ProductGroup  `json:"product_group,omitempty"`
-	ProductLocalInfo                                      string         `json:"product_local_info,omitempty"`
-	ProductType                                           string         `json:"product_type,omitempty"`
-	QuantityToSellOnFacebook                              int            `json:"quantity_to_sell_on_facebook,omitempty"`
-	RetailerId                                            string         `json:"retailer_id,omitempty"`
-	RetailerProductGroupID                                string         `json:"retailer_product_group_id,omitempty"`
-	ReviewRejectionReasons                                []string       `json:"review_rejection_reasons,omitempty"`
-	ReviewStatus                                          string         `json:"review_status,omitempty"`
-	SalePrice                                             string         `json:"sale_price,omitempty"`
-	SalePriceEndDate                                      string         `json:"sale_price_end_date,omitempty"`
-	SalePriceStartDate                                    string         `json:"sale_price_start_date,omitempty"`
-	ShippingWeightUnit                                    string         `json:"shipping_weight_unit,omitempty"`
-	ShippingWeightValue                                   float64        `json:"shipping_weight_value,omitempty"`
-	ShortDescription                                      string         `json:"short_description,omitempty"`
-	Size                                                  string         `json:"size,omitempty"`
-	StartDate                                             string         `json:"start_date,omitempty"`
-	Tags                                                  []string       `json:"tags,omitempty"`
-	Url                                                   string         `json:"url,omitempty"`
-	VendorId                                              string         `json:"vendor_id,omitempty"`
-	VideoFetchStatus                                      string         `json:"video_fetch_status,omitempty"`
-	Visibility                                            string         `json:"visibility,omitempty"`
-	WaComplianceCategory                                  string         `json:"wa_compliance_category,omitempty"`
+	Id                                                    string          `json:"id"`
+	AdditionalImageCdnUrls                                [][]ImageCdnUrl `json:"additional_image_cdn_urls,omitempty"`
+	AdditionalImageUrls                                   []string        `json:"additional_image_urls,omitempty"`
+	AdditionalVariantAttributes                           []KeyValue      `json:"additional_variant_attributes,omitempty"`
+	AgeGroup                                              string          `json:"age_group,omitempty"`
+	Applinks                                              *Applinks       `json:"applinks,omitempty"`
+	Availability                                          string          `json:"availability,omitempty"`
+	Brand                                                 string          `json:"brand,omitempty"`
+	CapabilityToReviewStatus                              []KeyValue      `json:"capability_to_review_status,omitempty"`
+	Category                                              string          `json:"category,omitempty"`
+	CategorySpecificFields                                interface{}     `json:"category_specific_fields,omitempty"`
+	Color                                                 string          `json:"color,omitempty"`
+	CommerceInsights                                      string          `json:"commerce_insights,omitempty"`
+	Condition                                             string          `json:"condition,omitempty"`
+	Currency                                              string          `json:"currency,omitempty"`
+	CustomData                                            []KeyValue      `json:"custom_data,omitempty"`
+	CustomLabel0                                          string          `json:"custom_label_0,omitempty"`
+	CustomLabel1                                          string          `json:"custom_label_1,omitempty"`
+	CustomLabel2                                          string          `json:"custom_label_2,omitempty"`
+	CustomLabel3                                          string          `json:"custom_label_3,omitempty"`
+	CustomLabel4                                          string          `json:"custom_label_4,omitempty"`
+	CustomNumber0                                         string          `json:"custom_number_0,omitempty"`
+	CustomNumber1                                         string          `json:"custom_number_1,omitempty"`
+	CustomNumber2                                         string          `json:"custom_number_2,omitempty"`
+	CustomNumber3                                         string          `json:"custom_number_3,omitempty"`
+	CustomNumber4                                         string          `json:"custom_number_4,omitempty"`
+	Description                                           string          `json:"description,omitempty"`
+	Errors                                                []ProductError  `json:"errors,omitempty"`
+	ExpirationDate                                        string          `json:"expiration_date,omitempty"`
+	FbProductCategory                                     string          `json:"fb_product_category,omitempty"`
+	Gender                                                string          `json:"gender,omitempty"`
+	Gtin                                                  string          `json:"gtin,omitempty"`
+	ImageCdnUrls                                          []ImageCdnUrl   `json:"image_cdn_urls,omitempty"`
+	ImageFetchStatus                                      string          `json:"image_fetch_status,omitempty"`
+	ImageUrl                                              string          `json:"image_url,omitempty"`
+	Images                                                []string        `json:"images,omitempty"`
+	ImporterAddress                                       string          `json:"importer_address,omitempty"`
+	ImporterName                                          string          `json:"importer_name,omitempty"`
+	InvalidationErrors                                    []string        `json:"invalidation_errors,omitempty"`
+	Inventory                                             int             `json:"inventory,omitempty"`
+	ManufacturerInfo                                      string          `json:"manufacturer_info,omitempty"`
+	ManufacturerPartNumber                                string          `json:"manufacturer_part_number,omitempty"`
+	MarkedForProductLaunch                                string          `json:"marked_for_product_launch,omitempty"`
+	Material                                              string          `json:"material,omitempty"`
+	MobileLink                                            string          `json:"mobile_link,omitempty"`
+	Name                                                  string          `json:"name,omitempty"`
+	OrderingIndex                                         int             `json:"ordering_index,omitempty"`
+	OriginCountry                                         string          `json:"origin_country,omitempty"`
+	ParentProductID                                       string          `json:"parent_product_id,omitempty"`
+	Pattern                                               string          `json:"pattern,omitempty"`
+	PostConversionSignalBasedEnforcementAppealEligibility bool            `json:"post_conversion_signal_based_enforcement_appeal_eligibility,omitempty"`
+	Price                                                 string          `json:"price,omitempty"`
+	ProductFeed                                           *ProductFeed    `json:"product_feed,omitempty"`
+	ProductGroup                                          *ProductGroup   `json:"product_group,omitempty"`
+	ProductLocalInfo                                      string          `json:"product_local_info,omitempty"`
+	ProductType                                           string          `json:"product_type,omitempty"`
+	QuantityToSellOnFacebook                              int             `json:"quantity_to_sell_on_facebook,omitempty"`
+	RetailerId                                            string          `json:"retailer_id,omitempty"`
+	RetailerProductGroupID                                string          `json:"retailer_product_group_id,omitempty"`
+	ReviewRejectionReasons                                []string        `json:"review_rejection_reasons,omitempty"`
+	ReviewStatus                                          string          `json:"review_status,omitempty"`
+	SalePrice                                             string          `json:"sale_price,omitempty"`
+	SalePriceEndDate                                      string          `json:"sale_price_end_date,omitempty"`
+	SalePriceStartDate                                    string          `json:"sale_price_start_date,omitempty"`
+	ShippingWeightUnit                                    string          `json:"shipping_weight_unit,omitempty"`
+	ShippingWeightValue                                   float64         `json:"shipping_weight_value,omitempty"`
+	ShortDescription                                      string          `json:"short_description,omitempty"`
+	Size                                                  string          `json:"size,omitempty"`
+	StartDate                                             string          `json:"start_date,omitempty"`
+	Tags                                                  []string        `json:"tags,omitempty"`
+	Url                                                   string          `json:"url,omitempty"`
+	VendorId                                              string          `json:"vendor_id,omitempty"`
+	VideoFetchStatus                                      string          `json:"video_fetch_status,omitempty"`
+	Visibility                                            string          `json:"visibility,omitempty"`
+	WaComplianceCategory                                  string          `json:"wa_compliance_category,omitempty"`
 }
 
 // ProductSetMetadata represents metadata for a product set.
@@ -204,10 +202,64 @@ type Catalog struct {
 }
 
 type CatalogFetchResponseEdge struct {
-	Data   []Catalog                                  `json:"data"`
-	Paging internal.WhatsAppBusinessApiPaginationMeta `json:"paging"`
+	Data   []Catalog         `json:"data"`
+	Paging PaginationDetails `json:"paging"`
 }
 
+// GetAllCatalogsWithPagination retrieves catalogs with pagination support
+func (cm *CatalogManager) GetAllCatalogsWithPagination(paginationInput ...*PaginationInput) (*PaginatedResponse[Catalog], error) {
+	apiPath := strings.Join([]string{cm.businessAccountId, "product_catalogs"}, "/")
+	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodGet)
+
+	fields := []string{
+		"id",
+		"name",
+		"vertical",
+		"product_count",
+		"data_sources",
+		"product_groups",
+		"product_sets",
+		"products",
+	}
+
+	for _, field := range fields {
+		apiRequest.AddField(request_client.ApiRequestQueryParamField{
+			Name:    field,
+			Filters: map[string]string{},
+		})
+	}
+
+	// Apply pagination parameters
+	if len(paginationInput) > 0 && paginationInput[0] != nil {
+		input := paginationInput[0]
+		if input.Limit > 0 {
+			apiRequest.AddQueryParam("limit", strconv.Itoa(input.Limit))
+		}
+		if input.After != "" {
+			apiRequest.AddQueryParam("after", input.After)
+		}
+		if input.Before != "" {
+			apiRequest.AddQueryParam("before", input.Before)
+		}
+	} else {
+		// Default limit
+		apiRequest.AddQueryParam("limit", "100")
+	}
+
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	var result PaginatedResponse[Catalog]
+	if err := json.Unmarshal([]byte(response), &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// Deprecated: Use GetAllCatalogsWithPagination for better control
 func (cm *CatalogManager) GetAllCatalogs() (*CatalogFetchResponseEdge, error) {
 	apiPath := strings.Join([]string{cm.businessAccountId, "product_catalogs"}, "/")
 	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodGet)
@@ -230,21 +282,24 @@ func (cm *CatalogManager) GetAllCatalogs() (*CatalogFetchResponseEdge, error) {
 		})
 	}
 
-	response, err := apiRequest.Execute()
+	// High limit for backwards compatibility
+	apiRequest.AddQueryParam("limit", "1000")
 
+	response, err := apiRequest.Execute()
 	if err != nil {
-		fmt.Println("GetAllCatalogs error", err)
 		return nil, err
 	}
+
 	var result CatalogFetchResponseEdge
 	if err := json.Unmarshal([]byte(response), &result); err != nil {
 		return nil, err
 	}
+
 	return &result, nil
 }
 
-// GetCatalogProducts retrieves the list of products for a given catalog.
-func (cm *CatalogManager) GetCatalogProducts(catalogId string) ([]ProductItem, error) {
+// GetCatalogProductsWithPagination retrieves products for a catalog with pagination support
+func (cm *CatalogManager) GetCatalogProductsWithPagination(catalogId string, paginationInput ...*PaginationInput) (*PaginatedResponse[ProductItem], error) {
 	apiPath := strings.Join([]string{catalogId, "products"}, "/")
 	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodGet)
 
@@ -315,36 +370,172 @@ func (cm *CatalogManager) GetCatalogProducts(catalogId string) ([]ProductItem, e
 		})
 	}
 
-	// ! TODO: proper pagination must be implemented here
-	apiRequest.AddQueryParam("limit", "1000")
+	// Apply pagination parameters
+	if len(paginationInput) > 0 && paginationInput[0] != nil {
+		input := paginationInput[0]
+		if input.Limit > 0 {
+			apiRequest.AddQueryParam("limit", strconv.Itoa(input.Limit))
+		}
+		if input.After != "" {
+			apiRequest.AddQueryParam("after", input.After)
+		}
+		if input.Before != "" {
+			apiRequest.AddQueryParam("before", input.Before)
+		}
+	} else {
+		// Default limit
+		apiRequest.AddQueryParam("limit", "100")
+	}
 
 	response, err := apiRequest.Execute()
 	if err != nil {
 		return nil, err
 	}
 
-	// Temporary response structure.
-	var res struct {
-		Data    []ProductItem   `json:"data"`
-		Paging  json.RawMessage `json:"paging"` // using RawMessage to ignore paging details
+	var result struct {
+		Data    []ProductItem     `json:"data"`
+		Paging  PaginationDetails `json:"paging"`
 		Summary struct {
 			TotalCount int `json:"total_count"`
 		} `json:"summary"`
 	}
-	if err := json.Unmarshal([]byte(response), &res); err != nil {
+
+	if err := json.Unmarshal([]byte(response), &result); err != nil {
 		return nil, err
 	}
-	return res.Data, nil
+
+	return &PaginatedResponse[ProductItem]{
+		Data:   result.Data,
+		Paging: result.Paging,
+	}, nil
 }
 
-type CreateProductCatalogOptions struct {
-	Success string `json:"success,omitempty"`
-}
+// Deprecated: Use GetCatalogProductsWithPagination for better control
+func (cm *CatalogManager) GetCatalogProducts(catalogId string, paginationInput ...*PaginationInput) ([]ProductItem, *PaginationDetails, error) {
+	apiPath := strings.Join([]string{catalogId, "products"}, "/")
+	apiRequest := cm.requester.NewApiRequest(apiPath, http.MethodGet)
 
-func (cm *CatalogManager) CreateNewProductCatalog() (CreateProductCatalogOptions, error) {
-	apiRequest := cm.requester.NewApiRequest(strings.Join([]string{cm.businessAccountId, "product_catalogs"}, "/"), http.MethodPost)
+	fields := []string{
+		"id",
+		"price",
+		"additional_image_cdn_urls",
+		"additional_image_urls",
+		"condition",
+		"additional_variant_attributes",
+		"age_group",
+		"availability",
+		"brand",
+		"category",
+		"category_specific_fields",
+		"color",
+		"currency",
+		"custom_data",
+		"custom_label_0",
+		"custom_label_1",
+		"custom_label_2",
+		"custom_label_3",
+		"custom_label_4",
+		"custom_number_0",
+		"custom_number_1",
+		"custom_number_2",
+		"custom_number_3",
+		"custom_number_4",
+		"description",
+		"errors",
+		"expiration_date",
+		"fb_product_category",
+		"gender",
+		"gtin",
+		"image_cdn_urls",
+		"image_fetch_status",
+		"image_url",
+		"images",
+		"inventory",
+		"material",
+		"name",
+		"ordering_index",
+		"origin_country",
+		"parent_product_id",
+		"pattern",
+		"product_local_info",
+		"product_type",
+		"quantity_to_sell_on_facebook",
+		"retailer_id",
+		"retailer_product_group_id",
+		"sale_price",
+		"sale_price_end_date",
+		"sale_price_start_date",
+		"short_description",
+		"size",
+		"start_date",
+		"tags",
+		"url",
+		"vendor_id",
+		"visibility",
+		"wa_compliance_category",
+	}
+
+	for _, field := range fields {
+		apiRequest.AddField(request_client.ApiRequestQueryParamField{
+			Name:    field,
+			Filters: map[string]string{},
+		})
+	}
+
+	// High limit for backwards compatibility
+	apiRequest.AddQueryParam("limit", "10000")
+
 	response, err := apiRequest.Execute()
-	var responseToReturn CreateProductCatalogOptions
-	json.Unmarshal([]byte(response), &responseToReturn)
-	return responseToReturn, err
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var res struct {
+		Data    []ProductItem     `json:"data"`
+		Paging  PaginationDetails `json:"paging"`
+		Summary struct {
+			TotalCount int `json:"total_count"`
+		} `json:"summary"`
+	}
+
+	if err := json.Unmarshal([]byte(response), &res); err != nil {
+		return nil, nil, err
+	}
+
+	return res.Data, &res.Paging, nil
+}
+
+// GetAllCatalogProducts fetches all products across all pages for a given catalog
+// This is a helper method that handles pagination automatically
+func (cm *CatalogManager) GetAllCatalogProducts(catalogId string, limit ...int) ([]ProductItem, error) {
+	pageLimit := 100
+	if len(limit) > 0 && limit[0] > 0 {
+		pageLimit = limit[0]
+	}
+
+	var allProducts []ProductItem
+	var nextCursor string
+
+	for {
+		input := &PaginationInput{
+			Limit: pageLimit,
+			After: nextCursor,
+		}
+
+		result, err := cm.GetCatalogProductsWithPagination(catalogId, input)
+		if err != nil {
+			return nil, err
+		}
+
+		allProducts = append(allProducts, result.Data...)
+
+		// Check if there's a next page
+		if !result.Paging.HasNextPage() {
+			break
+		}
+
+		nextCursor = result.Paging.GetNextCursor()
+	}
+
+	return allProducts, nil
 }

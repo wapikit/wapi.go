@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/wapikit/wapi.go/internal"
 	"github.com/wapikit/wapi.go/internal/request_client"
 )
 
@@ -146,9 +145,9 @@ type WhatsappBusinessAccountPhoneNumber struct {
 
 // WhatsappBusinessAccountPhoneNumberEdge represents a list of WhatsApp Business Account phone numbers.
 type WhatsappBusinessAccountPhoneNumberEdge struct {
-	Data    []WhatsappBusinessAccountPhoneNumber       `json:"data,omitempty"`
-	Paging  internal.WhatsAppBusinessApiPaginationMeta `json:"paging,omitempty"`
-	Summary string                                     `json:"summary,omitempty"`
+	Data    []WhatsappBusinessAccountPhoneNumber `json:"data,omitempty"`
+	Paging  PaginationDetails                    `json:"paging,omitempty"`
+	Summary string                               `json:"summary,omitempty"`
 }
 
 // FetchAll fetches all phone numbers based on the provided filters.
