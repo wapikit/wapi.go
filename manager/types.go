@@ -234,7 +234,7 @@ type WhatsappApiNotificationPayloadSchemaType struct {
 type Entry struct {
 	Id      string   `json:"id"`
 	Changes []Change `json:"changes"`
-	Time    *string  `json:"time"`
+	Time    *int64   `json:"time"`
 }
 
 type WebhookFieldEnum string

@@ -133,7 +133,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 				err = wh.handleAccountReviewSubscriptionEvents(events.BaseBusinessAccountEvent{
 					BusinessAccountId: entry.Id,
-					Timestamp:         *entry.Time,
+					Timestamp:         fmt.Sprint(*entry.Time),
 				}, accountReviewValue)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
@@ -151,7 +151,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 				err = wh.handleAccountAlertsSubscriptionEvents(events.BaseBusinessAccountEvent{
 					BusinessAccountId: entry.Id,
-					Timestamp:         *entry.Time,
+					Timestamp:         fmt.Sprint(*entry.Time),
 				}, accountAlertValue)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
@@ -169,7 +169,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 				wh.handleAccountUpdateSubscriptionEvents(events.BaseBusinessAccountEvent{
 					BusinessAccountId: entry.Id,
-					Timestamp:         *entry.Time,
+					Timestamp:         fmt.Sprint(*entry.Time),
 				}, accountUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
@@ -187,7 +187,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 				wh.handleTemplateCategoryUpdateSubscriptionEvents(events.BaseBusinessAccountEvent{
 					BusinessAccountId: entry.Id,
-					Timestamp:         *entry.Time,
+					Timestamp:         fmt.Sprint(*entry.Time),
 				}, templateCategoryUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
@@ -205,7 +205,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 				wh.handleMessageTemplateQualitySubscriptionEvents(events.BaseBusinessAccountEvent{
 					BusinessAccountId: entry.Id,
-					Timestamp:         *entry.Time,
+					Timestamp:         fmt.Sprint(*entry.Time),
 				}, qualityUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
@@ -223,7 +223,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 				wh.handleMessageTemplateStatusSubscriptionEvents(events.BaseBusinessAccountEvent{
 					BusinessAccountId: entry.Id,
-					Timestamp:         *entry.Time,
+					Timestamp:         fmt.Sprint(*entry.Time),
 				}, statusUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
@@ -241,7 +241,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 				wh.handlePhoneNumberNameSubscriptionEvents(events.BaseBusinessAccountEvent{
 					BusinessAccountId: entry.Id,
-					Timestamp:         *entry.Time,
+					Timestamp:         fmt.Sprint(*entry.Time),
 				}, nameUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
@@ -259,7 +259,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 				wh.handlePhoneNumberQualitySubscriptionEvents(events.BaseBusinessAccountEvent{
 					BusinessAccountId: entry.Id,
-					Timestamp:         *entry.Time,
+					Timestamp:         fmt.Sprint(*entry.Time),
 				}, qualityUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
@@ -277,7 +277,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 				wh.handleBusinessCapabilitySubscriptionEvents(events.BaseBusinessAccountEvent{
 					BusinessAccountId: entry.Id,
-					Timestamp:         *entry.Time,
+					Timestamp:         fmt.Sprint(*entry.Time),
 				}, capabilityUpdate)
 				if err != nil {
 					fmt.Println("Error handling messages subscription events:", err)
