@@ -26,22 +26,28 @@ type NotificationPayloadMessageContextSchemaType struct {
 	} `json:"referred_product,omitempty"`
 }
 
+// ReferralInfo represents referral data from Click to WhatsApp ads
+type ReferralInfo struct {
+	SourceUrl      string                           `json:"source_url"`
+	SourceType     AdInteractionSourceTypeEnum      `json:"source_type"`
+	SourceId       string                           `json:"source_id"`
+	Headline       string                           `json:"headline"`
+	Body           string                           `json:"body"`
+	ImageUrl       string                           `json:"image_url,omitempty"`
+	VideoUrl       string                           `json:"video_url,omitempty"`
+	ThumbnailUrl   string                           `json:"thumbnail_url,omitempty"`
+	CtwaClid       string                           `json:"ctwa_clid,omitempty"`
+	MediaType      AdInteractionSourceMediaTypeEnum `json:"media_type"`
+	WelcomeMessage struct {
+		Text string `json:"text"`
+	} `json:"welcome_message,omitempty"`
+}
+
 type NotificationPayloadTextMessageSchemaType struct {
 	Text struct {
 		Body string `json:"body"`
 	} `json:"text,omitempty"`
-	Referral struct {
-		SourceUrl    string                           `json:"source_url"`
-		SourceType   AdInteractionSourceTypeEnum      `json:"source_type"`
-		SourceId     string                           `json:"source_id"`
-		Headline     string                           `json:"headline"`
-		Body         string                           `json:"body"`
-		ImageUrl     string                           `json:"image_url,omitempty"`
-		VideoUrl     string                           `json:"video_url,omitempty"`
-		ThumbnailUrl string                           `json:"thumbnail_url"`
-		CtwaCLId     string                           `json:"ctwa_clid"`
-		MediaType    AdInteractionSourceMediaTypeEnum `json:"media_type"`
-	} `json:"referral,omitempty"`
+	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadAudioMessageSchemaType struct {
@@ -49,7 +55,10 @@ type NotificationPayloadAudioMessageSchemaType struct {
 		Id       string `json:"id,omitempty"`
 		MIMEType string `json:"mime_type,omitempty"`
 		SHA256   string `json:"sha256,omitempty"`
+		Url      string `json:"url,omitempty"`
+		Voice    bool   `json:"voice,omitempty"` // Is Voice Recording?
 	} `json:"audio,omitempty"`
+	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadImageMessageSchemaType struct {
@@ -58,7 +67,9 @@ type NotificationPayloadImageMessageSchemaType struct {
 		MIMEType string `json:"mime_type"`
 		SHA256   string `json:"sha256"`
 		Caption  string `json:"caption,omitempty"`
+		Url      string `json:"url,omitempty"`
 	} `json:"image,omitempty"`
+	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadButtonMessageSchemaType struct {
@@ -76,6 +87,7 @@ type NotificationPayloadDocumentMessageSchemaType struct {
 		Caption  string `json:"caption,omitempty"`
 		Filename string `json:"filename,omitempty"`
 	} `json:"document,omitempty"`
+	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadOrderMessageSchemaType struct {
@@ -98,22 +110,17 @@ type NotificationPayloadStickerMessageSchemaType struct {
 		MIMEType string `json:"mime_type"`
 		SHA256   string `json:"sha256"`
 		Animated bool   `json:"animated"`
+		Url      string `json:"url,omitempty"`
 	} `json:"sticker,omitempty"`
+	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadSystemMessageSchemaType struct {
 	System struct {
-		Identity string                     `json:"identity"`
-		Body     string                     `json:"body"`
-		Customer string                     `json:"customer"`
-		Type     SystemNotificationTypeEnum `json:"type"`
-		WaId     string                     `json:"wa_id"`
+		Body string                     `json:"body"`
+		Type SystemNotificationTypeEnum `json:"type"`
+		WaId string                     `json:"wa_id"`
 	} `json:"system,omitempty"`
-	Identity struct {
-		Acknowledged     string `json:"acknowledged"`
-		CreatedTimestamp string `json:"created_timestamp"`
-		Hash             string `json:"hash"`
-	} `json:"identity,omitempty"`
 }
 
 type NotificationPayloadVideoMessageSchemaType struct {
@@ -124,6 +131,7 @@ type NotificationPayloadVideoMessageSchemaType struct {
 		Caption  string `json:"caption,omitempty"`
 		Filename string `json:"filename,omitempty"`
 	} `json:"video,omitempty"`
+	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadReactionMessageSchemaType struct {
@@ -163,10 +171,18 @@ type NotificationPayloadLocationMessageSchemaType struct {
 		Name      string  `json:"name,omitempty"`
 		Address   string  `json:"address,omitempty"`
 	} `json:"location,omitempty"`
+	Referral ReferralInfo `json:"referral,omitempty"`
+}
+
+type NotificationPayloadUnsupportedMessageSchemaType struct {
+	Unsupported struct {
+		Type string `json:"type"`
+	} `json:"unsupported,omitempty"`
 }
 
 type NotificationPayloadContactMessageSchemaType struct {
-	Contacts []Contact `json:"contacts"`
+	Contacts []Contact    `json:"contacts"`
+	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationMessageTypeEnum string
@@ -186,6 +202,7 @@ const (
 	NotificationMessageTypeUnknown     NotificationMessageTypeEnum = "unknown"
 	NotificationMessageTypeLocation    NotificationMessageTypeEnum = "location"
 	NotificationMessageTypeContacts    NotificationMessageTypeEnum = "contacts"
+	NotificationMessageTypeUnsupported NotificationMessageTypeEnum = "unsupported"
 )
 
 type InteractiveNotificationTypeEnum string
@@ -218,8 +235,9 @@ const (
 )
 
 type Contact struct {
-	WaId    string  `json:"wa_id"`
-	Profile Profile `json:"profile"`
+	WaId            string  `json:"wa_id"`
+	Profile         Profile `json:"profile"`
+	IdentityKeyHash string  `json:"identity_key_hash,omitempty"`
 }
 
 type Profile struct {
@@ -234,23 +252,28 @@ type WhatsappApiNotificationPayloadSchemaType struct {
 type Entry struct {
 	Id      string   `json:"id"`
 	Changes []Change `json:"changes"`
-	Time    *int64   `json:"time"`
+	Time    int64    `json:"time,omitempty"`
 }
 
 type WebhookFieldEnum string
 
 const (
-	WebhookFieldEnumAccountAlerts          WebhookFieldEnum = "account_alerts"
-	WebhookFieldEnumMessages               WebhookFieldEnum = "messages"
-	WebhookFieldEnumSecurity               WebhookFieldEnum = "security"
-	WebhookFieldEnumAccountUpdate          WebhookFieldEnum = "account_update"
-	WebhookFieldEnumAccountReview          WebhookFieldEnum = "account_review"
-	WebhookFieldEnumBusinessCapability     WebhookFieldEnum = "business_capability"
-	WebhookFieldEnumMessageTemplateQuality WebhookFieldEnum = "message_template_quality"
-	WebhookFieldEnumMessageTemplateStatus  WebhookFieldEnum = "message_template_status"
-	WebhookFieldEnumPhoneNumberName        WebhookFieldEnum = "phone_number_name"
-	WebhookFieldEnumPhoneNumberQuality     WebhookFieldEnum = "phone_number_quality"
-	WebhookFieldEnumTemplateCategoryUpdate WebhookFieldEnum = "template_category"
+	WebhookFieldEnumAccountAlerts                   WebhookFieldEnum = "account_alerts"
+	WebhookFieldEnumMessages                        WebhookFieldEnum = "messages"
+	WebhookFieldEnumSecurity                        WebhookFieldEnum = "security"
+	WebhookFieldEnumAccountUpdate                   WebhookFieldEnum = "account_update"
+	WebhookFieldEnumAccountReview                   WebhookFieldEnum = "account_review"
+	WebhookFieldEnumBusinessCapability              WebhookFieldEnum = "business_capability"
+	WebhookFieldEnumMessageTemplateQuality          WebhookFieldEnum = "message_template_quality"
+	WebhookFieldEnumMessageTemplateStatus           WebhookFieldEnum = "message_template_status"
+	WebhookFieldEnumPhoneNumberName                 WebhookFieldEnum = "phone_number_name"
+	WebhookFieldEnumPhoneNumberQuality              WebhookFieldEnum = "phone_number_quality"
+	WebhookFieldEnumTemplateCategoryUpdate          WebhookFieldEnum = "template_category"
+	WebhookFieldEnumUserPreferences                 WebhookFieldEnum = "user_preferences"
+	WebhookFieldEnumMessageTemplateComponentsUpdate WebhookFieldEnum = "message_template_components_update"
+	WebhookFieldEnumPaymentConfigurationUpdate      WebhookFieldEnum = "payment_configuration_update"
+	WebhookFieldEnumSmbAppStateSync                 WebhookFieldEnum = "smb_app_state_sync"
+	WebhookFieldEnumSmbMessageEchoes                WebhookFieldEnum = "smb_message_echoes"
 )
 
 type TemplateMessageStatusUpdateEventEnum string
@@ -308,6 +331,21 @@ type TemplateQualityUpdateValue struct {
 	MessageTemplateLanguage string `json:"message_template_language"`
 }
 
+type MessageTemplateComponentsUpdateValue struct {
+	MessageTemplateId       int64  `json:"message_template_id"`
+	MessageTemplateName     string `json:"message_template_name"`
+	MessageTemplateLanguage string `json:"message_template_language"`
+	MessageTemplateElement  string `json:"message_template_element"`          // Template body text
+	MessageTemplateTitle    string `json:"message_template_title,omitempty"`  // Only if template has text header
+	MessageTemplateFooter   string `json:"message_template_footer,omitempty"` // Only if template has footer
+	MessageTemplateButtons  []struct {
+		MessageTemplateButtonType        string `json:"message_template_button_type"`
+		MessageTemplateButtonText        string `json:"message_template_button_text"`
+		MessageTemplateButtonUrl         string `json:"message_template_button_url,omitempty"`          // Only for url buttons
+		MessageTemplateButtonPhoneNumber string `json:"message_template_button_phone_number,omitempty"` // Only for phone number buttons
+	} `json:"message_template_buttons,omitempty"` // Only if template has url or phone number button
+}
+
 type PhoneNumberNameUpdateValue struct {
 	DisplayPhoneNumber    string `json:"display_phone_number"`
 	Decision              string `json:"decision"`
@@ -340,12 +378,14 @@ const (
 )
 
 type AccountAlertsValue struct {
-	EntityType       string                   `json:"entity_type"`
-	EntityId         string                   `json:"entity_id"`
-	AlertSeverity    AccountAlertSeverityEnum `json:"alert_severity"`
-	AlertStatus      string                   `json:"alert_status"`
-	AlertType        string                   `json:"alert_type"`
-	AlertDescription string                   `json:"alert_description"`
+	EntityType string `json:"entity_type"`
+	EntityId   string `json:"entity_id"`
+	AlertInfo  struct {
+		AlertSeverity    AccountAlertSeverityEnum `json:"alert_severity"`
+		AlertStatus      string                   `json:"alert_status"`
+		AlertType        string                   `json:"alert_type"`
+		AlertDescription string                   `json:"alert_description"`
+	} `json:"alert_info"`
 }
 
 type AccountUpdateEventEnum string
@@ -373,9 +413,38 @@ const (
 	AccountUpdateEventEnumPartnerRemoved     AccountUpdateEventEnum = "PARTNER_REMOVED"
 )
 
+type AccountUpdateWabaInfo struct {
+	WabaId                     string   `json:"waba_id"`
+	OwnerBusinessId            string   `json:"owner_business_id"`
+	AdAccountLinked            string   `json:"ad_account_linked,omitempty"`             // Only for AD_ACCOUNT_LINKED event
+	PartnerAppId               string   `json:"partner_app_id,omitempty"`                // Only for PARTNER_APP_INSTALLED, PARTNER_APP_UNINSTALLED
+	SolutionId                 string   `json:"solution_id,omitempty"`                   // Only if customer onboarded via multi-partner solution
+	SolutionPartnerBusinessIds []string `json:"solution_partner_business_ids,omitempty"` // Only if customer onboarded via multi-partner solution
+}
+
+type AccountUpdateAuthInternationalRateEligibility struct {
+	ExceptionCountries []struct {
+		CountryCode string `json:"country_code"`
+		StartTime   int64  `json:"start_time"`
+	} `json:"exception_countries,omitempty"`
+	StartTime int64 `json:"start_time"`
+}
+
+type AccountUpdatePartnerClientCertificationInfo struct {
+	ClientBusinessId string   `json:"client_business_id"`
+	Status           string   `json:"status"`
+	RejectionReasons []string `json:"rejection_reasons,omitempty"`
+}
+
 type AccountUpdateValue struct {
-	PhoneNumber string                 `json:"phone_number,omitempty"`
-	Event       AccountUpdateEventEnum `json:"event"`
+	PhoneNumber                      string                                         `json:"phone_number,omitempty"`
+	Event                            AccountUpdateEventEnum                         `json:"event"`
+	Country                          string                                         `json:"country,omitempty"`                             // Only for BUSINESS_PRIMARY_LOCATION_COUNTRY_UPDATE
+	WabaInfo                         *AccountUpdateWabaInfo                         `json:"waba_info,omitempty"`                           // For various events
+	ViolationInfo                    *AccountUpdateViolationInfo                    `json:"violation_info,omitempty"`                      // Only for ACCOUNT_VIOLATION
+	AuthInternationalRateEligibility *AccountUpdateAuthInternationalRateEligibility `json:"auth_international_rate_eligibility,omitempty"` // Only for AUTH_INTL_PRICE_ELIGIBILITY_UPDATE
+	BanInfo                          *AccountUpdateBanInfo                          `json:"ban_info,omitempty"`                            // Only for DISABLED_UPDATE
+	PartnerClientCertificationInfo   *AccountUpdatePartnerClientCertificationInfo   `json:"partner_client_certification_info,omitempty"`   // Only for PARTNER_CLIENT_CERTIFICATION_STATUS_UPDATE
 }
 
 type AccountReviewUpdateValue struct {
@@ -391,6 +460,63 @@ type SecurityValue struct {
 	DisplayPhoneNumber string `json:"display_phone_number"`
 	Event              string `json:"event"`
 	Requester          string `json:"requester"`
+}
+
+type UserPreferencesValue struct {
+	UserPreferences []struct {
+		WaId      string `json:"wa_id"`
+		Detail    string `json:"detail"`
+		Category  string `json:"category"` // e.g., "marketing_messages"
+		Value     string `json:"value"`    // Preference value
+		Timestamp int64  `json:"timestamp"`
+	} `json:"user_preferences"`
+}
+
+type PaymentConfigurationUpdateValue struct {
+	ConfigurationName string `json:"configuration_name"`
+	ProviderName      string `json:"provider_name"`
+	ProviderMid       string `json:"provider_mid"`
+	Status            string `json:"status"`
+	CreatedTimestamp  int64  `json:"created_timestamp"`
+	UpdatedTimestamp  int64  `json:"updated_timestamp"`
+}
+
+type SmbAppStateSyncValue struct {
+	MessagingProduct string `json:"messaging_product"`
+	Metadata         struct {
+		DisplayPhoneNumber string `json:"display_phone_number"`
+		PhoneNumberId      string `json:"phone_number_id"`
+	} `json:"metadata"`
+	StateSync []struct {
+		Type    string `json:"type"` // e.g., "contact"
+		Contact struct {
+			FullName    string `json:"full_name,omitempty"`
+			FirstName   string `json:"first_name,omitempty"`
+			PhoneNumber string `json:"phone_number,omitempty"`
+		} `json:"contact,omitempty"`
+		Action   string `json:"action"` // e.g., "add", "remove", "update"
+		Metadata struct {
+			Timestamp string `json:"timestamp"`
+		} `json:"metadata"`
+	} `json:"state_sync"`
+}
+
+type SmbMessageEchoesValue struct {
+	MessagingProduct string `json:"messaging_product"`
+	Metadata         struct {
+		DisplayPhoneNumber string `json:"display_phone_number"`
+		PhoneNumberId      string `json:"phone_number_id"`
+	} `json:"metadata"`
+	MessageEchoes []struct {
+		From      string `json:"from"`
+		To        string `json:"to"`
+		Id        string `json:"id"`
+		Timestamp string `json:"timestamp"`
+		Type      string `json:"type"`
+		// Message contents are dynamic based on type
+		// Using map for flexibility
+		MessageContent map[string]interface{} `json:"-"` // Will be populated from the type-specific field
+	} `json:"message_echoes"`
 }
 
 type Change struct {
@@ -413,18 +539,23 @@ type Metadata struct {
 }
 
 type Status struct {
-	Id           string       `json:"id"`
-	Conversation Conversation `json:"conversation,omitempty"`
-	Errors       []Error      `json:"errors,omitempty"`
-	Status       string       `json:"status"`
-	Timestamp    string       `json:"timestamp"`
-	RecipientId  string       `json:"recipient_id"`
-	Pricing      Pricing      `json:"pricing,omitempty"`
+	Id                       string       `json:"id"`
+	Conversation             Conversation `json:"conversation,omitempty"`
+	Errors                   []Error      `json:"errors,omitempty"`
+	Status                   string       `json:"status"`
+	Timestamp                string       `json:"timestamp"`
+	RecipientId              string       `json:"recipient_id"`
+	RecipientType            string       `json:"recipient_type,omitempty"`              // Only included if message sent to a group
+	RecipientParticipantId   string       `json:"recipient_participant_id,omitempty"`    // Only included if message sent to a group
+	RecipientIdentityKeyHash string       `json:"recipient_identity_key_hash,omitempty"` // Only included if identity change check enabled
+	BizOpaqueCallbackData    string       `json:"biz_opaque_callback_data,omitempty"`    // Only included if message sent with biz_opaque_callback_data
+	Pricing                  Pricing      `json:"pricing,omitempty"`
 }
 
 type Conversation struct {
-	Id     string `json:"id"`
-	Origin Origin `json:"origin,omitempty"`
+	Id                  string `json:"id"`
+	ExpirationTimestamp string `json:"expiration_timestamp,omitempty"`
+	Origin              Origin `json:"origin,omitempty"`
 }
 
 type Origin struct {
@@ -433,6 +564,7 @@ type Origin struct {
 }
 
 type Pricing struct {
+	Billable     bool                      `json:"billable"`
 	PricingModel string                    `json:"pricing_model"`
 	Category     MessageStatusCategoryEnum `json:"category"`
 }
@@ -442,8 +574,9 @@ type Message struct {
 	From                                            string                                      `json:"from"`
 	Timestamp                                       string                                      `json:"timestamp"`
 	Type                                            NotificationMessageTypeEnum                 `json:"type"`
-	Context                                         NotificationPayloadMessageContextSchemaType `json:"context"`
-	Errors                                          []Error                                     `json:",inline"`
+	GroupId                                         string                                      `json:"group_id,omitempty"`
+	Context                                         NotificationPayloadMessageContextSchemaType `json:"context,omitempty"`
+	Errors                                          []Error                                     `json:"errors,omitempty"`
 	NotificationPayloadTextMessageSchemaType        `json:",inline"`
 	NotificationPayloadAudioMessageSchemaType       `json:",inline"`
 	NotificationPayloadImageMessageSchemaType       `json:",inline"`
@@ -457,6 +590,7 @@ type Message struct {
 	NotificationPayloadLocationMessageSchemaType    `json:",inline"`
 	NotificationPayloadContactMessageSchemaType     `json:",inline"`
 	NotificationPayloadInteractionMessageSchemaType `json:",inline"`
+	NotificationPayloadUnsupportedMessageSchemaType `json:",inline"`
 }
 
 type Error struct {
