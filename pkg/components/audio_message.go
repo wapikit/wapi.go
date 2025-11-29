@@ -31,9 +31,6 @@ func NewAudioMessage(params AudioMessageConfigs) (*AudioMessage, error) {
 	idSet := params.Id != ""
 	linkSet := params.Link != ""
 
-	if idSet && linkSet {
-		return nil, fmt.Errorf("only one of ID or Link can be provided")
-	}
 	if !idSet && !linkSet {
 		return nil, fmt.Errorf("either ID or Link must be provided")
 	}

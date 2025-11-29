@@ -24,7 +24,15 @@ type AccountAlertEvent struct {
 	AlertDescription string
 }
 
-func NewAccountAlertEvent(baseEvent *BaseBusinessAccountEvent, entityType string, entityId string, alertSeverity AccountAlertSeverityEnum, alertStatus AccountAlertStatusEnum, alertType string, alertDescription string) *AccountAlertEvent {
+func NewAccountAlertEvent(
+	baseEvent *BaseBusinessAccountEvent,
+	entityType string,
+	entityId string,
+	alertSeverity AccountAlertSeverityEnum,
+	alertStatus AccountAlertStatusEnum,
+	alertType string,
+	alertDescription string,
+) *AccountAlertEvent {
 	return &AccountAlertEvent{
 		BaseBusinessAccountEvent: *baseEvent,
 		EntityType:               entityType,
