@@ -9,8 +9,9 @@ import (
 
 // StickerMessage represents a sticker message.
 type StickerMessage struct {
-	Id   string `json:"id,omitempty"`
-	Link string `json:"link,omitempty"`
+	Id         string `json:"id,omitempty"`
+	Link       string `json:"link,omitempty"`
+	IsAnimated bool   `json:"animated,omitempty"`
 }
 
 // StickerMessageApiPayload represents the API payload for a sticker message.
@@ -21,8 +22,9 @@ type StickerMessageApiPayload struct {
 
 // StickerMessageConfigs represents the configurations for a sticker message.
 type StickerMessageConfigs struct {
-	Id   string `json:"id,omitempty"`
-	Link string `json:"link,omitempty"`
+	Id         string `json:"id,omitempty"`
+	Link       string `json:"link,omitempty"`
+	IsAnimated bool   `json:"animated,omitempty"`
 }
 
 // NewStickerMessage creates a new sticker message based on the provided configurations.
@@ -33,9 +35,6 @@ func NewStickerMessage(params *StickerMessageConfigs) (*StickerMessage, error) {
 	idSet := params.Id != ""
 	linkSet := params.Link != ""
 
-	if idSet && linkSet {
-		return nil, fmt.Errorf("only one of ID or Link can be provided")
-	}
 	if !idSet && !linkSet {
 		return nil, fmt.Errorf("either ID or Link must be provided")
 	}

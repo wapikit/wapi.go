@@ -13,20 +13,43 @@ const (
 
 type AccountUpdateEvent struct {
 	BaseBusinessAccountEvent
-	StatusUpdate    AccountUpdateEventEnum
-	PhoneNumber     string
-	BanInfo         *BanInfo
-	ViolationInfo   *ViolationInfo
-	RestrictionInfo []RestrictionInfo
+	StatusUpdate                     AccountUpdateEventEnum
+	PhoneNumber                      string
+	Country                          string
+	WabaInfo                         *WabaInfo
+	ViolationInfo                    *ViolationInfo
+	AuthInternationalRateEligibility *AuthInternationalRateEligibility
+	BanInfo                          *BanInfo
+	RestrictionInfo                  *RestrictionInfo
+	PartnerClientCertificationInfo   *PartnerClientCertificationInfo
 }
 
-type BanInfo struct {
-	WabaBanState string
-	WabaBanDate  string
+type WabaInfo struct {
+	WabaId                     string
+	OwnerBusinessId            string
+	AdAccountLinked            string
+	PartnerAppId               string
+	SolutionId                 string
+	SolutionPartnerBusinessIds []string
 }
 
 type ViolationInfo struct {
 	ViolationType string
+}
+
+type AuthInternationalRateEligibility struct {
+	ExceptionCountries []ExceptionCountry
+	StartTime          int64
+}
+
+type ExceptionCountry struct {
+	CountryCode string
+	StartTime   int64
+}
+
+type BanInfo struct {
+	WabaBanState []string
+	WabaBanDate  string
 }
 
 type RestrictionInfo struct {
@@ -34,10 +57,34 @@ type RestrictionInfo struct {
 	Expiration      string
 }
 
-func NewAccountUpdateEvent(baseEvent *BaseBusinessAccountEvent, statusUpdate AccountUpdateEventEnum, phoneNumber string) *AccountUpdateEvent {
+type PartnerClientCertificationInfo struct {
+	ClientBusinessId string
+	Status           string
+	RejectionReasons []string
+}
+
+func NewAccountUpdateEvent(
+	baseEvent *BaseBusinessAccountEvent,
+	statusUpdate AccountUpdateEventEnum,
+	phoneNumber string,
+	country string,
+	wabaInfo *WabaInfo,
+	violationInfo *ViolationInfo,
+	authInternationalRateEligibility *AuthInternationalRateEligibility,
+	banInfo *BanInfo,
+	restrictionInfo *RestrictionInfo,
+	partnerClientCertificationInfo *PartnerClientCertificationInfo,
+) *AccountUpdateEvent {
 	return &AccountUpdateEvent{
-		BaseBusinessAccountEvent: *baseEvent,
-		StatusUpdate:             statusUpdate,
-		PhoneNumber:              phoneNumber,
+		BaseBusinessAccountEvent:         *baseEvent,
+		StatusUpdate:                     statusUpdate,
+		PhoneNumber:                      phoneNumber,
+		Country:                          country,
+		WabaInfo:                         wabaInfo,
+		ViolationInfo:                    violationInfo,
+		AuthInternationalRateEligibility: authInternationalRateEligibility,
+		BanInfo:                          banInfo,
+		RestrictionInfo:                  restrictionInfo,
+		PartnerClientCertificationInfo:   partnerClientCertificationInfo,
 	}
 }

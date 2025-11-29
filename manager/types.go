@@ -1,5 +1,9 @@
 package manager
 
+import (
+	"github.com/wapikit/wapi.go/pkg/components"
+)
+
 type NotificationReasonEnum string
 
 const (
@@ -47,7 +51,6 @@ type NotificationPayloadTextMessageSchemaType struct {
 	Text struct {
 		Body string `json:"body"`
 	} `json:"text,omitempty"`
-	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadAudioMessageSchemaType struct {
@@ -58,7 +61,6 @@ type NotificationPayloadAudioMessageSchemaType struct {
 		Url      string `json:"url,omitempty"`
 		Voice    bool   `json:"voice,omitempty"` // Is Voice Recording?
 	} `json:"audio,omitempty"`
-	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadImageMessageSchemaType struct {
@@ -69,7 +71,6 @@ type NotificationPayloadImageMessageSchemaType struct {
 		Caption  string `json:"caption,omitempty"`
 		Url      string `json:"url,omitempty"`
 	} `json:"image,omitempty"`
-	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadButtonMessageSchemaType struct {
@@ -86,8 +87,8 @@ type NotificationPayloadDocumentMessageSchemaType struct {
 		SHA256   string `json:"sha256"`
 		Caption  string `json:"caption,omitempty"`
 		Filename string `json:"filename,omitempty"`
+		Link     string `json:"link,omitempty"`
 	} `json:"document,omitempty"`
-	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadOrderMessageSchemaType struct {
@@ -112,7 +113,6 @@ type NotificationPayloadStickerMessageSchemaType struct {
 		Animated bool   `json:"animated"`
 		Url      string `json:"url,omitempty"`
 	} `json:"sticker,omitempty"`
-	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadSystemMessageSchemaType struct {
@@ -130,8 +130,8 @@ type NotificationPayloadVideoMessageSchemaType struct {
 		SHA256   string `json:"sha256"`
 		Caption  string `json:"caption,omitempty"`
 		Filename string `json:"filename,omitempty"`
+		Url      string `json:"url,omitempty"`
 	} `json:"video,omitempty"`
-	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadReactionMessageSchemaType struct {
@@ -171,7 +171,6 @@ type NotificationPayloadLocationMessageSchemaType struct {
 		Name      string  `json:"name,omitempty"`
 		Address   string  `json:"address,omitempty"`
 	} `json:"location,omitempty"`
-	Referral ReferralInfo `json:"referral,omitempty"`
 }
 
 type NotificationPayloadUnsupportedMessageSchemaType struct {
@@ -181,8 +180,7 @@ type NotificationPayloadUnsupportedMessageSchemaType struct {
 }
 
 type NotificationPayloadContactMessageSchemaType struct {
-	Contacts []Contact    `json:"contacts"`
-	Referral ReferralInfo `json:"referral,omitempty"`
+	Contacts []components.Contact `json:"contacts"`
 }
 
 type NotificationMessageTypeEnum string
@@ -234,7 +232,7 @@ const (
 	SystemNotificationTypeCustomerIdentityChanged   SystemNotificationTypeEnum = "customer_identity_changed"
 )
 
-type Contact struct {
+type SenderContact struct {
 	WaId            string  `json:"wa_id"`
 	Profile         Profile `json:"profile"`
 	IdentityKeyHash string  `json:"identity_key_hash,omitempty"`
@@ -274,6 +272,7 @@ const (
 	WebhookFieldEnumPaymentConfigurationUpdate      WebhookFieldEnum = "payment_configuration_update"
 	WebhookFieldEnumSmbAppStateSync                 WebhookFieldEnum = "smb_app_state_sync"
 	WebhookFieldEnumSmbMessageEchoes                WebhookFieldEnum = "smb_message_echoes"
+	WebhookFieldEnumHistory                         WebhookFieldEnum = "history"
 )
 
 type TemplateMessageStatusUpdateEventEnum string
@@ -444,6 +443,7 @@ type AccountUpdateValue struct {
 	ViolationInfo                    *AccountUpdateViolationInfo                    `json:"violation_info,omitempty"`                      // Only for ACCOUNT_VIOLATION
 	AuthInternationalRateEligibility *AccountUpdateAuthInternationalRateEligibility `json:"auth_international_rate_eligibility,omitempty"` // Only for AUTH_INTL_PRICE_ELIGIBILITY_UPDATE
 	BanInfo                          *AccountUpdateBanInfo                          `json:"ban_info,omitempty"`                            // Only for DISABLED_UPDATE
+	RestrictionInfo                  *AccountUpdateRestrictionInfo                  `json:"restriction_info,omitempty"`                    // Only for ACCOUNT_RESTRICTION
 	PartnerClientCertificationInfo   *AccountUpdatePartnerClientCertificationInfo   `json:"partner_client_certification_info,omitempty"`   // Only for PARTNER_CLIENT_CERTIFICATION_STATUS_UPDATE
 }
 
@@ -519,18 +519,48 @@ type SmbMessageEchoesValue struct {
 	} `json:"message_echoes"`
 }
 
+type HistoryValue struct {
+	MessagingProduct string `json:"messaging_product"`
+	Metadata         struct {
+		DisplayPhoneNumber string `json:"display_phone_number"`
+		PhoneNumberId      string `json:"phone_number_id"`
+	} `json:"metadata"`
+	History []struct {
+		Metadata struct {
+			Phase      int `json:"phase"`
+			ChunkOrder int `json:"chunk_order"`
+			Progress   int `json:"progress"`
+		} `json:"metadata"`
+		Threads []struct {
+			Id       string `json:"id"` // WhatsApp user phone number
+			Messages []struct {
+				From           string `json:"from"`
+				To             string `json:"to,omitempty"` // Only included if SMB message echo
+				Id             string `json:"id"`
+				Timestamp      string `json:"timestamp"`
+				Type           string `json:"type"`
+				HistoryContext struct {
+					Status string `json:"status"` // Message status
+				} `json:"history_context"`
+				// Message contents are dynamic based on type
+				// Would need to be unmarshaled based on Type field
+			} `json:"messages"`
+		} `json:"threads"`
+	} `json:"history"`
+}
+
 type Change struct {
 	Value interface{}      `json:"value"`
 	Field WebhookFieldEnum `json:"field"`
 }
 
 type MessagesValue struct {
-	MessagingProduct string    `json:"messaging_product"`
-	Metadata         Metadata  `json:"metadata"`
-	Contacts         []Contact `json:"contacts,omitempty"`
-	Statuses         []Status  `json:"statuses,omitempty"`
-	Messages         []Message `json:"messages,omitempty"`
-	Errors           []Error   `json:"errors,omitempty"`
+	MessagingProduct string          `json:"messaging_product"`
+	Metadata         Metadata        `json:"metadata"`
+	Contacts         []SenderContact `json:"contacts,omitempty"`
+	Statuses         []Status        `json:"statuses,omitempty"`
+	Messages         []Message       `json:"messages,omitempty"`
+	Errors           []Error         `json:"errors,omitempty"`
 }
 
 type Metadata struct {
@@ -577,6 +607,7 @@ type Message struct {
 	GroupId                                         string                                      `json:"group_id,omitempty"`
 	Context                                         NotificationPayloadMessageContextSchemaType `json:"context,omitempty"`
 	Errors                                          []Error                                     `json:"errors,omitempty"`
+	Referral                                        *ReferralInfo                               `json:"referral,omitempty"`
 	NotificationPayloadTextMessageSchemaType        `json:",inline"`
 	NotificationPayloadAudioMessageSchemaType       `json:",inline"`
 	NotificationPayloadImageMessageSchemaType       `json:",inline"`

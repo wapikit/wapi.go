@@ -300,6 +300,15 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 					BusinessAccountId: entry.Id,
 					Timestamp:         fmt.Sprint(entry.Time),
 				}, messageEchoesValue)
+			case WebhookFieldEnumHistory:
+				historyValue, err := unmarshalWebhookValue[HistoryValue](change.Value)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid history webhook: %v", err))
+				}
+				wh.handleHistorySubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         fmt.Sprint(entry.Time),
+				}, historyValue)
 			}
 		}
 	}
@@ -460,9 +469,9 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 			}
 		case NotificationMessageTypeAudio:
 			{
-
 				audioMessageComponent, err := components.NewAudioMessage(components.AudioMessageConfigs{
-					Id: message.Audio.Id,
+					Id:   message.Audio.Id,
+					Link: message.Audio.Url,
 				})
 
 				if err != nil {
@@ -476,14 +485,13 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 					*audioMessageComponent,
 					message.Audio.MIMEType, message.Audio.SHA256, message.Audio.Id),
 				)
-
 			}
 		case NotificationMessageTypeVideo:
 			{
-
 				videoMessageComponent, err := components.NewVideoMessage(components.VideoMessageConfigs{
 					Id:      message.Video.Id,
 					Caption: message.Video.Caption,
+					Link:    message.Video.Url,
 				})
 
 				if err != nil {
@@ -497,7 +505,6 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 					*videoMessageComponent,
 					message.Video.MIMEType, message.Video.SHA256, message.Video.Id),
 				)
-
 			}
 		case NotificationMessageTypeDocument:
 			{
@@ -505,6 +512,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 					Id:       message.Document.Id,
 					Caption:  &message.Document.Caption,
 					FileName: message.Document.Filename,
+					Link:     message.Document.Id,
 				})
 
 				if err != nil {
@@ -516,7 +524,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 				wh.EventManager.Publish(events.DocumentMessageEventType, events.NewDocumentMessageEvent(
 					baseMessageEvent,
 					*documentMessageComponent,
-					message.Document.MIMEType, message.Document.SHA256, message.Document.Id),
+					message.Document.Id, message.Document.SHA256, message.Document.MIMEType),
 				)
 			}
 		case NotificationMessageTypeLocation:
@@ -536,8 +544,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 			}
 		case NotificationMessageTypeContacts:
 			{
-				contactMessageComponent, _ := components.NewContactMessage([]components.Contact{})
-				// ! TODO: add the contact here to the contact message component
+				contactMessageComponent, _ := components.NewContactMessage(message.Contacts)
 				wh.EventManager.Publish(events.ContactMessageEventType, events.NewContactsMessageEvent(
 					baseMessageEvent,
 					*contactMessageComponent,
@@ -545,9 +552,10 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 			}
 		case NotificationMessageTypeSticker:
 			{
-
 				stickerMessageComponent, err := components.NewStickerMessage(&components.StickerMessageConfigs{
-					Id: message.Sticker.Id,
+					Id:         message.Sticker.Id,
+					Link:       message.Sticker.Url,
+					IsAnimated: message.Sticker.Animated,
 				})
 
 				if err != nil {
@@ -559,9 +567,8 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 				wh.EventManager.Publish(events.StickerMessageEventType, events.NewStickerMessageEvent(
 					baseMessageEvent,
 					*stickerMessageComponent,
-					message.Sticker.MIMEType, message.Sticker.SHA256, message.Sticker.Id),
+					message.Sticker.Id, message.Sticker.SHA256, message.Sticker.MIMEType),
 				)
-
 			}
 		case NotificationMessageTypeButton:
 			{
@@ -673,12 +680,77 @@ func (wh *WebhookManager) handleSecuritySubscriptionEvents(value SecurityValue) 
 }
 
 func (wh *WebhookManager) handleAccountUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value AccountUpdateValue) {
-	wh.EventManager.Publish(events.AccountAlertsEventType, events.NewAccountUpdateEvent(
+	var wabaInfo *events.WabaInfo
+	if value.WabaInfo != nil {
+		wabaInfo = &events.WabaInfo{
+			WabaId:                     value.WabaInfo.WabaId,
+			OwnerBusinessId:            value.WabaInfo.OwnerBusinessId,
+			AdAccountLinked:            value.WabaInfo.AdAccountLinked,
+			PartnerAppId:               value.WabaInfo.PartnerAppId,
+			SolutionId:                 value.WabaInfo.SolutionId,
+			SolutionPartnerBusinessIds: value.WabaInfo.SolutionPartnerBusinessIds,
+		}
+	}
+
+	var violationInfo *events.ViolationInfo
+	if value.ViolationInfo != nil {
+		violationInfo = &events.ViolationInfo{
+			ViolationType: value.ViolationInfo.ViolationType,
+		}
+	}
+
+	var authIntlRateEligibility *events.AuthInternationalRateEligibility
+	if value.AuthInternationalRateEligibility != nil {
+		exceptionCountries := make([]events.ExceptionCountry, len(value.AuthInternationalRateEligibility.ExceptionCountries))
+		for i, ec := range value.AuthInternationalRateEligibility.ExceptionCountries {
+			exceptionCountries[i] = events.ExceptionCountry{
+				CountryCode: ec.CountryCode,
+				StartTime:   ec.StartTime,
+			}
+		}
+		authIntlRateEligibility = &events.AuthInternationalRateEligibility{
+			ExceptionCountries: exceptionCountries,
+			StartTime:          value.AuthInternationalRateEligibility.StartTime,
+		}
+	}
+
+	var banInfo *events.BanInfo
+	if value.BanInfo != nil {
+		banInfo = &events.BanInfo{
+			WabaBanState: value.BanInfo.WabaBanState,
+			WabaBanDate:  value.BanInfo.WabaBanDate,
+		}
+	}
+
+	var restrictionInfo *events.RestrictionInfo
+	if value.RestrictionInfo != nil {
+		restrictionInfo = &events.RestrictionInfo{
+			RestrictionType: value.RestrictionInfo.RestrictionType,
+			Expiration:      value.RestrictionInfo.Expiration,
+		}
+	}
+
+	var partnerClientCertInfo *events.PartnerClientCertificationInfo
+	if value.PartnerClientCertificationInfo != nil {
+		partnerClientCertInfo = &events.PartnerClientCertificationInfo{
+			ClientBusinessId: value.PartnerClientCertificationInfo.ClientBusinessId,
+			Status:           value.PartnerClientCertificationInfo.Status,
+			RejectionReasons: value.PartnerClientCertificationInfo.RejectionReasons,
+		}
+	}
+
+	wh.EventManager.Publish(events.AccountUpdateEventType, events.NewAccountUpdateEvent(
 		&baseEvent,
 		events.AccountUpdateEventEnum(value.Event),
 		value.PhoneNumber,
+		value.Country,
+		wabaInfo,
+		violationInfo,
+		authIntlRateEligibility,
+		banInfo,
+		restrictionInfo,
+		partnerClientCertInfo,
 	))
-
 }
 
 func (wh *WebhookManager) handleAccountReviewSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value AccountReviewUpdateValue) error {
@@ -709,9 +781,7 @@ func (wh *WebhookManager) handleMessageTemplateQualitySubscriptionEvents(baseEve
 		value.MessageTemplateName,
 		value.MessageTemplateLanguage,
 	))
-
 	return nil
-
 }
 
 func (wh *WebhookManager) handleMessageTemplateStatusSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateStatusUpdateValue) error {
@@ -761,46 +831,134 @@ func (wh *WebhookManager) handleTemplateCategoryUpdateSubscriptionEvents(baseEve
 }
 
 func (wh *WebhookManager) handleUserPreferencesSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value UserPreferencesValue) {
-	// TODO: Create proper event type for user preferences in events package
-	// For now, we'll publish a generic event with the user preferences data
-	// SDK users can subscribe to this event type when it's added to the events package
-	_ = baseEvent
-	_ = value
-	// wh.EventManager.Publish(events.UserPreferencesEventType, events.NewUserPreferencesEvent(&baseEvent, value))
+	// Convert webhook value to event preferences
+	prefs := make([]events.UserPreference, len(value.UserPreferences))
+	for i, p := range value.UserPreferences {
+		prefs[i] = events.UserPreference{
+			WaId:      p.WaId,
+			Detail:    p.Detail,
+			Category:  p.Category,
+			Value:     p.Value,
+			Timestamp: p.Timestamp,
+		}
+	}
+	wh.EventManager.Publish(events.UserPreferencesEventType, events.NewUserPreferencesEvent(&baseEvent, prefs))
 }
 
 func (wh *WebhookManager) handleMessageTemplateComponentsUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value MessageTemplateComponentsUpdateValue) {
-	// TODO: Create proper event type for message template components update in events package
-	// For now, we'll publish a generic event with the components update data
-	// SDK users can subscribe to this event type when it's added to the events package
-	_ = baseEvent
-	_ = value
-	// wh.EventManager.Publish(events.MessageTemplateComponentsUpdateEventType, events.NewMessageTemplateComponentsUpdateEvent(&baseEvent, value))
+	// Convert webhook buttons to event buttons
+	buttons := make([]events.MessageTemplateButton, len(value.MessageTemplateButtons))
+	for i, b := range value.MessageTemplateButtons {
+		buttons[i] = events.MessageTemplateButton{
+			Type:        b.MessageTemplateButtonType,
+			Text:        b.MessageTemplateButtonText,
+			Url:         b.MessageTemplateButtonUrl,
+			PhoneNumber: b.MessageTemplateButtonPhoneNumber,
+		}
+	}
+	wh.EventManager.Publish(events.MessageTemplateComponentsUpdateEventType, events.NewMessageTemplateComponentsUpdateEvent(
+		&baseEvent,
+		value.MessageTemplateId,
+		value.MessageTemplateName,
+		value.MessageTemplateLanguage,
+		value.MessageTemplateElement,
+		value.MessageTemplateTitle,
+		value.MessageTemplateFooter,
+		buttons,
+	))
 }
 
 func (wh *WebhookManager) handlePaymentConfigurationUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value PaymentConfigurationUpdateValue) {
-	// TODO: Create proper event type for payment configuration update in events package
-	// For now, we'll publish a generic event with the payment configuration data
-	// SDK users can subscribe to this event type when it's added to the events package
-	_ = baseEvent
-	_ = value
-	// wh.EventManager.Publish(events.PaymentConfigurationUpdateEventType, events.NewPaymentConfigurationUpdateEvent(&baseEvent, value))
+	wh.EventManager.Publish(events.PaymentConfigurationUpdateEventType, events.NewPaymentConfigurationUpdateEvent(
+		&baseEvent,
+		value.ConfigurationName,
+		value.ProviderName,
+		value.ProviderMid,
+		value.Status,
+		value.CreatedTimestamp,
+		value.UpdatedTimestamp,
+	))
 }
 
 func (wh *WebhookManager) handleSmbAppStateSyncSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value SmbAppStateSyncValue) {
-	// TODO: Create proper event type for SMB app state sync in events package
-	// For now, we'll publish a generic event with the state sync data
-	// SDK users can subscribe to this event type when it's added to the events package
-	_ = baseEvent
-	_ = value
-	// wh.EventManager.Publish(events.SmbAppStateSyncEventType, events.NewSmbAppStateSyncEvent(&baseEvent, value))
+	// Convert webhook state sync to event state sync
+	stateSync := make([]events.StateSyncItem, len(value.StateSync))
+	for i, s := range value.StateSync {
+		stateSync[i] = events.StateSyncItem{
+			Type: s.Type,
+			Contact: events.ContactSync{
+				FullName:    s.Contact.FullName,
+				FirstName:   s.Contact.FirstName,
+				PhoneNumber: s.Contact.PhoneNumber,
+			},
+			Action:    s.Action,
+			Timestamp: s.Metadata.Timestamp,
+		}
+	}
+	wh.EventManager.Publish(events.SmbAppStateSyncEventType, events.NewSmbAppStateSyncEvent(
+		&baseEvent,
+		value.MessagingProduct,
+		value.Metadata.DisplayPhoneNumber,
+		value.Metadata.PhoneNumberId,
+		stateSync,
+	))
 }
 
 func (wh *WebhookManager) handleSmbMessageEchoesSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value SmbMessageEchoesValue) {
-	// TODO: Create proper event type for SMB message echoes in events package
-	// For now, we'll publish a generic event with the message echoes data
-	// SDK users can subscribe to this event type when it's added to the events package
-	_ = baseEvent
-	_ = value
-	// wh.EventManager.Publish(events.SmbMessageEchoesEventType, events.NewSmbMessageEchoesEvent(&baseEvent, value))
+	// Convert webhook message echoes to event message echoes
+	echoes := make([]events.MessageEcho, len(value.MessageEchoes))
+	for i, e := range value.MessageEchoes {
+		echoes[i] = events.MessageEcho{
+			From:      e.From,
+			To:        e.To,
+			Id:        e.Id,
+			Timestamp: e.Timestamp,
+			Type:      e.Type,
+		}
+	}
+	wh.EventManager.Publish(events.SmbMessageEchoesEventType, events.NewSmbMessageEchoesEvent(
+		&baseEvent,
+		value.MessagingProduct,
+		value.Metadata.DisplayPhoneNumber,
+		value.Metadata.PhoneNumberId,
+		echoes,
+	))
+}
+
+func (wh *WebhookManager) handleHistorySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value HistoryValue) {
+	// Convert webhook history to event history chunks
+	chunks := make([]events.HistoryChunk, len(value.History))
+	for i, h := range value.History {
+		threads := make([]events.HistoryThread, len(h.Threads))
+		for j, t := range h.Threads {
+			messages := make([]events.HistoryMessage, len(t.Messages))
+			for k, m := range t.Messages {
+				messages[k] = events.HistoryMessage{
+					From:          m.From,
+					To:            m.To,
+					Id:            m.Id,
+					Timestamp:     m.Timestamp,
+					Type:          m.Type,
+					MessageStatus: m.HistoryContext.Status,
+				}
+			}
+			threads[j] = events.HistoryThread{
+				Id:       t.Id,
+				Messages: messages,
+			}
+		}
+		chunks[i] = events.HistoryChunk{
+			Phase:      h.Metadata.Phase,
+			ChunkOrder: h.Metadata.ChunkOrder,
+			Progress:   h.Metadata.Progress,
+			Threads:    threads,
+		}
+	}
+	wh.EventManager.Publish(events.HistoryEventType, events.NewHistoryEvent(
+		&baseEvent,
+		value.MessagingProduct,
+		value.Metadata.DisplayPhoneNumber,
+		value.Metadata.PhoneNumberId,
+		chunks,
+	))
 }
