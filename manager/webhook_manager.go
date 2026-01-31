@@ -512,7 +512,7 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 					Id:       message.Document.Id,
 					Caption:  &message.Document.Caption,
 					FileName: message.Document.Filename,
-					Link:     message.Document.Id,
+					Link:     message.Document.Link,
 				})
 
 				if err != nil {
