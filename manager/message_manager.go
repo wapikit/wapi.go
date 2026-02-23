@@ -124,6 +124,40 @@ func (mm *MessageManager) Send(message components.BaseMessage, phoneNumber strin
 	return &sendResponse, nil
 }
 
+// Send sends a using the MM Lite API. 
+// this only works if the WABA is eligible and has been onboarded on the MM Lite API.
+func (mm *MessageManager) SendMarketingMessage(message components.BaseMessage, phoneNumber string) (*MessageSendResponse, error) {
+	// Convert the message to JSON.
+	body, err := message.ToJson(components.ApiCompatibleJsonConverterConfigs{
+		SendToPhoneNumber: phoneNumber,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error converting message to json: %v", err)
+	}
+
+	// Build the API request.
+	apiRequest := mm.requester.NewApiRequest(strings.Join([]string{mm.PhoneNumberId, "marketing_messages"}, "/"), http.MethodPost)
+	apiRequest.SetBody(string(body))
+	responseStr, err := apiRequest.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshal the API response.
+	var sendResponse MessageSendResponse
+	err = json.Unmarshal([]byte(responseStr), &sendResponse)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling response: %v", err)
+	}
+
+	// If an error object is present in the response, return it.
+	if sendResponse.Error != nil {
+		return &sendResponse, fmt.Errorf("error sending message: %s", sendResponse.Error.Message)
+	}
+
+	return &sendResponse, nil
+}
+
 // ReadMessage marks a message as read.
 // messageId: The ID of the message to mark as read
 // showTyping: Whether to show typing indicator (will auto-dismiss after 25 seconds or when you respond)

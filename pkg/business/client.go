@@ -84,11 +84,40 @@ type FetchBusinessAccountResponse struct {
 		Name string `json:"name" validate:"required"`
 		Id   string `json:"id" validate:"required"`
 	} `json:"owner_business_info" validate:"required"`
+	MarketingMessagesOnboardingStatus string `json:"marketing_messages_onboarding_status" validate:"required"`
+	MessageTemplateNamespace          string `json:"message_template_namespace" validate:"required"`
+	AccountReviewStatus               string `json:"account_review_status" validate:"required"`
+	BusinessVerificationStatus        string `json:"business_verification_status" validate:"required"`
+	Country                           string `json:"country" validate:"required"`
+	OwnershipType                     string `json:"ownership_type" validate:"required"`
+	PrimaryBusinessLocation           string `json:"primary_business_location" validate:"required"`
 }
 
 // This method fetches the business account details.
 func (client *BusinessClient) Fetch() (*FetchBusinessAccountResponse, error) {
 	apiRequest := client.requester.NewApiRequest(client.BusinessAccountId, http.MethodGet)
+	fields := []string{
+		"id",
+		"name",
+		"timezone_id",
+		"message_template_namespace",
+		"account_review_status",
+		"business_verification_status",
+		"country",
+		"ownership_type",
+		"primary_business_location",
+		"currency",
+		"owner_business_info",
+		"marketing_messages_onboarding_status",
+	}
+
+	for _, field := range fields {
+		apiRequest.AddField(request_client.ApiRequestQueryParamField{
+			Name:    field,
+			Filters: map[string]string{},
+		})
+	}
+
 	response, err := apiRequest.Execute()
 	if err != nil {
 		fmt.Println("Error while fetching business account", err)

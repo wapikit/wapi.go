@@ -35,7 +35,7 @@ func New(config *ClientConfig) *Client {
 	requester := *request_client.NewRequestClient(config.ApiAccessToken)
 	return &Client{
 		businessAccountId: config.BusinessAccountId,
-		apiAccessToken:    config.BusinessAccountId,
+		apiAccessToken:    config.ApiAccessToken,
 		Messaging:         []messaging.MessagingClient{},
 		eventManager:      &eventManager,
 		Business: *business.NewBusinessClient(&business.BusinessClientConfig{
