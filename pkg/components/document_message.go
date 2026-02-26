@@ -23,7 +23,7 @@ type DocumentMessageApiPayload struct {
 
 // DocumentMessageConfigs represents the configurations for a document message.
 type DocumentMessageConfigs struct {
-	Id       string  `json:"id" validate:"required"`
+	Id       string  `json:"id,omitempty"`
 	Link     string  `json:"link,omitempty"`
 	Caption  *string `json:"caption,omitempty"`
 	FileName string  `json:"filename" validate:"required"`
