@@ -75,7 +75,7 @@ type WhatsAppBusinessTemplatesFetchResponseEdge struct {
 
 // TemplateMessageComponentCard represents a card component in a message template.
 type TemplateMessageComponentCard struct {
-	// Add card-specific fields if needed.
+	CardIndex  int                                       `json:"card_index,omitempty"`
 	Components []WhatsAppBusinessHSMWhatsAppHSMComponent `json:"components,omitempty"`
 }
 
@@ -141,6 +141,7 @@ const (
 	MessageTemplateComponentFormatText     MessageTemplateComponentFormat = "TEXT"
 	MessageTemplateComponentFormatImage    MessageTemplateComponentFormat = "IMAGE"
 	MessageTemplateComponentFormatDocument MessageTemplateComponentFormat = "DOCUMENT"
+	MessageTemplateComponentFormatProduct  MessageTemplateComponentFormat = "PRODUCT"
 	MessageTemplateComponentFormatVideo    MessageTemplateComponentFormat = "VIDEO"
 	MessageTemplateComponentFormatLocation MessageTemplateComponentFormat = "LOCATION"
 )
@@ -183,6 +184,7 @@ type WhatsappMessageTemplateButtonCreateRequestBodyAlias = WhatsappMessageTempla
 // WhatsappMessageTemplateComponentCreateOrUpdateRequestBody represents the request body for creating/updating a component.
 type WhatsappMessageTemplateComponentCreateOrUpdateRequestBody struct {
 	Type    MessageTemplateComponentType                     `json:"type,omitempty"`
+	Cards   []TemplateMessageComponentCard                   `json:"cards,omitempty"`
 	Format  MessageTemplateComponentFormat                   `json:"format,omitempty"`
 	Text    string                                           `json:"text,omitempty"`
 	Buttons []WhatsappMessageTemplateButtonCreateRequestBody `json:"buttons,omitempty"`
@@ -296,8 +298,8 @@ type TemplateMigrationResponse struct {
 // MigrateFromOtherBusinessAccount migrates templates from another business account.
 func (manager *TemplateManager) MigrateFromOtherBusinessAccount(sourcePageNumber int, sourceWabaId int) (*TemplateMigrationResponse, error) {
 	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{manager.businessAccountId, "migrate_message_templates"}, "/"), http.MethodGet)
-	apiRequest.AddQueryParam("page_number", string(sourcePageNumber))
-	apiRequest.AddQueryParam("source_waba_id", string(sourceWabaId))
+	apiRequest.AddQueryParam("page_number", strconv.Itoa(sourcePageNumber))
+	apiRequest.AddQueryParam("source_waba_id", strconv.Itoa(sourceWabaId))
 	response, err := apiRequest.Execute()
 	if err != nil {
 		return nil, err

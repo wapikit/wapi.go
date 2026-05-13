@@ -84,14 +84,19 @@ func (t TemplateMessageComponentBodyType) GetComponentType() string {
 	return string(t.Type)
 }
 
-type TemplateMessageCaraouselCard struct {
+type TemplateMessageCarouselCard struct {
 	CardIndex  int                        `json:"card_index" validate:"required"`
 	Components []TemplateMessageComponent `json:"components" validate:"required"` // only header, buttons and body
 }
 
 type TemplateMessageComponentCarouselType struct {
-	Type  TemplateMessageComponentType   `json:"type" validate:"required"` // "carousel"
-	Cards []TemplateMessageCaraouselCard `json:"cards" validate:"required"`
+	Type  TemplateMessageComponentType  `json:"type" validate:"required"` // "carousel"
+	Cards []TemplateMessageCarouselCard `json:"cards" validate:"required"`
+}
+
+// GetComponentType returns the component type.
+func (t TemplateMessageComponentCarouselType) GetComponentType() string {
+	return string(t.Type)
 }
 
 // TemplateMessageParameterType represents the type of a parameter.
@@ -282,6 +287,33 @@ func (tm *TemplateMessage) AddBody(params TemplateMessageComponentBodyType) {
 		// Append the new body.
 		tm.Components = append(tm.Components, params)
 	}
+}
+
+// AddCarousel adds (or overrides) a carousel component in the template message.
+// Only one carousel is allowed, and a carousel can contain up to 10 cards.
+func (tm *TemplateMessage) AddCarousel(params TemplateMessageComponentCarouselType) error {
+	if len(params.Cards) > 10 {
+		return fmt.Errorf("maximum number of carousel cards reached")
+	}
+
+	var existingCarouselIndex int
+	var found bool
+
+	for i, component := range tm.Components {
+		if TemplateMessageComponentType(component.GetComponentType()) == TemplateMessageComponentTypeCarousel {
+			existingCarouselIndex = i
+			found = true
+			break
+		}
+	}
+
+	if found {
+		tm.Components[existingCarouselIndex] = params
+	} else {
+		tm.Components = append(tm.Components, params)
+	}
+
+	return nil
 }
 
 // AddButton adds a button component to the template message.
