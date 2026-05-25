@@ -439,6 +439,33 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 			Requester: wh.Requester,
 		})
 
+		if message.Referral != nil {
+			mediaUrl := message.Referral.ImageUrl
+			if message.Referral.VideoUrl != "" {
+				mediaUrl = message.Referral.VideoUrl
+			}
+			adSource := events.AdSource{
+				Url:          message.Referral.SourceUrl,
+				Id:           message.Referral.SourceId,
+				Type:         events.AdInteractionSourceType(message.Referral.SourceType),
+				Title:        message.Referral.Headline,
+				Description:  message.Referral.Body,
+				MediaUrl:     mediaUrl,
+				MediaType:    events.AdInteractionSourceMediaType(message.Referral.MediaType),
+				ThumbnailUrl: message.Referral.ThumbnailUrl,
+				CtwaClid:     message.Referral.CtwaClid,
+			}
+			welcomeText := message.Referral.WelcomeMessage.Text
+			if welcomeText == "" && message.Type == NotificationMessageTypeText {
+				welcomeText = message.Text.Body
+			}
+			wh.EventManager.Publish(events.AdInteractionEventType, events.NewAdInteractionEvent(
+				baseMessageEvent,
+				adSource,
+				welcomeText,
+			))
+		}
+
 		switch message.Type {
 		case NotificationMessageTypeText:
 			{
