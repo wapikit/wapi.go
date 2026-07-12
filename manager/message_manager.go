@@ -30,6 +30,10 @@ type MessageSendResponse struct {
 	Contacts         []struct {
 		Input string `json:"input"`
 		WaID  string `json:"wa_id"`
+		// UserId is the recipient BSUID when the send targeted a BSUID
+		// (identity rollout). Empty for phone-targeted sends — do not treat
+		// its absence as a parse failure.
+		UserId string `json:"user_id,omitempty"`
 	} `json:"contacts"`
 	Messages []struct {
 		ID string `json:"id"`
@@ -56,106 +60,75 @@ type StatusResponse struct {
 	Error   *MessageSendError `json:"error,omitempty"`
 }
 
-// Reply sends a reply message using the provided BaseMessage and returns a structured response.
-// If the API response contains an error, it returns that error.
+// dispatch converts a message with the given configs and POSTs it to the given
+// endpoint suffix under the phone number id, returning the parsed response. It
+// is the shared core of all Send/Reply/SendMarketing paths (phone and target).
+func (mm *MessageManager) dispatch(message components.BaseMessage, configs components.ApiCompatibleJsonConverterConfigs, endpointSuffix string) (*MessageSendResponse, error) {
+	body, err := message.ToJson(configs)
+	if err != nil {
+		return nil, fmt.Errorf("error converting message to json: %v", err)
+	}
+
+	apiRequest := mm.requester.NewApiRequest(strings.Join([]string{mm.PhoneNumberId, endpointSuffix}, "/"), http.MethodPost)
+	apiRequest.SetBody(string(body))
+	responseStr, execErr := apiRequest.Execute()
+
+	// Parse whatever body we got — a non-2xx response carries Meta's error
+	// envelope, which callers may want alongside the returned error.
+	var sendResponse MessageSendResponse
+	if responseStr != "" {
+		if err := json.Unmarshal([]byte(responseStr), &sendResponse); err != nil && execErr == nil {
+			return nil, fmt.Errorf("error unmarshalling response: %v", err)
+		}
+	}
+
+	// A non-2xx HTTP status surfaces as execErr (typed *GraphAPIError); an
+	// application-level error may also appear in the parsed envelope on a 200.
+	if execErr != nil {
+		if responseStr == "" {
+			return nil, execErr
+		}
+		return &sendResponse, execErr
+	}
+	if sendResponse.Error != nil {
+		return &sendResponse, fmt.Errorf("error sending message: %s", sendResponse.Error.Message)
+	}
+	return &sendResponse, nil
+}
+
+// SendToTarget sends a message to any MessageTarget (phone or BSUID/parent
+// BSUID). Phone targets serialize as `to`, BSUID/parent as `recipient`.
+func (mm *MessageManager) SendToTarget(message components.BaseMessage, target MessageTarget) (*MessageSendResponse, error) {
+	return mm.dispatch(message, target.configs(""), "messages")
+}
+
+// ReplyToTarget sends a reply (in-reply-to replyTo) to any MessageTarget.
+func (mm *MessageManager) ReplyToTarget(message components.BaseMessage, target MessageTarget, replyTo string) (*MessageSendResponse, error) {
+	return mm.dispatch(message, target.configs(replyTo), "messages")
+}
+
+// SendMarketingMessageToTarget sends via the MM Lite API to any MessageTarget.
+// Only works if the WABA is eligible and onboarded on the MM Lite API.
+func (mm *MessageManager) SendMarketingMessageToTarget(message components.BaseMessage, target MessageTarget) (*MessageSendResponse, error) {
+	return mm.dispatch(message, target.configs(""), "marketing_messages")
+}
+
+// Reply sends a reply message to a phone number. Backward-compatible wrapper
+// over ReplyToTarget with a phone target.
 func (mm *MessageManager) Reply(message components.BaseMessage, phoneNumber string, replyTo string) (*MessageSendResponse, error) {
-	body, err := message.ToJson(components.ApiCompatibleJsonConverterConfigs{
-		SendToPhoneNumber: phoneNumber,
-		ReplyToMessageId:  replyTo,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error converting message to json: %v", err)
-	}
-
-	// Build the API request.
-	apiRequest := mm.requester.NewApiRequest(strings.Join([]string{mm.PhoneNumberId, "messages"}, "/"), http.MethodPost)
-	apiRequest.SetBody(string(body))
-	responseStr, err := apiRequest.Execute()
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal the API response.
-	var sendResponse MessageSendResponse
-	err = json.Unmarshal([]byte(responseStr), &sendResponse)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling response: %v", err)
-	}
-
-	// If an error object is present in the response, return it.
-	if sendResponse.Error != nil {
-		return &sendResponse, fmt.Errorf("error sending message: %s", sendResponse.Error.Message)
-	}
-
-	return &sendResponse, nil
+	return mm.ReplyToTarget(message, NewPhoneTarget(phoneNumber), replyTo)
 }
 
-// Send sends a message using the provided BaseMessage and returns a structured response.
-// If the API response contains an error, it returns that error.
+// Send sends a message to a phone number. Backward-compatible wrapper over
+// SendToTarget with a phone target.
 func (mm *MessageManager) Send(message components.BaseMessage, phoneNumber string) (*MessageSendResponse, error) {
-	// Convert the message to JSON.
-	body, err := message.ToJson(components.ApiCompatibleJsonConverterConfigs{
-		SendToPhoneNumber: phoneNumber,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error converting message to json: %v", err)
-	}
-
-	// Build the API request.
-	apiRequest := mm.requester.NewApiRequest(strings.Join([]string{mm.PhoneNumberId, "messages"}, "/"), http.MethodPost)
-	apiRequest.SetBody(string(body))
-	responseStr, err := apiRequest.Execute()
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal the API response.
-	var sendResponse MessageSendResponse
-	err = json.Unmarshal([]byte(responseStr), &sendResponse)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling response: %v", err)
-	}
-
-	// If an error object is present in the response, return it.
-	if sendResponse.Error != nil {
-		return &sendResponse, fmt.Errorf("error sending message: %s", sendResponse.Error.Message)
-	}
-
-	return &sendResponse, nil
+	return mm.SendToTarget(message, NewPhoneTarget(phoneNumber))
 }
 
-// Send sends a using the MM Lite API. 
-// this only works if the WABA is eligible and has been onboarded on the MM Lite API.
+// SendMarketingMessage sends via the MM Lite API to a phone number.
+// Backward-compatible wrapper over SendMarketingMessageToTarget.
 func (mm *MessageManager) SendMarketingMessage(message components.BaseMessage, phoneNumber string) (*MessageSendResponse, error) {
-	// Convert the message to JSON.
-	body, err := message.ToJson(components.ApiCompatibleJsonConverterConfigs{
-		SendToPhoneNumber: phoneNumber,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error converting message to json: %v", err)
-	}
-
-	// Build the API request.
-	apiRequest := mm.requester.NewApiRequest(strings.Join([]string{mm.PhoneNumberId, "marketing_messages"}, "/"), http.MethodPost)
-	apiRequest.SetBody(string(body))
-	responseStr, err := apiRequest.Execute()
-	if err != nil {
-		return nil, err
-	}
-
-	// Unmarshal the API response.
-	var sendResponse MessageSendResponse
-	err = json.Unmarshal([]byte(responseStr), &sendResponse)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling response: %v", err)
-	}
-
-	// If an error object is present in the response, return it.
-	if sendResponse.Error != nil {
-		return &sendResponse, fmt.Errorf("error sending message: %s", sendResponse.Error.Message)
-	}
-
-	return &sendResponse, nil
+	return mm.SendMarketingMessageToTarget(message, NewPhoneTarget(phoneNumber))
 }
 
 // ReadMessage marks a message as read.

@@ -89,6 +89,12 @@ const (
 	TemplateMessageButtonTypeCopyCode            TemplateMessageButtonType = "COPY_CODE"
 	TemplateMessageButtonTypeCatalog             TemplateMessageButtonType = "CATALOG"
 	TemplateMessageButtonTypeMultiProductMessage TemplateMessageButtonType = "MPM"
+	// TemplateMessageButtonTypeRequestContactInfo asks the recipient to share
+	// their contact info (BSUID/phone). The button takes no other fields — the
+	// label is Meta-controlled — so a create-request button is just
+	// {"type": "REQUEST_CONTACT_INFO"}, and sending the template needs no
+	// button parameter.
+	TemplateMessageButtonTypeRequestContactInfo TemplateMessageButtonType = "REQUEST_CONTACT_INFO"
 )
 
 // TemplateMessageComponentButton represents a button component in a message template.

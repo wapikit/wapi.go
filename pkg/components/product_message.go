@@ -96,7 +96,7 @@ func (m *ProductMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]by
 	}
 
 	jsonData := ProductMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeInteractive),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeInteractive),
 		Interactive:        *m,
 	}
 

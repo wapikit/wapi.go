@@ -49,7 +49,7 @@ func (dm *DocumentMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]
 	}
 
 	jsonData := DocumentMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeDocument),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeDocument),
 		Document:           *dm,
 	}
 

@@ -296,6 +296,13 @@ type FetchBusinessAccountResponse struct {
         Name string `json:"name" validate:"required"`
         Id   string `json:"id" validate:"required"`
     }   `json:"owner_business_info" validate:"required"`
+    MarketingMessagesOnboardingStatus string `json:"marketing_messages_onboarding_status" validate:"required"`
+    MessageTemplateNamespace          string `json:"message_template_namespace" validate:"required"`
+    AccountReviewStatus               string `json:"account_review_status" validate:"required"`
+    BusinessVerificationStatus        string `json:"business_verification_status" validate:"required"`
+    Country                           string `json:"country" validate:"required"`
+    OwnershipType                     string `json:"ownership_type" validate:"required"`
+    PrimaryBusinessLocation           string `json:"primary_business_location" validate:"required"`
 }
 ```
 
@@ -327,7 +334,7 @@ type WhatsAppConversationAnalyticsEdge struct {
     Data []struct {
         DataPoints []WhatsAppConversationAnalyticsNode `json:"data_points,omitempty"`
     }   `json:"data,omitempty"`
-    Paging internal.WhatsAppBusinessApiPaginationMeta `json:"paging,omitempty"`
+    Paging manager.PaginationDetails `json:"paging,omitempty"`
 }
 ```
 

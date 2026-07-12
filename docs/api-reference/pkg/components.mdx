@@ -40,6 +40,10 @@ ApiCompatibleJsonConverterConfigs represents the configuration for converting to
 type ApiCompatibleJsonConverterConfigs struct {
     ReplyToMessageId  string
     SendToPhoneNumber string
+    // SendToRecipient carries a BSUID (or parent BSUID) send target. When set,
+    // the payload serializes `recipient` instead of `to` (Meta BSUID send
+    // contract). Empty for phone sends — existing behavior is unchanged.
+    SendToRecipient string
 }
 ```
 
@@ -112,8 +116,13 @@ BaseMessagePayload represents the base payload to send messages.
 
 ```go
 type BaseMessagePayload struct {
-    Context          *Context    `json:"context,omitempty"`
-    To               string      `json:"to"`
+    Context *Context `json:"context,omitempty"`
+    // To is the recipient phone number for phone-targeted sends. Omitted when a
+    // BSUID `Recipient` is used (exactly one of To/Recipient is set).
+    To  string `json:"to,omitempty"`
+    // Recipient is the BSUID / parent-BSUID send target (identity rollout).
+    // Omitted for phone sends. Serialized only when set.
+    Recipient        string      `json:"recipient,omitempty"`
     Type             MessageType `json:"type"`
     MessagingProduct string      `json:"messaging_product"`
     RecipientType    string      `json:"recipient_type"`
@@ -124,10 +133,40 @@ type BaseMessagePayload struct {
 ### func NewBaseMessagePayload
 
 ```go
-func NewBaseMessagePayload(to string, messageType MessageType) BaseMessagePayload
+func NewBaseMessagePayload(configs ApiCompatibleJsonConverterConfigs, messageType MessageType) BaseMessagePayload
 ```
 
-NewBaseMessagePayload creates a new instance of BaseMessagePayload.
+NewBaseMessagePayload creates a new instance of BaseMessagePayload from the send configs, choosing phone \(\`to\`\) vs BSUID \(\`recipient\`\) serialization. SendToRecipient \(BSUID\) takes precedence when both are set — callers should set exactly one; setting both is only meaningful for Meta precedence tests.
+
+<a name="CallToAction"></a>
+## type CallToAction
+
+
+
+```go
+type CallToAction struct {
+    DisplayText string `json:"display_text" validate:"required"`
+    Url         string `json:"url" validate:"required"`
+}
+```
+
+<a name="CallToAction.SetDisplayText"></a>
+### func \(\*CallToAction\) SetDisplayText
+
+```go
+func (p *CallToAction) SetDisplayText(text string)
+```
+
+
+
+<a name="CallToAction.SetUrl"></a>
+### func \(\*CallToAction\) SetUrl
+
+```go
+func (p *CallToAction) SetUrl(url string)
+```
+
+
 
 <a name="CatalogMessage"></a>
 ## type CatalogMessage
@@ -271,6 +310,13 @@ type Contact struct {
     Emails    []ContactEmail   `json:"emails,omitempty"`
     Phones    []ContactPhone   `json:"phones,omitempty"`
     Birthday  string           `json:"birthday,omitempty"`
+    // Inbound-only fields (identity/contact-book rollout). Populated when a user
+    // shares contact info — via a REQUEST_CONTACT_INFO button or a direct share.
+    // Vcard is Meta's raw vCard string; Origin distinguishes a contact-request
+    // response ("contact_request") from a direct share ("other"). Both omitted
+    // on outbound sends.
+    Vcard  string `json:"vcard,omitempty"`
+    Origin string `json:"origin,omitempty"`
 }
 ```
 
@@ -487,6 +533,80 @@ type ContactPhone struct {
 }
 ```
 
+<a name="ContactRequestMessage"></a>
+## type ContactRequestMessage
+
+
+
+```go
+type ContactRequestMessage struct {
+    Type   InteractiveMessageType    `json:"type" validate:"required"`
+    Action contactRequestAction      `json:"action" validate:"required"`
+    Body   ContactRequestMessageBody `json:"body,omitempty"`
+}
+```
+
+<a name="NewContactRequestMessage"></a>
+### func NewContactRequestMessage
+
+```go
+func NewContactRequestMessage(params ContactRequestMessageParams) (*ContactRequestMessage, error)
+```
+
+
+
+<a name="ContactRequestMessage.SetBodyText"></a>
+### func \(\*ContactRequestMessage\) SetBodyText
+
+```go
+func (m *ContactRequestMessage) SetBodyText(bodyText string)
+```
+
+
+
+<a name="ContactRequestMessage.ToJson"></a>
+### func \(\*ContactRequestMessage\) ToJson
+
+```go
+func (m *ContactRequestMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]byte, error)
+```
+
+ToJson converts the contact\-request message to WhatsApp API compatible JSON.
+
+<a name="ContactRequestMessageApiPayload"></a>
+## type ContactRequestMessageApiPayload
+
+
+
+```go
+type ContactRequestMessageApiPayload struct {
+    BaseMessagePayload
+    Interactive ContactRequestMessage `json:"interactive" validate:"required"`
+}
+```
+
+<a name="ContactRequestMessageBody"></a>
+## type ContactRequestMessageBody
+
+
+
+```go
+type ContactRequestMessageBody struct {
+    Text string `json:"text" validate:"required"`
+}
+```
+
+<a name="ContactRequestMessageParams"></a>
+## type ContactRequestMessageParams
+
+
+
+```go
+type ContactRequestMessageParams struct {
+    BodyText string `json:"-" validate:"required"`
+}
+```
+
 <a name="ContactUrl"></a>
 ## type ContactUrl
 
@@ -510,6 +630,173 @@ type Context struct {
 }
 ```
 
+<a name="CtaMessage"></a>
+## type CtaMessage
+
+CtaMessage represents a cta message.
+
+```go
+type CtaMessage struct {
+    Action CtaMessageAction       `json:"action" validate:"required"`
+    Body   CtaMessageBody         `json:"body" validate:"required"`
+    Footer *CtaMessageFooter      `json:"footer,omitempty"`
+    Header CtaMessageHeader       `json:"header,omitempty"`
+    Type   InteractiveMessageType `json:"type" validate:"required"`
+}
+```
+
+<a name="NewCtaMessage"></a>
+### func NewCtaMessage
+
+```go
+func NewCtaMessage(params CtaMessageParams) (*CtaMessage, error)
+```
+
+NewCtaMessage creates a new cta message.
+
+<a name="CtaMessage.SetAction"></a>
+### func \(\*CtaMessage\) SetAction
+
+```go
+func (message *CtaMessage) SetAction(params CtaMessageActionParams)
+```
+
+
+
+<a name="CtaMessage.SetBody"></a>
+### func \(\*CtaMessage\) SetBody
+
+```go
+func (message *CtaMessage) SetBody(text string)
+```
+
+
+
+<a name="CtaMessage.SetFooter"></a>
+### func \(\*CtaMessage\) SetFooter
+
+```go
+func (message *CtaMessage) SetFooter(text string)
+```
+
+
+
+<a name="CtaMessage.SetHeader"></a>
+### func \(\*CtaMessage\) SetHeader
+
+```go
+func (message *CtaMessage) SetHeader(text string)
+```
+
+
+
+<a name="CtaMessage.ToJson"></a>
+### func \(\*CtaMessage\) ToJson
+
+```go
+func (m *CtaMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]byte, error)
+```
+
+ToJson converts the cta message to JSON.
+
+<a name="CtaMessageAction"></a>
+## type CtaMessageAction
+
+
+
+```go
+type CtaMessageAction struct {
+    Name       string                 `json:"name" validate:"required"`
+    Parameters CtaMessageActionParams `json:"parameters" validate:"required"`
+}
+```
+
+<a name="CtaMessageActionParams"></a>
+## type CtaMessageActionParams
+
+
+
+```go
+type CtaMessageActionParams struct {
+    DisplayText string `json:"display_text" validate:"required"`
+    Url         string `json:"url" validate:"required"`
+}
+```
+
+<a name="CtaMessageApiPayload"></a>
+## type CtaMessageApiPayload
+
+CtaMessageApiPayload represents the API payload for a cta message.
+
+```go
+type CtaMessageApiPayload struct {
+    BaseMessagePayload
+    Interactive CtaMessage `json:"interactive" validate:"required"`
+}
+```
+
+<a name="CtaMessageBody"></a>
+## type CtaMessageBody
+
+
+
+```go
+type CtaMessageBody struct {
+    Text string `json:"text" validate:"required"`
+}
+```
+
+<a name="CtaMessageFooter"></a>
+## type CtaMessageFooter
+
+
+
+```go
+type CtaMessageFooter struct {
+    Text string `json:"text"`
+}
+```
+
+<a name="CtaMessageHeader"></a>
+## type CtaMessageHeader
+
+\! TODO: support more header types
+
+```go
+type CtaMessageHeader struct {
+    Type CtaMessageHeaderType `json:"type" validate:"required"`
+    Text string               `json:"text"`
+}
+```
+
+<a name="CtaMessageHeaderType"></a>
+## type CtaMessageHeaderType
+
+
+
+```go
+type CtaMessageHeaderType string
+```
+
+<a name="CtaMessageHeaderTypeText"></a>
+
+```go
+const (
+    CtaMessageHeaderTypeText CtaMessageHeaderType = "text"
+)
+```
+
+<a name="CtaMessageParams"></a>
+## type CtaMessageParams
+
+CtaMessageParams represents the parameters for creating a cta message.
+
+```go
+type CtaMessageParams struct {
+    BodyText string `validate:"required"`
+}
+```
+
 <a name="DocumentMessage"></a>
 ## type DocumentMessage
 
@@ -518,7 +805,7 @@ DocumentMessage represents a document message.
 ```go
 type DocumentMessage struct {
     Id       string  `json:"id,omitempty"`
-    Link     *string `json:"link,omitempty"`
+    Link     string  `json:"link,omitempty"`
     Caption  *string `json:"caption,omitempty"`
     FileName string  `json:"filename" validate:"required"`
 }
@@ -561,8 +848,8 @@ DocumentMessageConfigs represents the configurations for a document message.
 
 ```go
 type DocumentMessageConfigs struct {
-    Id       string  `json:"id" validate:"required"`
-    Link     *string `json:"link,omitempty"`
+    Id       string  `json:"id,omitempty"`
+    Link     string  `json:"link,omitempty"`
     Caption  *string `json:"caption,omitempty"`
     FileName string  `json:"filename" validate:"required"`
 }
@@ -663,9 +950,11 @@ const (
     InteractiveMessageTypeButton          InteractiveMessageType = "button"
     InteractiveMessageTypeProduct         InteractiveMessageType = "product"
     InteractiveMessageTypeProductList     InteractiveMessageType = "product_list"
+    InteractiveMessageTypeCta             InteractiveMessageType = "cta_url"
     InteractiveMessageTypeList            InteractiveMessageType = "list"
     InteractiveMessageTypeCatalog         InteractiveMessageType = "catalog_message"
     InteractiveMessageTypeLocationRequest InteractiveMessageType = "location_request_message"
+    InteractiveMessageTypeContactRequest  InteractiveMessageType = "contact_request"
 )
 ```
 
@@ -1524,8 +1813,9 @@ StickerMessage represents a sticker message.
 
 ```go
 type StickerMessage struct {
-    Id   string `json:"id,omitempty"`
-    Link string `json:"link,omitempty"`
+    Id         string `json:"id,omitempty"`
+    Link       string `json:"link,omitempty"`
+    IsAnimated bool   `json:"animated,omitempty"`
 }
 ```
 
@@ -1566,8 +1856,9 @@ StickerMessageConfigs represents the configurations for a sticker message.
 
 ```go
 type StickerMessageConfigs struct {
-    Id   string `json:"id,omitempty"`
-    Link string `json:"link,omitempty"`
+    Id         string `json:"id,omitempty"`
+    Link       string `json:"link,omitempty"`
+    IsAnimated bool   `json:"animated,omitempty"`
 }
 ```
 
@@ -1610,6 +1901,15 @@ func (tm *TemplateMessage) AddButton(params TemplateMessageComponentButtonType) 
 ```
 
 AddButton adds a button component to the template message. A maximum of 10 buttons is allowed.
+
+<a name="TemplateMessage.AddCarousel"></a>
+### func \(\*TemplateMessage\) AddCarousel
+
+```go
+func (tm *TemplateMessage) AddCarousel(params TemplateMessageComponentCarouselType) error
+```
+
+AddCarousel adds \(or overrides\) a carousel component in the template message. Only one carousel is allowed, and a carousel can contain up to 10 cards.
 
 <a name="TemplateMessage.AddHeader"></a>
 ### func \(\*TemplateMessage\) AddHeader
@@ -1747,13 +2047,13 @@ const (
 )
 ```
 
-<a name="TemplateMessageCaraouselCard"></a>
-## type TemplateMessageCaraouselCard
+<a name="TemplateMessageCarouselCard"></a>
+## type TemplateMessageCarouselCard
 
 
 
 ```go
-type TemplateMessageCaraouselCard struct {
+type TemplateMessageCarouselCard struct {
     CardIndex  int                        `json:"card_index" validate:"required"`
     Components []TemplateMessageComponent `json:"components" validate:"required"` // only header, buttons and body
 }
@@ -1821,10 +2121,19 @@ func (t TemplateMessageComponentButtonType) GetComponentType() string
 
 ```go
 type TemplateMessageComponentCarouselType struct {
-    Type  TemplateMessageComponentType   `json:"type" validate:"required"` // "carousel"
-    Cards []TemplateMessageCaraouselCard `json:"cards" validate:"required"`
+    Type  TemplateMessageComponentType  `json:"type" validate:"required"` // "carousel"
+    Cards []TemplateMessageCarouselCard `json:"cards" validate:"required"`
 }
 ```
+
+<a name="TemplateMessageComponentCarouselType.GetComponentType"></a>
+### func \(TemplateMessageComponentCarouselType\) GetComponentType
+
+```go
+func (t TemplateMessageComponentCarouselType) GetComponentType() string
+```
+
+GetComponentType returns the component type.
 
 <a name="TemplateMessageComponentHeaderType"></a>
 ## type TemplateMessageComponentHeaderType
@@ -2007,7 +2316,8 @@ TemplateMessageParameterMedia represents a media parameter \(for document, image
 
 ```go
 type TemplateMessageParameterMedia struct {
-    Link string `json:"link" validate:"required"` // URL link of the media.
+    Link     string `json:"link" validate:"required"` // URL link of the media.
+    Filename string `json:"filename,omitempty"`       // Optional filename for document.
 }
 ```
 
@@ -2152,6 +2462,17 @@ VideoMessageConfigs is an alias for VideoMessage.
 
 ```go
 type VideoMessageConfigs = VideoMessage
+```
+
+<a name="contactRequestAction"></a>
+## type contactRequestAction
+
+
+
+```go
+type contactRequestAction struct {
+    Name string `json:"name" validate:"required"` // "request_contact_info"
+}
 ```
 
 <a name="listMessage"></a>

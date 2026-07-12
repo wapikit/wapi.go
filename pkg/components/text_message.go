@@ -55,7 +55,7 @@ func (m *textMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]byte,
 	}
 
 	jsonData := TextMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeText),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeText),
 		Text: TextMessageApiPayloadText{
 			Body:         m.Text,
 			AllowPreview: m.AllowPreview,

@@ -87,6 +87,13 @@ type Contact struct {
 	Emails    []ContactEmail   `json:"emails,omitempty"`
 	Phones    []ContactPhone   `json:"phones,omitempty"`
 	Birthday  string           `json:"birthday,omitempty"`
+	// Inbound-only fields (identity/contact-book rollout). Populated when a user
+	// shares contact info — via a REQUEST_CONTACT_INFO button or a direct share.
+	// Vcard is Meta's raw vCard string; Origin distinguishes a contact-request
+	// response ("contact_request") from a direct share ("other"). Both omitted
+	// on outbound sends.
+	Vcard  string `json:"vcard,omitempty"`
+	Origin string `json:"origin,omitempty"`
 }
 
 func NewContact(name ContactName) *Contact {
@@ -156,7 +163,7 @@ func (m *ContactMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]by
 		return nil, fmt.Errorf("error validating configs: %v", err)
 	}
 	jsonData := ContactMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeContact),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeContact),
 		Contacts:           m.Contacts,
 	}
 

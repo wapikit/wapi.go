@@ -113,11 +113,15 @@ const (
 ```go
 type AccountUpdateEvent struct {
     BaseBusinessAccountEvent
-    StatusUpdate    AccountUpdateEventEnum
-    PhoneNumber     string
-    BanInfo         *BanInfo
-    ViolationInfo   *ViolationInfo
-    RestrictionInfo []RestrictionInfo
+    StatusUpdate                     AccountUpdateEventEnum
+    PhoneNumber                      string
+    Country                          string
+    WabaInfo                         *WabaInfo
+    ViolationInfo                    *ViolationInfo
+    AuthInternationalRateEligibility *AuthInternationalRateEligibility
+    BanInfo                          *BanInfo
+    RestrictionInfo                  *RestrictionInfo
+    PartnerClientCertificationInfo   *PartnerClientCertificationInfo
 }
 ```
 
@@ -125,7 +129,7 @@ type AccountUpdateEvent struct {
 ### func NewAccountUpdateEvent
 
 ```go
-func NewAccountUpdateEvent(baseEvent *BaseBusinessAccountEvent, statusUpdate AccountUpdateEventEnum, phoneNumber string) *AccountUpdateEvent
+func NewAccountUpdateEvent(baseEvent *BaseBusinessAccountEvent, statusUpdate AccountUpdateEventEnum, phoneNumber string, country string, wabaInfo *WabaInfo, violationInfo *ViolationInfo, authInternationalRateEligibility *AuthInternationalRateEligibility, banInfo *BanInfo, restrictionInfo *RestrictionInfo, partnerClientCertificationInfo *PartnerClientCertificationInfo) *AccountUpdateEvent
 ```
 
 
@@ -254,6 +258,18 @@ func NewAudioMessageEvent(baseMessageEvent BaseMessageEvent, audio components.Au
 
 NewAudioMessageEvent creates a new AudioMessageEvent instance.
 
+<a name="AuthInternationalRateEligibility"></a>
+## type AuthInternationalRateEligibility
+
+
+
+```go
+type AuthInternationalRateEligibility struct {
+    ExceptionCountries []ExceptionCountry
+    StartTime          int64
+}
+```
+
 <a name="BanInfo"></a>
 ## type BanInfo
 
@@ -261,7 +277,7 @@ NewAudioMessageEvent creates a new AudioMessageEvent instance.
 
 ```go
 type BanInfo struct {
-    WabaBanState string
+    WabaBanState []string
     WabaBanDate  string
 }
 ```
@@ -339,6 +355,16 @@ type BaseMessageEvent struct {
     Timestamp         string              `json:"timestamp"`
     IsForwarded       bool                `json:"is_forwarded"`
     PhoneNumber       BusinessPhoneNumber `json:"phone_number"`
+    // Identity fields (BSUID/username rollout). All additive and optional — a
+    // phone-known message leaves the BSUID fields empty, and existing consumers
+    // that only read `From`/`SenderName` are unaffected. WaId is the sender's
+    // wa_id from the contacts block (equals From for phone-known contacts).
+    WaId             string `json:"wa_id,omitempty"`
+    UserId           string `json:"user_id,omitempty"`
+    ParentUserId     string `json:"parent_user_id,omitempty"`
+    FromUserId       string `json:"from_user_id,omitempty"`
+    FromParentUserId string `json:"from_parent_user_id,omitempty"`
+    Username         string `json:"username,omitempty"`
 }
 ```
 
@@ -407,6 +433,13 @@ type BaseMessageEventParams struct {
     IsForwarded       bool
     Context           MessageContext // * this context will not be present if in case a message is a reply to another message
     Requester         request_client.RequestClient
+    // Identity fields (BSUID/username rollout); all optional/additive.
+    WaId             string
+    UserId           string
+    ParentUserId     string
+    FromUserId       string
+    FromParentUserId string
+    Username         string
 }
 ```
 
@@ -472,6 +505,54 @@ func NewBusinessCapabilityUpdateEvent(baseEvent *BaseBusinessAccountEvent, maxDa
 type BusinessPhoneNumber struct {
     DisplayNumber string `json:"display_number"`
     Id            string `json:"id"`
+}
+```
+
+<a name="BusinessUsernameUpdateEvent"></a>
+## type BusinessUsernameUpdateEvent
+
+BusinessUsernameUpdateEvent is emitted on Meta's \`business\_username\_updates\` webhook when the business's own WhatsApp username changes for a phone number \(set, changed, or removed\). Fields are best\-effort from Meta's payload.
+
+```go
+type BusinessUsernameUpdateEvent struct {
+    BaseBusinessAccountEvent
+    PhoneNumberId    string `json:"phone_number_id,omitempty"`
+    Username         string `json:"username,omitempty"`
+    PreviousUsername string `json:"previous_username,omitempty"`
+    // Event describes the change (e.g. created/updated/deleted) when Meta
+    // provides it; raw string preserved.
+    Event string `json:"event,omitempty"`
+}
+```
+
+<a name="NewBusinessUsernameUpdateEvent"></a>
+### func NewBusinessUsernameUpdateEvent
+
+```go
+func NewBusinessUsernameUpdateEvent(baseEvent *BaseBusinessAccountEvent, phoneNumberId, username, previousUsername, event string) *BusinessUsernameUpdateEvent
+```
+
+
+
+<a name="BusinessUsernameUpdateEvent.GetEventType"></a>
+### func \(BusinessUsernameUpdateEvent\) GetEventType
+
+```go
+func (e BusinessUsernameUpdateEvent) GetEventType() string
+```
+
+
+
+<a name="ContactSync"></a>
+## type ContactSync
+
+
+
+```go
+type ContactSync struct {
+    FullName    string `json:"full_name,omitempty"`
+    FirstName   string `json:"first_name,omitempty"`
+    PhoneNumber string `json:"phone_number,omitempty"`
 }
 ```
 
@@ -558,43 +639,139 @@ type EventType string
 
 ```go
 const (
-    TextMessageEventType                  EventType = "text_message"
-    AudioMessageEventType                 EventType = "audio_message"
-    VideoMessageEventType                 EventType = "video_message"
-    ImageMessageEventType                 EventType = "image_message"
-    ContactMessageEventType               EventType = "contact_message"
-    DocumentMessageEventType              EventType = "document_message"
-    LocationMessageEventType              EventType = "location_message"
-    ReactionMessageEventType              EventType = "reaction_message"
-    ListInteractionMessageEventType       EventType = "list_interaction_message"
-    TemplateMessageEventType              EventType = "template_message"
-    QuickReplyMessageEventType            EventType = "quick_reply_message"
-    ReplyButtonInteractionEventType       EventType = "reply_button_interaction"
-    StickerMessageEventType               EventType = "sticker_message"
-    AdInteractionEventType                EventType = "ad_interaction_message"
-    CustomerIdentityChangedEventType      EventType = "customer_identity_changed"
-    CustomerNumberChangedEventType        EventType = "customer_number_changed"
-    MessageDeliveredEventType             EventType = "message_delivered"
-    MessageFailedEventType                EventType = "message_failed"
-    MessageReadEventType                  EventType = "message_read"
-    MessageSentEventType                  EventType = "message_sent"
-    MessageUndeliveredEventType           EventType = "message_undelivered"
-    OrderReceivedEventType                EventType = "order_received"
-    ProductInquiryEventType               EventType = "product_inquiry"
-    UnknownEventType                      EventType = "unknown"
-    ErrorEventType                        EventType = "error"
-    WarnEventType                         EventType = "warn"
-    ReadyEventType                        EventType = "ready"
-    MessageTemplateStatusUpdateEventType  EventType = "message_template_status_update"
-    MessageTemplateQualityUpdateEventType EventType = "message_template_quality_update"
-    PhoneNumberNameUpdateEventType        EventType = "phone_number_name_update"
-    PhoneNumberQualityUpdateEventType     EventType = "phone_number_quality_update"
-    SecurityEventType                     EventType = "security"
-    AccountUpdateEventType                EventType = "account_update"
-    AccountReviewUpdateEventType          EventType = "account_review_update"
-    AccountAlertsEventType                EventType = "account_alerts"
-    BusinessCapabilityUpdateEventType     EventType = "business_capability_update"
+    TextMessageEventType                     EventType = "text_message"
+    AudioMessageEventType                    EventType = "audio_message"
+    VideoMessageEventType                    EventType = "video_message"
+    ImageMessageEventType                    EventType = "image_message"
+    ContactMessageEventType                  EventType = "contact_message"
+    DocumentMessageEventType                 EventType = "document_message"
+    LocationMessageEventType                 EventType = "location_message"
+    ReactionMessageEventType                 EventType = "reaction_message"
+    ListInteractionMessageEventType          EventType = "list_interaction_message"
+    TemplateMessageEventType                 EventType = "template_message"
+    QuickReplyMessageEventType               EventType = "quick_reply_message"
+    ReplyButtonInteractionEventType          EventType = "reply_button_interaction"
+    StickerMessageEventType                  EventType = "sticker_message"
+    AdInteractionEventType                   EventType = "ad_interaction_message"
+    CustomerIdentityChangedEventType         EventType = "customer_identity_changed"
+    CustomerNumberChangedEventType           EventType = "customer_number_changed"
+    MessageDeliveredEventType                EventType = "message_delivered"
+    MessageFailedEventType                   EventType = "message_failed"
+    MessageReadEventType                     EventType = "message_read"
+    MessageSentEventType                     EventType = "message_sent"
+    MessageUndeliveredEventType              EventType = "message_undelivered"
+    OrderReceivedEventType                   EventType = "order_received"
+    ProductInquiryEventType                  EventType = "product_inquiry"
+    UnknownEventType                         EventType = "unknown"
+    ErrorEventType                           EventType = "error"
+    WarnEventType                            EventType = "warn"
+    ReadyEventType                           EventType = "ready"
+    MessageTemplateStatusUpdateEventType     EventType = "message_template_status_update"
+    MessageTemplateQualityUpdateEventType    EventType = "message_template_quality_update"
+    PhoneNumberNameUpdateEventType           EventType = "phone_number_name_update"
+    PhoneNumberQualityUpdateEventType        EventType = "phone_number_quality_update"
+    SecurityEventType                        EventType = "security"
+    AccountUpdateEventType                   EventType = "account_update"
+    AccountReviewUpdateEventType             EventType = "account_review_update"
+    AccountAlertsEventType                   EventType = "account_alerts"
+    BusinessCapabilityUpdateEventType        EventType = "business_capability_update"
+    UserPreferencesEventType                 EventType = "user_preferences"
+    MessageTemplateComponentsUpdateEventType EventType = "message_template_components_update"
+    PaymentConfigurationUpdateEventType      EventType = "payment_configuration_update"
+    UserIdUpdateEventType                    EventType = "user_id_update"
+    BusinessUsernameUpdateEventType          EventType = "business_username_update"
+    SmbAppStateSyncEventType                 EventType = "smb_app_state_sync"
+    SmbMessageEchoesEventType                EventType = "smb_message_echoes"
+    TemplateCategoryUpdateEventType          EventType = "template_category_update"
+    HistoryEventType                         EventType = "history"
 )
+```
+
+<a name="ExceptionCountry"></a>
+## type ExceptionCountry
+
+
+
+```go
+type ExceptionCountry struct {
+    CountryCode string
+    StartTime   int64
+}
+```
+
+<a name="HistoryChunk"></a>
+## type HistoryChunk
+
+
+
+```go
+type HistoryChunk struct {
+    Phase      int             `json:"phase"`
+    ChunkOrder int             `json:"chunk_order"`
+    Progress   int             `json:"progress"`
+    Threads    []HistoryThread `json:"threads"`
+}
+```
+
+<a name="HistoryEvent"></a>
+## type HistoryEvent
+
+HistoryEvent represents an event for chat history synchronization
+
+```go
+type HistoryEvent struct {
+    BaseBusinessAccountEvent `json:",inline"`
+    MessagingProduct         string         `json:"messaging_product"`
+    DisplayPhoneNumber       string         `json:"display_phone_number"`
+    PhoneNumberId            string         `json:"phone_number_id"`
+    HistoryChunks            []HistoryChunk `json:"history_chunks"`
+}
+```
+
+<a name="NewHistoryEvent"></a>
+### func NewHistoryEvent
+
+```go
+func NewHistoryEvent(baseEvent *BaseBusinessAccountEvent, messagingProduct string, displayPhoneNumber string, phoneNumberId string, historyChunks []HistoryChunk) *HistoryEvent
+```
+
+NewHistoryEvent creates a new HistoryEvent instance
+
+<a name="HistoryEvent.GetEventType"></a>
+### func \(\*HistoryEvent\) GetEventType
+
+```go
+func (e *HistoryEvent) GetEventType() string
+```
+
+
+
+<a name="HistoryMessage"></a>
+## type HistoryMessage
+
+
+
+```go
+type HistoryMessage struct {
+    From          string `json:"from"`
+    To            string `json:"to,omitempty"` // Only included if SMB message echo
+    Id            string `json:"id"`
+    Timestamp     string `json:"timestamp"`
+    Type          string `json:"type"`
+    MessageStatus string `json:"message_status"` // From history_context.status
+}
+```
+
+<a name="HistoryThread"></a>
+## type HistoryThread
+
+
+
+```go
+type HistoryThread struct {
+    Id       string           `json:"id"` // WhatsApp user phone number
+    Messages []HistoryMessage `json:"messages"`
+}
 ```
 
 <a name="ImageMessageEvent"></a>
@@ -683,6 +860,16 @@ type MessageDeliveredEvent struct {
     BaseSystemEvent `json:",inline"`
     MessageId       string `json:"messageId"`
     SentTo          string `json:"sentTo"`
+
+    // Pricing carries Meta's `messages.statuses[].pricing` block when
+    // present. For CBP-priced sends Meta typically populates this on
+    // `delivered` rather than `sent`. Nil otherwise.
+    Pricing *MessagePricingInfo `json:"pricing,omitempty"`
+
+    // Recipient BSUID identity (identity rollout). Present alongside SentTo
+    // (recipient_id) in the dual-identifier shape; empty otherwise.
+    RecipientUserId       string `json:"recipientUserId,omitempty"`
+    RecipientParentUserId string `json:"recipientParentUserId,omitempty"`
 }
 ```
 
@@ -695,6 +882,21 @@ func NewMessageDeliveredEvent(baseSystemEvent BaseSystemEvent, messageId, sendTo
 
 MessageDeliveredEvent creates a new instance of MessageUndeliveredEvent.
 
+<a name="MessageEcho"></a>
+## type MessageEcho
+
+
+
+```go
+type MessageEcho struct {
+    From      string `json:"from"`
+    To        string `json:"to"`
+    Id        string `json:"id"`
+    Timestamp string `json:"timestamp"`
+    Type      string `json:"type"`
+}
+```
+
 <a name="MessageFailedEvent"></a>
 ## type MessageFailedEvent
 
@@ -706,6 +908,8 @@ type MessageFailedEvent struct {
     MessageId       string `json:"messageId"`
     SentTo          string `json:"sentTo"`
     FailReason      string `json:"failReason"`
+    ErrorCode       int    `json:"errorCode"`
+    ErrorMessage    string `json:"errorMessage"`
 }
 ```
 
@@ -713,10 +917,35 @@ type MessageFailedEvent struct {
 ### func NewMessageFailedEvent
 
 ```go
-func NewMessageFailedEvent(baseSystemEvent BaseSystemEvent, messageId, sendTo, failReason string) *MessageFailedEvent
+func NewMessageFailedEvent(baseSystemEvent BaseSystemEvent, messageId, sendTo, failReason string, errCode int, errorMessage string) *MessageFailedEvent
 ```
 
 
+
+<a name="MessagePricingInfo"></a>
+## type MessagePricingInfo
+
+MessagePricingInfo carries Meta's per\-message pricing\-block fields from the \`messages.statuses\[\].pricing\` shape of the WhatsApp Business webhook. Meta populates this for billable status updates \(typically \`sent\` or \`delivered\` depending on category × country × pricing\-model rollout\).
+
+Note: Meta does NOT include the per\-message amount in this block — the amount must be looked up from Meta's published rate card keyed by \(Category × PricingModel × Country × Currency\).
+
+```go
+type MessagePricingInfo struct {
+    // Billable is whether Meta will charge us for this send. Falsey for
+    // user-initiated service-window replies, free entry-points, etc.
+    Billable bool `json:"billable"`
+
+    // PricingModel is "CBP" (conversation-based, legacy 24h window) or
+    // "PMP" (per-message). Meta is mid-migration across markets in 2025+.
+    PricingModel string `json:"pricingModel"`
+
+    // Category is Meta's classification of the message: "MARKETING" |
+    // "UTILITY" | "AUTHENTICATION" | "SERVICE" | "REFERRAL_CONVERSION".
+    // This is the same category surfaced on the template, but the webhook
+    // is the authoritative source — Meta can override at send time.
+    Category string `json:"category"`
+}
+```
 
 <a name="MessageReadEvent"></a>
 ## type MessageReadEvent
@@ -728,6 +957,17 @@ type MessageReadEvent struct {
     BaseSystemEvent `json:",inline"`
     MessageId       string `json:"messageId"`
     SentTo          string `json:"sentTo"`
+
+    // Pricing carries Meta's `messages.statuses[].pricing` block when
+    // present. Most pricing payloads arrive earlier (on `sent` or
+    // `delivered`); included here for parity since Meta sometimes
+    // retroactively populates pricing on later status updates.
+    Pricing *MessagePricingInfo `json:"pricing,omitempty"`
+
+    // Recipient BSUID identity (identity rollout). Present alongside SentTo
+    // (recipient_id) in the dual-identifier shape; empty otherwise.
+    RecipientUserId       string `json:"recipientUserId,omitempty"`
+    RecipientParentUserId string `json:"recipientParentUserId,omitempty"`
 }
 ```
 
@@ -750,6 +990,17 @@ type MessageSentEvent struct {
     BaseSystemEvent `json:",inline"`
     MessageId       string `json:"messageId"`
     SentTo          string `json:"sentTo"`
+
+    // Pricing carries Meta's `messages.statuses[].pricing` block when
+    // present. Nil for status events Meta didn't tag with a pricing
+    // payload. Consumers that bill on the upstream charge should check
+    // `Pricing != nil && Pricing.Billable` before committing.
+    Pricing *MessagePricingInfo `json:"pricing,omitempty"`
+
+    // Recipient BSUID identity (identity rollout). Present alongside SentTo
+    // (recipient_id) in the dual-identifier shape; empty otherwise.
+    RecipientUserId       string `json:"recipientUserId,omitempty"`
+    RecipientParentUserId string `json:"recipientParentUserId,omitempty"`
 }
 ```
 
@@ -761,6 +1012,20 @@ func NewMessageSentEvent(baseSystemEvent BaseSystemEvent, messageId, sendTo stri
 ```
 
 NewMessageSentEvent creates a new instance of MessageSentEvent.
+
+<a name="MessageTemplateButton"></a>
+## type MessageTemplateButton
+
+
+
+```go
+type MessageTemplateButton struct {
+    Type        string `json:"type"`
+    Text        string `json:"text"`
+    Url         string `json:"url,omitempty"`
+    PhoneNumber string `json:"phone_number,omitempty"`
+}
+```
 
 <a name="MessageTemplateCategoryEnum"></a>
 ## type MessageTemplateCategoryEnum
@@ -782,6 +1047,42 @@ const (
     MessageTemplateCategoryEnumUtility        MessageTemplateCategoryEnum = "UTILITY"
 )
 ```
+
+<a name="MessageTemplateComponentsUpdateEvent"></a>
+## type MessageTemplateComponentsUpdateEvent
+
+MessageTemplateComponentsUpdateEvent represents an event for message template components update
+
+```go
+type MessageTemplateComponentsUpdateEvent struct {
+    BaseBusinessAccountEvent `json:",inline"`
+    MessageTemplateId        int64                   `json:"message_template_id"`
+    MessageTemplateName      string                  `json:"message_template_name"`
+    MessageTemplateLanguage  string                  `json:"message_template_language"`
+    MessageTemplateElement   string                  `json:"message_template_element"` // Template body text
+    MessageTemplateTitle     string                  `json:"message_template_title,omitempty"`
+    MessageTemplateFooter    string                  `json:"message_template_footer,omitempty"`
+    MessageTemplateButtons   []MessageTemplateButton `json:"message_template_buttons,omitempty"`
+}
+```
+
+<a name="NewMessageTemplateComponentsUpdateEvent"></a>
+### func NewMessageTemplateComponentsUpdateEvent
+
+```go
+func NewMessageTemplateComponentsUpdateEvent(baseEvent *BaseBusinessAccountEvent, templateId int64, templateName string, templateLanguage string, element string, title string, footer string, buttons []MessageTemplateButton) *MessageTemplateComponentsUpdateEvent
+```
+
+NewMessageTemplateComponentsUpdateEvent creates a new MessageTemplateComponentsUpdateEvent instance
+
+<a name="MessageTemplateComponentsUpdateEvent.GetEventType"></a>
+### func \(\*MessageTemplateComponentsUpdateEvent\) GetEventType
+
+```go
+func (e *MessageTemplateComponentsUpdateEvent) GetEventType() string
+```
+
+
 
 <a name="MessageTemplateQualityUpdateEvent"></a>
 ## type MessageTemplateQualityUpdateEvent
@@ -907,6 +1208,9 @@ type MessageUndeliveredEvent struct {
     BaseSystemEvent `json:",inline"`
     MessageId       string `json:"messageId"`
     SentTo          string `json:"sentTo"`
+    Reason          string `json:"reason"`
+    ErrorCode       int    `json:"errorCode"`
+    ErrorMessage    string `json:"errorMessage"`
 }
 ```
 
@@ -914,7 +1218,7 @@ type MessageUndeliveredEvent struct {
 ### func NewMessageUndeliveredEvent
 
 ```go
-func NewMessageUndeliveredEvent(baseSystemEvent BaseSystemEvent, messageId, sendTo string) *MessageUndeliveredEvent
+func NewMessageUndeliveredEvent(baseSystemEvent BaseSystemEvent, messageId, sendTo, reason string, errorCode int, errorMessage string) *MessageUndeliveredEvent
 ```
 
 NewMessageUndeliveredEvent creates a new instance of MessageUndeliveredEvent.
@@ -939,6 +1243,54 @@ func NewOrderEvent(baseMessageEvent BaseMessageEvent, order components.Order) *O
 ```
 
 NewOrderEvent creates a new OrderEvent instance.
+
+<a name="PartnerClientCertificationInfo"></a>
+## type PartnerClientCertificationInfo
+
+
+
+```go
+type PartnerClientCertificationInfo struct {
+    ClientBusinessId string
+    Status           string
+    RejectionReasons []string
+}
+```
+
+<a name="PaymentConfigurationUpdateEvent"></a>
+## type PaymentConfigurationUpdateEvent
+
+PaymentConfigurationUpdateEvent represents an event for payment configuration update
+
+```go
+type PaymentConfigurationUpdateEvent struct {
+    BaseBusinessAccountEvent `json:",inline"`
+    ConfigurationName        string `json:"configuration_name"`
+    ProviderName             string `json:"provider_name"`
+    ProviderMid              string `json:"provider_mid"`
+    Status                   string `json:"status"`
+    CreatedTimestamp         int64  `json:"created_timestamp"`
+    UpdatedTimestamp         int64  `json:"updated_timestamp"`
+}
+```
+
+<a name="NewPaymentConfigurationUpdateEvent"></a>
+### func NewPaymentConfigurationUpdateEvent
+
+```go
+func NewPaymentConfigurationUpdateEvent(baseEvent *BaseBusinessAccountEvent, configName string, providerName string, providerMid string, status string, createdTs int64, updatedTs int64) *PaymentConfigurationUpdateEvent
+```
+
+NewPaymentConfigurationUpdateEvent creates a new PaymentConfigurationUpdateEvent instance
+
+<a name="PaymentConfigurationUpdateEvent.GetEventType"></a>
+### func \(\*PaymentConfigurationUpdateEvent\) GetEventType
+
+```go
+func (e *PaymentConfigurationUpdateEvent) GetEventType() string
+```
+
+
 
 <a name="PhoneNumberNameUpdateEvent"></a>
 ## type PhoneNumberNameUpdateEvent
@@ -1170,6 +1522,86 @@ func NewSecurity() *SecurityEvent
 
 
 
+<a name="SmbAppStateSyncEvent"></a>
+## type SmbAppStateSyncEvent
+
+SmbAppStateSyncEvent represents an event for SMB app state synchronization
+
+```go
+type SmbAppStateSyncEvent struct {
+    BaseBusinessAccountEvent `json:",inline"`
+    MessagingProduct         string          `json:"messaging_product"`
+    DisplayPhoneNumber       string          `json:"display_phone_number"`
+    PhoneNumberId            string          `json:"phone_number_id"`
+    StateSync                []StateSyncItem `json:"state_sync"`
+}
+```
+
+<a name="NewSmbAppStateSyncEvent"></a>
+### func NewSmbAppStateSyncEvent
+
+```go
+func NewSmbAppStateSyncEvent(baseEvent *BaseBusinessAccountEvent, messagingProduct string, displayPhoneNumber string, phoneNumberId string, stateSync []StateSyncItem) *SmbAppStateSyncEvent
+```
+
+NewSmbAppStateSyncEvent creates a new SmbAppStateSyncEvent instance
+
+<a name="SmbAppStateSyncEvent.GetEventType"></a>
+### func \(\*SmbAppStateSyncEvent\) GetEventType
+
+```go
+func (e *SmbAppStateSyncEvent) GetEventType() string
+```
+
+
+
+<a name="SmbMessageEchoesEvent"></a>
+## type SmbMessageEchoesEvent
+
+SmbMessageEchoesEvent represents an event for SMB message echoes
+
+```go
+type SmbMessageEchoesEvent struct {
+    BaseBusinessAccountEvent `json:",inline"`
+    MessagingProduct         string        `json:"messaging_product"`
+    DisplayPhoneNumber       string        `json:"display_phone_number"`
+    PhoneNumberId            string        `json:"phone_number_id"`
+    MessageEchoes            []MessageEcho `json:"message_echoes"`
+}
+```
+
+<a name="NewSmbMessageEchoesEvent"></a>
+### func NewSmbMessageEchoesEvent
+
+```go
+func NewSmbMessageEchoesEvent(baseEvent *BaseBusinessAccountEvent, messagingProduct string, displayPhoneNumber string, phoneNumberId string, messageEchoes []MessageEcho) *SmbMessageEchoesEvent
+```
+
+NewSmbMessageEchoesEvent creates a new SmbMessageEchoesEvent instance
+
+<a name="SmbMessageEchoesEvent.GetEventType"></a>
+### func \(\*SmbMessageEchoesEvent\) GetEventType
+
+```go
+func (e *SmbMessageEchoesEvent) GetEventType() string
+```
+
+
+
+<a name="StateSyncItem"></a>
+## type StateSyncItem
+
+
+
+```go
+type StateSyncItem struct {
+    Type      string      `json:"type"` // e.g., "contact"
+    Contact   ContactSync `json:"contact,omitempty"`
+    Action    string      `json:"action"` // e.g., "add", "remove", "update"
+    Timestamp string      `json:"timestamp"`
+}
+```
+
 <a name="StickerMessageEvent"></a>
 ## type StickerMessageEvent
 
@@ -1237,6 +1669,91 @@ func NewTextMessageEvent(baseMessageEvent BaseMessageEvent, text string) *TextMe
 
 NewTextMessageEvent creates a new TextMessageEvent instance.
 
+<a name="UserIdUpdateEvent"></a>
+## type UserIdUpdateEvent
+
+UserIdUpdateEvent is emitted when Meta reports a user\-id \(BSUID\) change on the \`user\_id\_update\` webhook — e.g. a contact's business\-scoped user id is created or changes. Consumers use it to bridge/merge identity across the transition. All fields are best\-effort from Meta's payload; any may be empty depending on the transition shape.
+
+```go
+type UserIdUpdateEvent struct {
+    BaseSystemEvent
+    // BusinessAccountId is the WABA (webhook entry) id that scopes this change —
+    // BSUID continuity is scoped to a WABA/portfolio, never global, so consumers
+    // need it to resolve the affected org/contact.
+    BusinessAccountId string `json:"business_account_id,omitempty"`
+    // The phone identifier of the affected contact when Meta includes it.
+    WaId string `json:"wa_id,omitempty"`
+    // Previous and new BSUID values across the transition.
+    OldUserId string `json:"old_user_id,omitempty"`
+    NewUserId string `json:"new_user_id,omitempty"`
+    // Parent BSUID when Meta scopes the id to a parent business.
+    ParentUserId string `json:"parent_user_id,omitempty"`
+}
+```
+
+<a name="NewUserIdUpdateEvent"></a>
+### func NewUserIdUpdateEvent
+
+```go
+func NewUserIdUpdateEvent(baseEvent BaseSystemEvent, businessAccountId, waId, oldUserId, newUserId, parentUserId string) *UserIdUpdateEvent
+```
+
+
+
+<a name="UserIdUpdateEvent.GetEventType"></a>
+### func \(UserIdUpdateEvent\) GetEventType
+
+```go
+func (e UserIdUpdateEvent) GetEventType() string
+```
+
+
+
+<a name="UserPreference"></a>
+## type UserPreference
+
+
+
+```go
+type UserPreference struct {
+    WaId      string `json:"wa_id"`
+    Detail    string `json:"detail"`
+    Category  string `json:"category"` // e.g., "marketing_messages"
+    Value     string `json:"value"`    // Preference value
+    Timestamp int64  `json:"timestamp"`
+}
+```
+
+<a name="UserPreferencesEvent"></a>
+## type UserPreferencesEvent
+
+UserPreferencesEvent represents an event for user marketing preferences update
+
+```go
+type UserPreferencesEvent struct {
+    BaseBusinessAccountEvent `json:",inline"`
+    UserPreferences          []UserPreference `json:"user_preferences"`
+}
+```
+
+<a name="NewUserPreferencesEvent"></a>
+### func NewUserPreferencesEvent
+
+```go
+func NewUserPreferencesEvent(baseEvent *BaseBusinessAccountEvent, preferences []UserPreference) *UserPreferencesEvent
+```
+
+NewUserPreferencesEvent creates a new UserPreferencesEvent instance
+
+<a name="UserPreferencesEvent.GetEventType"></a>
+### func \(\*UserPreferencesEvent\) GetEventType
+
+```go
+func (e *UserPreferencesEvent) GetEventType() string
+```
+
+
+
 <a name="VideoMessageEvent"></a>
 ## type VideoMessageEvent
 
@@ -1266,6 +1783,22 @@ NewVideoMessageEvent creates a new VideoMessageEvent instance.
 ```go
 type ViolationInfo struct {
     ViolationType string
+}
+```
+
+<a name="WabaInfo"></a>
+## type WabaInfo
+
+
+
+```go
+type WabaInfo struct {
+    WabaId                     string
+    OwnerBusinessId            string
+    AdAccountLinked            string
+    PartnerAppId               string
+    SolutionId                 string
+    SolutionPartnerBusinessIds []string
 }
 ```
 

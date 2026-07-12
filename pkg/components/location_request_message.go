@@ -58,7 +58,7 @@ func (m *LocationRequestMessage) ToJson(configs ApiCompatibleJsonConverterConfig
 	}
 
 	jsonData := LocationRequestMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeInteractive),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeInteractive),
 		Interactive:        *m,
 	}
 

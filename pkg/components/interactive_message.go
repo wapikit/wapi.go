@@ -10,4 +10,5 @@ const (
 	InteractiveMessageTypeList            InteractiveMessageType = "list"
 	InteractiveMessageTypeCatalog         InteractiveMessageType = "catalog_message"
 	InteractiveMessageTypeLocationRequest InteractiveMessageType = "location_request_message"
+	InteractiveMessageTypeContactRequest  InteractiveMessageType = "contact_request"
 )

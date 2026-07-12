@@ -89,6 +89,11 @@ func (requestClientInstance *RequestClient) request(params RequestCloudApiParams
 	if err != nil {
 		return "", err
 	}
+	// Surface non-2xx Graph API responses as a typed error (the body is still
+	// returned so callers that already parse Meta's error envelope keep working).
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return string(body), newGraphAPIError(response.StatusCode, string(body))
+	}
 	return string(body), nil
 }
 
@@ -179,11 +184,10 @@ func (request *ApiRequest) Execute() (string, error) {
 		QueryParam: queryParam,
 	})
 
-	if err != nil {
-		fmt.Println("Error while executing business api request", err)
-		return "", nil
-	}
-
+	// Return the response body AND the error. A non-2xx status yields a
+	// *GraphAPIError while still returning the body, so callers can both detect
+	// the failure and inspect Meta's error envelope. (Previously the error was
+	// swallowed and an empty string returned, hiding failed requests.)
 	return response, err
 }
 
@@ -222,6 +226,9 @@ func (rc *RequestClient) RequestMultipart(
 	respBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response body: %w", err)
+	}
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return string(respBody), newGraphAPIError(response.StatusCode, string(respBody))
 	}
 	return string(respBody), nil
 }

@@ -107,7 +107,7 @@ func (m *QuickReplyButtonMessage) ToJson(configs ApiCompatibleJsonConverterConfi
 	}
 
 	jsonData := QuickReplyButtonMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeInteractive),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeInteractive),
 		Interactive:        *m,
 	}
 

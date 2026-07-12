@@ -4,6 +4,24 @@ import "github.com/wapikit/wapi.go/manager"
 
 
 
+<a name="buildPricingInfo"></a>
+## func buildPricingInfo
+
+```go
+func buildPricingInfo(p Pricing) *events.MessagePricingInfo
+```
+
+buildPricingInfo converts the internal Pricing struct \(parsed from Meta's webhook payload\) into the public events.MessagePricingInfo surface. Returns nil for the empty case so downstream handlers can distinguish 'pricing block absent' from 'pricing block present with Billable=false'.
+
+<a name="unmarshalWebhookValue"></a>
+## func unmarshalWebhookValue
+
+```go
+func unmarshalWebhookValue[T any](value interface{}) (T, error)
+```
+
+unmarshalWebhookValue is a generic helper to unmarshal webhook change values
+
 <a name="AccountAlertSeverityEnum"></a>
 ## type AccountAlertSeverityEnum
 
@@ -29,12 +47,14 @@ const (
 
 ```go
 type AccountAlertsValue struct {
-    EntityType       string                   `json:"entity_type"`
-    EntityId         string                   `json:"entity_id"`
-    AlertSeverity    AccountAlertSeverityEnum `json:"alert_severity"`
-    AlertStatus      string                   `json:"alert_status"`
-    AlertType        string                   `json:"alert_type"`
-    AlertDescription string                   `json:"alert_description"`
+    EntityType string `json:"entity_type"`
+    EntityId   string `json:"entity_id"`
+    AlertInfo  struct {
+        AlertSeverity    AccountAlertSeverityEnum `json:"alert_severity"`
+        AlertStatus      string                   `json:"alert_status"`
+        AlertType        string                   `json:"alert_type"`
+        AlertDescription string                   `json:"alert_description"`
+    }   `json:"alert_info"`
 }
 ```
 
@@ -46,6 +66,21 @@ type AccountAlertsValue struct {
 ```go
 type AccountReviewUpdateValue struct {
     Decision string `json:"decision"`
+}
+```
+
+<a name="AccountUpdateAuthInternationalRateEligibility"></a>
+## type AccountUpdateAuthInternationalRateEligibility
+
+
+
+```go
+type AccountUpdateAuthInternationalRateEligibility struct {
+    ExceptionCountries []struct {
+        CountryCode string `json:"country_code"`
+        StartTime   int64  `json:"start_time"`
+    }   `json:"exception_countries,omitempty"`
+    StartTime int64 `json:"start_time"`
 }
 ```
 
@@ -83,6 +118,19 @@ const (
 )
 ```
 
+<a name="AccountUpdatePartnerClientCertificationInfo"></a>
+## type AccountUpdatePartnerClientCertificationInfo
+
+
+
+```go
+type AccountUpdatePartnerClientCertificationInfo struct {
+    ClientBusinessId string   `json:"client_business_id"`
+    Status           string   `json:"status"`
+    RejectionReasons []string `json:"rejection_reasons,omitempty"`
+}
+```
+
 <a name="AccountUpdateRestrictionInfo"></a>
 ## type AccountUpdateRestrictionInfo
 
@@ -102,8 +150,15 @@ type AccountUpdateRestrictionInfo struct {
 
 ```go
 type AccountUpdateValue struct {
-    PhoneNumber string                 `json:"phone_number,omitempty"`
-    Event       AccountUpdateEventEnum `json:"event"`
+    PhoneNumber                      string                                         `json:"phone_number,omitempty"`
+    Event                            AccountUpdateEventEnum                         `json:"event"`
+    Country                          string                                         `json:"country,omitempty"`                             // Only for BUSINESS_PRIMARY_LOCATION_COUNTRY_UPDATE
+    WabaInfo                         *AccountUpdateWabaInfo                         `json:"waba_info,omitempty"`                           // For various events
+    ViolationInfo                    *AccountUpdateViolationInfo                    `json:"violation_info,omitempty"`                      // Only for ACCOUNT_VIOLATION
+    AuthInternationalRateEligibility *AccountUpdateAuthInternationalRateEligibility `json:"auth_international_rate_eligibility,omitempty"` // Only for AUTH_INTL_PRICE_ELIGIBILITY_UPDATE
+    BanInfo                          *AccountUpdateBanInfo                          `json:"ban_info,omitempty"`                            // Only for DISABLED_UPDATE
+    RestrictionInfo                  *AccountUpdateRestrictionInfo                  `json:"restriction_info,omitempty"`                    // Only for ACCOUNT_RESTRICTION
+    PartnerClientCertificationInfo   *AccountUpdatePartnerClientCertificationInfo   `json:"partner_client_certification_info,omitempty"`   // Only for PARTNER_CLIENT_CERTIFICATION_STATUS_UPDATE
 }
 ```
 
@@ -115,6 +170,22 @@ type AccountUpdateValue struct {
 ```go
 type AccountUpdateViolationInfo struct {
     ViolationType string `json:"violation_type"`
+}
+```
+
+<a name="AccountUpdateWabaInfo"></a>
+## type AccountUpdateWabaInfo
+
+
+
+```go
+type AccountUpdateWabaInfo struct {
+    WabaId                     string   `json:"waba_id"`
+    OwnerBusinessId            string   `json:"owner_business_id"`
+    AdAccountLinked            string   `json:"ad_account_linked,omitempty"`             // Only for AD_ACCOUNT_LINKED event
+    PartnerAppId               string   `json:"partner_app_id,omitempty"`                // Only for PARTNER_APP_INSTALLED, PARTNER_APP_UNINSTALLED
+    SolutionId                 string   `json:"solution_id,omitempty"`                   // Only if customer onboarded via multi-partner solution
+    SolutionPartnerBusinessIds []string `json:"solution_partner_business_ids,omitempty"` // Only if customer onboarded via multi-partner solution
 }
 ```
 
@@ -173,6 +244,36 @@ type Applinks struct {
 type BusinessCapabilityUpdateValue struct {
     MaxDailyConversationPerPhone int `json:"max_daily_conversation_per_phone"`
     MaxPhoneNumbersPerBusiness   int `json:"max_phone_numbers_per_business"`
+}
+```
+
+<a name="BusinessUsernameResponse"></a>
+## type BusinessUsernameResponse
+
+BusinessUsernameResponse is the GET /\<phone\_number\_id\>/username result.
+
+```go
+type BusinessUsernameResponse struct {
+    Id       string            `json:"id,omitempty"`
+    Username string            `json:"username,omitempty"`
+    Error    *MessageSendError `json:"error,omitempty"`
+}
+```
+
+<a name="BusinessUsernameUpdateValue"></a>
+## type BusinessUsernameUpdateValue
+
+BusinessUsernameUpdateValue is the webhook value for the \`business\_username\_updates\` field \(the business's own username changing for a phone number\). All optional; raw values preserved.
+
+```go
+type BusinessUsernameUpdateValue struct {
+    Metadata struct {
+        DisplayPhoneNumber string `json:"display_phone_number,omitempty"`
+        PhoneNumberId      string `json:"phone_number_id,omitempty"`
+    }   `json:"metadata,omitempty"`
+    Username         string `json:"username,omitempty"`
+    PreviousUsername string `json:"previous_username,omitempty"`
+    Event            string `json:"event,omitempty"`
 }
 ```
 
@@ -236,8 +337,8 @@ type Catalog struct {
 
 ```go
 type CatalogFetchResponseEdge struct {
-    Data   []Catalog                                  `json:"data"`
-    Paging internal.WhatsAppBusinessApiPaginationMeta `json:"paging"`
+    Data   []Catalog         `json:"data"`
+    Paging PaginationDetails `json:"paging"`
 }
 ```
 
@@ -262,14 +363,14 @@ func NewCatalogManager(config *CatalogManagerConfig) *CatalogManager
 
 
 
-<a name="CatalogManager.CreateNewProductCatalog"></a>
-### func \(\*CatalogManager\) CreateNewProductCatalog
+<a name="CatalogManager.GetAllCatalogProducts"></a>
+### func \(\*CatalogManager\) GetAllCatalogProducts
 
 ```go
-func (cm *CatalogManager) CreateNewProductCatalog() (CreateProductCatalogOptions, error)
+func (cm *CatalogManager) GetAllCatalogProducts(catalogId string, limit ...int) ([]ProductItem, error)
 ```
 
-
+GetAllCatalogProducts fetches all products across all pages for a given catalog This is a helper method that handles pagination automatically
 
 <a name="CatalogManager.GetAllCatalogs"></a>
 ### func \(\*CatalogManager\) GetAllCatalogs
@@ -278,16 +379,34 @@ func (cm *CatalogManager) CreateNewProductCatalog() (CreateProductCatalogOptions
 func (cm *CatalogManager) GetAllCatalogs() (*CatalogFetchResponseEdge, error)
 ```
 
+Deprecated: Use GetAllCatalogsWithPagination for better control
 
+<a name="CatalogManager.GetAllCatalogsWithPagination"></a>
+### func \(\*CatalogManager\) GetAllCatalogsWithPagination
+
+```go
+func (cm *CatalogManager) GetAllCatalogsWithPagination(paginationInput ...*PaginationInput) (*PaginatedResponse[Catalog], error)
+```
+
+GetAllCatalogsWithPagination retrieves catalogs with pagination support
 
 <a name="CatalogManager.GetCatalogProducts"></a>
 ### func \(\*CatalogManager\) GetCatalogProducts
 
 ```go
-func (cm *CatalogManager) GetCatalogProducts(catalogId string) ([]ProductItem, error)
+func (cm *CatalogManager) GetCatalogProducts(catalogId string, paginationInput ...*PaginationInput) ([]ProductItem, *PaginationDetails, error)
 ```
 
-GetCatalogProducts retrieves the list of products for a given catalog.
+Deprecated: Use GetCatalogProductsWithPagination for better control
+
+<a name="CatalogManager.GetCatalogProductsWithPagination"></a>
+### func \(\*CatalogManager\) GetCatalogProductsWithPagination
+
+```go
+func (cm *CatalogManager) GetCatalogProductsWithPagination(catalogId string, paginationInput ...*PaginationInput) (*PaginatedResponse[ProductItem], error)
+```
+
+GetCatalogProductsWithPagination retrieves products for a catalog with pagination support
 
 <a name="CatalogManagerConfig"></a>
 ## type CatalogManagerConfig
@@ -325,18 +444,6 @@ type ChannelEvent struct {
 }
 ```
 
-<a name="Contact"></a>
-## type Contact
-
-
-
-```go
-type Contact struct {
-    WaId    string  `json:"wa_id"`
-    Profile Profile `json:"profile"`
-}
-```
-
 <a name="Conversation"></a>
 ## type Conversation
 
@@ -344,8 +451,9 @@ type Contact struct {
 
 ```go
 type Conversation struct {
-    Id     string `json:"id"`
-    Origin Origin `json:"origin,omitempty"`
+    Id                  string `json:"id"`
+    ExpirationTimestamp string `json:"expiration_timestamp,omitempty"`
+    Origin              Origin `json:"origin,omitempty"`
 }
 ```
 
@@ -357,17 +465,6 @@ type Conversation struct {
 ```go
 type CreatePhoneNumberResponse struct {
     Id string `json:"id,omitempty"`
-}
-```
-
-<a name="CreateProductCatalogOptions"></a>
-## type CreateProductCatalogOptions
-
-
-
-```go
-type CreateProductCatalogOptions struct {
-    Success string `json:"success,omitempty"`
 }
 ```
 
@@ -402,7 +499,7 @@ type DeleteSuccessResponse struct {
 type Entry struct {
     Id      string   `json:"id"`
     Changes []Change `json:"changes"`
-    Time    *string  `json:"time"`
+    Time    int64    `json:"time,omitempty"`
 }
 ```
 
@@ -517,6 +614,47 @@ type HandleMessageSubscriptionEventPayload struct {
     PhoneNumber       events.BusinessPhoneNumber `json:"phone_number_id"`     // * this is the phone number to which this event has bee sent to
     BusinessAccountId string                     `json:"business_account_id"` // * business account id to which this event has been sent to
     SenderName        string                     `json:"sender_name"`
+    // Sender identity from contacts[0] (BSUID/username rollout). Additive; empty
+    // for phone-only contacts.
+    SenderWaId         string `json:"sender_wa_id"`
+    SenderUserId       string `json:"sender_user_id"`
+    SenderParentUserId string `json:"sender_parent_user_id"`
+    SenderUsername     string `json:"sender_username"`
+}
+```
+
+<a name="HistoryValue"></a>
+## type HistoryValue
+
+
+
+```go
+type HistoryValue struct {
+    MessagingProduct string `json:"messaging_product"`
+    Metadata         struct {
+        DisplayPhoneNumber string `json:"display_phone_number"`
+        PhoneNumberId      string `json:"phone_number_id"`
+    }   `json:"metadata"`
+    History []struct {
+        Metadata struct {
+            Phase      int `json:"phase"`
+            ChunkOrder int `json:"chunk_order"`
+            Progress   int `json:"progress"`
+        }   `json:"metadata"`
+        Threads []struct {
+            Id       string `json:"id"` // WhatsApp user phone number
+            Messages []struct {
+                From           string `json:"from"`
+                To             string `json:"to,omitempty"` // Only included if SMB message echo
+                Id             string `json:"id"`
+                Timestamp      string `json:"timestamp"`
+                Type           string `json:"type"`
+                HistoryContext struct {
+                    Status string `json:"status"` // Message status
+                }   `json:"history_context"`
+            }   `json:"messages"`
+        }   `json:"threads"`
+    }   `json:"history"`
 }
 ```
 
@@ -634,10 +772,14 @@ type MediaMetadata struct {
 type Message struct {
     Id                                              string                                      `json:"id"`
     From                                            string                                      `json:"from"`
+    FromUserId                                      string                                      `json:"from_user_id,omitempty"`        // BSUID of the sender (identity rollout); empty for phone-only
+    FromParentUserId                                string                                      `json:"from_parent_user_id,omitempty"` // parent BSUID of the sender when Meta includes it
     Timestamp                                       string                                      `json:"timestamp"`
     Type                                            NotificationMessageTypeEnum                 `json:"type"`
-    Context                                         NotificationPayloadMessageContextSchemaType `json:"context"`
-    Errors                                          []Error                                     `json:",inline"`
+    GroupId                                         string                                      `json:"group_id,omitempty"`
+    Context                                         NotificationPayloadMessageContextSchemaType `json:"context,omitempty"`
+    Errors                                          []Error                                     `json:"errors,omitempty"`
+    Referral                                        *ReferralInfo                               `json:"referral,omitempty"`
     NotificationPayloadTextMessageSchemaType        `json:",inline"`
     NotificationPayloadAudioMessageSchemaType       `json:",inline"`
     NotificationPayloadImageMessageSchemaType       `json:",inline"`
@@ -651,6 +793,7 @@ type Message struct {
     NotificationPayloadLocationMessageSchemaType    `json:",inline"`
     NotificationPayloadContactMessageSchemaType     `json:",inline"`
     NotificationPayloadInteractionMessageSchemaType `json:",inline"`
+    NotificationPayloadUnsupportedMessageSchemaType `json:",inline"`
 }
 ```
 
@@ -675,6 +818,42 @@ func NewMessageManager(requester request_client.RequestClient, phoneNumberId str
 
 NewMessageManager creates a new instance of MessageManager.
 
+<a name="MessageManager.ReadMessageOnly"></a>
+### func \(\*MessageManager\) ReadMessageOnly
+
+```go
+func (mm *MessageManager) ReadMessageOnly(messageId string) error
+```
+
+ReadMessageOnly marks a message as read without showing typing indicator. This is a convenience method for ReadMessage\(messageId, false\).
+
+<a name="MessageManager.ReadMessageWithTyping"></a>
+### func \(\*MessageManager\) ReadMessageWithTyping
+
+```go
+func (mm *MessageManager) ReadMessageWithTyping(messageId string) error
+```
+
+ReadMessageWithTyping marks a message as read and shows typing indicator. This is a convenience method for ReadMessage\(messageId, true\).
+
+<a name="MessageManager.Reply"></a>
+### func \(\*MessageManager\) Reply
+
+```go
+func (mm *MessageManager) Reply(message components.BaseMessage, phoneNumber string, replyTo string) (*MessageSendResponse, error)
+```
+
+Reply sends a reply message to a phone number. Backward\-compatible wrapper over ReplyToTarget with a phone target.
+
+<a name="MessageManager.ReplyToTarget"></a>
+### func \(\*MessageManager\) ReplyToTarget
+
+```go
+func (mm *MessageManager) ReplyToTarget(message components.BaseMessage, target MessageTarget, replyTo string) (*MessageSendResponse, error)
+```
+
+ReplyToTarget sends a reply \(in\-reply\-to replyTo\) to any MessageTarget.
+
 <a name="MessageManager.Send"></a>
 ### func \(\*MessageManager\) Send
 
@@ -682,7 +861,52 @@ NewMessageManager creates a new instance of MessageManager.
 func (mm *MessageManager) Send(message components.BaseMessage, phoneNumber string) (*MessageSendResponse, error)
 ```
 
-Send sends a message using the provided BaseMessage and returns a structured response. If the API response contains an error, it returns that error.
+Send sends a message to a phone number. Backward\-compatible wrapper over SendToTarget with a phone target.
+
+<a name="MessageManager.SendMarketingMessage"></a>
+### func \(\*MessageManager\) SendMarketingMessage
+
+```go
+func (mm *MessageManager) SendMarketingMessage(message components.BaseMessage, phoneNumber string) (*MessageSendResponse, error)
+```
+
+SendMarketingMessage sends via the MM Lite API to a phone number. Backward\-compatible wrapper over SendMarketingMessageToTarget.
+
+<a name="MessageManager.SendMarketingMessageToTarget"></a>
+### func \(\*MessageManager\) SendMarketingMessageToTarget
+
+```go
+func (mm *MessageManager) SendMarketingMessageToTarget(message components.BaseMessage, target MessageTarget) (*MessageSendResponse, error)
+```
+
+SendMarketingMessageToTarget sends via the MM Lite API to any MessageTarget. Only works if the WABA is eligible and onboarded on the MM Lite API.
+
+<a name="MessageManager.SendToTarget"></a>
+### func \(\*MessageManager\) SendToTarget
+
+```go
+func (mm *MessageManager) SendToTarget(message components.BaseMessage, target MessageTarget) (*MessageSendResponse, error)
+```
+
+SendToTarget sends a message to any MessageTarget \(phone or BSUID/parent BSUID\). Phone targets serialize as \`to\`, BSUID/parent as \`recipient\`.
+
+<a name="MessageManager.dispatch"></a>
+### func \(\*MessageManager\) dispatch
+
+```go
+func (mm *MessageManager) dispatch(message components.BaseMessage, configs components.ApiCompatibleJsonConverterConfigs, endpointSuffix string) (*MessageSendResponse, error)
+```
+
+dispatch converts a message with the given configs and POSTs it to the given endpoint suffix under the phone number id, returning the parsed response. It is the shared core of all Send/Reply/SendMarketing paths \(phone and target\).
+
+<a name="MessageManager.readMessage"></a>
+### func \(\*MessageManager\) readMessage
+
+```go
+func (mm *MessageManager) readMessage(messageId string, showTyping bool) error
+```
+
+ReadMessage marks a message as read. messageId: The ID of the message to mark as read showTyping: Whether to show typing indicator \(will auto\-dismiss after 25 seconds or when you respond\)
 
 <a name="MessageSendError"></a>
 ## type MessageSendError
@@ -714,6 +938,10 @@ type MessageSendResponse struct {
     Contacts         []struct {
         Input string `json:"input"`
         WaID  string `json:"wa_id"`
+        // UserId is the recipient BSUID when the send targeted a BSUID
+        // (identity rollout). Empty for phone-targeted sends — do not treat
+        // its absence as a parse failure.
+        UserId string `json:"user_id,omitempty"`
     }   `json:"contacts"`
     Messages []struct {
         ID string `json:"id"`
@@ -760,6 +988,73 @@ const (
 )
 ```
 
+<a name="MessageTarget"></a>
+## type MessageTarget
+
+MessageTarget identifies who a message is sent to, independent of message type. Use the constructors below; the zero value is not a valid target.
+
+```go
+type MessageTarget struct {
+    Type  MessageTargetType
+    Value string
+}
+```
+
+<a name="NewBSUIDTarget"></a>
+### func NewBSUIDTarget
+
+```go
+func NewBSUIDTarget(bsuid string) MessageTarget
+```
+
+NewBSUIDTarget targets a recipient by business\-scoped user id \(serialized as \`recipient\`\).
+
+<a name="NewParentBSUIDTarget"></a>
+### func NewParentBSUIDTarget
+
+```go
+func NewParentBSUIDTarget(parentBSUID string) MessageTarget
+```
+
+NewParentBSUIDTarget targets a recipient by parent business\-scoped user id \(serialized as \`recipient\`\).
+
+<a name="NewPhoneTarget"></a>
+### func NewPhoneTarget
+
+```go
+func NewPhoneTarget(phoneNumber string) MessageTarget
+```
+
+NewPhoneTarget targets a recipient by phone number \(serialized as \`to\`\). This is the historical default and keeps existing behavior byte\-for\-byte.
+
+<a name="MessageTarget.configs"></a>
+### func \(MessageTarget\) configs
+
+```go
+func (t MessageTarget) configs(replyTo string) components.ApiCompatibleJsonConverterConfigs
+```
+
+configs builds the send configs for this target: phone → \`to\`, BSUID/parent → \`recipient\`. replyTo is optional \(empty for a non\-reply send\).
+
+<a name="MessageTargetType"></a>
+## type MessageTargetType
+
+MessageTargetType is how a send is addressed. Phone targets serialize as Meta's \`to\`; BSUID and parent\-BSUID targets serialize as \`recipient\` \(Meta business\-scoped user id send contract\).
+
+```go
+type MessageTargetType string
+```
+
+<a name="MessageTargetTypePhone"></a>
+
+```go
+const (
+    MessageTargetTypePhone       MessageTargetType = "phone"
+    MessageTargetTypeBSUID       MessageTargetType = "bsuid"
+    MessageTargetTypeParentBSUID MessageTargetType = "parent_bsuid"
+)
+```
+
 <a name="MessageTemplateCategory"></a>
 ## type MessageTemplateCategory
 
@@ -795,6 +1090,7 @@ const (
     MessageTemplateComponentFormatText     MessageTemplateComponentFormat = "TEXT"
     MessageTemplateComponentFormatImage    MessageTemplateComponentFormat = "IMAGE"
     MessageTemplateComponentFormatDocument MessageTemplateComponentFormat = "DOCUMENT"
+    MessageTemplateComponentFormatProduct  MessageTemplateComponentFormat = "PRODUCT"
     MessageTemplateComponentFormatVideo    MessageTemplateComponentFormat = "VIDEO"
     MessageTemplateComponentFormatLocation MessageTemplateComponentFormat = "LOCATION"
 )
@@ -821,6 +1117,28 @@ const (
     MessageTemplateComponentTypeCarousel         MessageTemplateComponentType = "CAROUSEL" // this appears in case of product caraousel
     MessageTemplateComponentTypeLimitedTimeOffer MessageTemplateComponentType = "LIMITED_TIME_OFFER"
 )
+```
+
+<a name="MessageTemplateComponentsUpdateValue"></a>
+## type MessageTemplateComponentsUpdateValue
+
+
+
+```go
+type MessageTemplateComponentsUpdateValue struct {
+    MessageTemplateId       int64  `json:"message_template_id"`
+    MessageTemplateName     string `json:"message_template_name"`
+    MessageTemplateLanguage string `json:"message_template_language"`
+    MessageTemplateElement  string `json:"message_template_element"`          // Template body text
+    MessageTemplateTitle    string `json:"message_template_title,omitempty"`  // Only if template has text header
+    MessageTemplateFooter   string `json:"message_template_footer,omitempty"` // Only if template has footer
+    MessageTemplateButtons  []struct {
+        MessageTemplateButtonType        string `json:"message_template_button_type"`
+        MessageTemplateButtonText        string `json:"message_template_button_text"`
+        MessageTemplateButtonUrl         string `json:"message_template_button_url,omitempty"`          // Only for url buttons
+        MessageTemplateButtonPhoneNumber string `json:"message_template_button_phone_number,omitempty"` // Only for phone number buttons
+    }   `json:"message_template_buttons,omitempty"` // Only if template has url or phone number button
+}
 ```
 
 <a name="MessageTemplateCreationResponse"></a>
@@ -862,12 +1180,12 @@ const (
 
 ```go
 type MessagesValue struct {
-    MessagingProduct string    `json:"messaging_product"`
-    Metadata         Metadata  `json:"metadata"`
-    Contacts         []Contact `json:"contacts,omitempty"`
-    Statuses         []Status  `json:"statuses,omitempty"`
-    Messages         []Message `json:"messages,omitempty"`
-    Errors           []Error   `json:"errors,omitempty"`
+    MessagingProduct string          `json:"messaging_product"`
+    Metadata         Metadata        `json:"metadata"`
+    Contacts         []SenderContact `json:"contacts,omitempty"`
+    Statuses         []Status        `json:"statuses,omitempty"`
+    Messages         []Message       `json:"messages,omitempty"`
+    Errors           []Error         `json:"errors,omitempty"`
 }
 ```
 
@@ -922,6 +1240,7 @@ const (
     NotificationMessageTypeUnknown     NotificationMessageTypeEnum = "unknown"
     NotificationMessageTypeLocation    NotificationMessageTypeEnum = "location"
     NotificationMessageTypeContacts    NotificationMessageTypeEnum = "contacts"
+    NotificationMessageTypeUnsupported NotificationMessageTypeEnum = "unsupported"
 )
 ```
 
@@ -936,6 +1255,8 @@ type NotificationPayloadAudioMessageSchemaType struct {
         Id       string `json:"id,omitempty"`
         MIMEType string `json:"mime_type,omitempty"`
         SHA256   string `json:"sha256,omitempty"`
+        Url      string `json:"url,omitempty"`
+        Voice    bool   `json:"voice,omitempty"` // Is Voice Recording?
     } `json:"audio,omitempty"`
 }
 ```
@@ -948,8 +1269,8 @@ type NotificationPayloadAudioMessageSchemaType struct {
 ```go
 type NotificationPayloadButtonInteractionMessageSchemaType struct {
     ButtonReply struct {
-        ReplyId string `json:"reply_id"`
-        Title   string `json:"title"`
+        Id    string `json:"id"`
+        Title string `json:"title"`
     } `json:"button_reply,omitempty"`
 }
 ```
@@ -975,7 +1296,7 @@ type NotificationPayloadButtonMessageSchemaType struct {
 
 ```go
 type NotificationPayloadContactMessageSchemaType struct {
-    Contacts []Contact `json:"contacts"`
+    Contacts []components.Contact `json:"contacts"`
 }
 ```
 
@@ -992,6 +1313,7 @@ type NotificationPayloadDocumentMessageSchemaType struct {
         SHA256   string `json:"sha256"`
         Caption  string `json:"caption,omitempty"`
         Filename string `json:"filename,omitempty"`
+        Link     string `json:"link,omitempty"`
     } `json:"document,omitempty"`
 }
 ```
@@ -1024,6 +1346,7 @@ type NotificationPayloadImageMessageSchemaType struct {
         MIMEType string `json:"mime_type"`
         SHA256   string `json:"sha256"`
         Caption  string `json:"caption,omitempty"`
+        Url      string `json:"url,omitempty"`
     } `json:"image,omitempty"`
 }
 ```
@@ -1103,11 +1426,12 @@ type NotificationPayloadOrderMessageSchemaType struct {
     Order struct {
         CatalogId    string `json:"catalog_id"`
         ProductItems []struct {
-            ProductRetailerId string `json:"product_retailer_id"`
-            Quantity          string `json:"quantity"`
-            ItemPrice         string `json:"item_price"`
-            Currency          string `json:"currency"`
+            ProductRetailerId string  `json:"product_retailer_id"`
+            Quantity          int     `json:"quantity"`
+            ItemPrice         float64 `json:"item_price"`
+            Currency          string  `json:"currency"`
         }   `json:"product_items"`
+        Text *string `json:"text,omitempty"`
     } `json:"order,omitempty"`
 }
 ```
@@ -1138,6 +1462,7 @@ type NotificationPayloadStickerMessageSchemaType struct {
         MIMEType string `json:"mime_type"`
         SHA256   string `json:"sha256"`
         Animated bool   `json:"animated"`
+        Url      string `json:"url,omitempty"`
     } `json:"sticker,omitempty"`
 }
 ```
@@ -1150,17 +1475,10 @@ type NotificationPayloadStickerMessageSchemaType struct {
 ```go
 type NotificationPayloadSystemMessageSchemaType struct {
     System struct {
-        Identity string                     `json:"identity"`
-        Body     string                     `json:"body"`
-        Customer string                     `json:"customer"`
-        Type     SystemNotificationTypeEnum `json:"type"`
-        WaId     string                     `json:"wa_id"`
-    }   `json:"system,omitempty"`
-    Identity struct {
-        Acknowledged     string `json:"acknowledged"`
-        CreatedTimestamp string `json:"created_timestamp"`
-        Hash             string `json:"hash"`
-    }   `json:"identity,omitempty"`
+        Body string                     `json:"body"`
+        Type SystemNotificationTypeEnum `json:"type"`
+        WaId string                     `json:"wa_id"`
+    } `json:"system,omitempty"`
 }
 ```
 
@@ -1173,19 +1491,20 @@ type NotificationPayloadSystemMessageSchemaType struct {
 type NotificationPayloadTextMessageSchemaType struct {
     Text struct {
         Body string `json:"body"`
-    }   `json:"text,omitempty"`
-    Referral struct {
-        SourceUrl    string                           `json:"source_url"`
-        SourceType   AdInteractionSourceTypeEnum      `json:"source_type"`
-        SourceId     string                           `json:"source_id"`
-        Headline     string                           `json:"headline"`
-        Body         string                           `json:"body"`
-        ImageUrl     string                           `json:"image_url,omitempty"`
-        VideoUrl     string                           `json:"video_url,omitempty"`
-        ThumbnailUrl string                           `json:"thumbnail_url"`
-        CtwaCLId     string                           `json:"ctwa_clid"`
-        MediaType    AdInteractionSourceMediaTypeEnum `json:"media_type"`
-    }   `json:"referral,omitempty"`
+    } `json:"text,omitempty"`
+}
+```
+
+<a name="NotificationPayloadUnsupportedMessageSchemaType"></a>
+## type NotificationPayloadUnsupportedMessageSchemaType
+
+
+
+```go
+type NotificationPayloadUnsupportedMessageSchemaType struct {
+    Unsupported struct {
+        Type string `json:"type"`
+    } `json:"unsupported,omitempty"`
 }
 ```
 
@@ -1202,6 +1521,7 @@ type NotificationPayloadVideoMessageSchemaType struct {
         SHA256   string `json:"sha256"`
         Caption  string `json:"caption,omitempty"`
         Filename string `json:"filename,omitempty"`
+        Url      string `json:"url,omitempty"`
     } `json:"video,omitempty"`
 }
 ```
@@ -1232,6 +1552,108 @@ const (
 type Origin struct {
     Type                MessageStatusCategoryEnum `json:"type"`
     ExpirationTimestamp string                    `json:"expiration_timestamp,omitempty"`
+}
+```
+
+<a name="PaginatedResponse"></a>
+## type PaginatedResponse
+
+PaginatedResponse is a generic wrapper for paginated responses
+
+```go
+type PaginatedResponse[T any] struct {
+    Data   []T               `json:"data"`
+    Paging PaginationDetails `json:"paging,omitempty"`
+}
+```
+
+<a name="PaginationCursors"></a>
+## type PaginationCursors
+
+PaginationCursors represents the before/after cursors used in cursor\-based pagination
+
+```go
+type PaginationCursors struct {
+    Before string `json:"before,omitempty"`
+    After  string `json:"after,omitempty"`
+}
+```
+
+<a name="PaginationDetails"></a>
+## type PaginationDetails
+
+PaginationDetails contains the pagination metadata returned by WhatsApp API
+
+```go
+type PaginationDetails struct {
+    Cursors  PaginationCursors `json:"cursors,omitempty"`
+    Next     string            `json:"next,omitempty"`
+    Previous string            `json:"previous,omitempty"`
+}
+```
+
+<a name="PaginationDetails.GetNextCursor"></a>
+### func \(\*PaginationDetails\) GetNextCursor
+
+```go
+func (pd *PaginationDetails) GetNextCursor() string
+```
+
+GetNextCursor returns the cursor for the next page
+
+<a name="PaginationDetails.GetPreviousCursor"></a>
+### func \(\*PaginationDetails\) GetPreviousCursor
+
+```go
+func (pd *PaginationDetails) GetPreviousCursor() string
+```
+
+GetPreviousCursor returns the cursor for the previous page
+
+<a name="PaginationDetails.HasNextPage"></a>
+### func \(\*PaginationDetails\) HasNextPage
+
+```go
+func (pd *PaginationDetails) HasNextPage() bool
+```
+
+HasNextPage checks if there's a next page available
+
+<a name="PaginationDetails.HasPreviousPage"></a>
+### func \(\*PaginationDetails\) HasPreviousPage
+
+```go
+func (pd *PaginationDetails) HasPreviousPage() bool
+```
+
+HasPreviousPage checks if there's a previous page available
+
+<a name="PaginationInput"></a>
+## type PaginationInput
+
+PaginationInput represents the pagination parameters that can be passed to API calls
+
+```go
+type PaginationInput struct {
+    Limit  int    `json:"limit,omitempty"`  // Number of results per page
+    After  string `json:"after,omitempty"`  // Cursor for next page
+    Before string `json:"before,omitempty"` // Cursor for previous page
+}
+```
+
+<a name="PaymentConfigurationUpdateValue"></a>
+## type PaymentConfigurationUpdateValue
+
+
+
+```go
+type PaymentConfigurationUpdateValue struct {
+    ConfigurationName string `json:"configuration_name"`
+    ProviderName      string `json:"provider_name"`
+    ProviderMid       string `json:"provider_mid"`
+    Status            string `json:"status"`
+    CreatedTimestamp  int64  `json:"created_timestamp"`
+    UpdatedTimestamp  int64  `json:"updated_timestamp"`
 }
 ```
 
@@ -1274,6 +1696,15 @@ func (manager *PhoneNumberManager) DeleteQrCode(phoneNumber, id string) (*Delete
 ```
 
 DeleteQrCode deletes a QR code by its ID for the specified phone number.
+
+<a name="PhoneNumberManager.DeleteUsername"></a>
+### func \(\*PhoneNumberManager\) DeleteUsername
+
+```go
+func (manager *PhoneNumberManager) DeleteUsername(phoneNumberId string) (*UsernameMutationResponse, error)
+```
+
+DeleteUsername removes the business username for the phone number id.
 
 <a name="PhoneNumberManager.Fetch"></a>
 ### func \(\*PhoneNumberManager\) Fetch
@@ -1320,6 +1751,15 @@ func (manager *PhoneNumberManager) GetQrCodeById(phoneNumber, id string) (*GetAl
 
 GetQrCodeById gets a QR code by its ID for the specified phone number.
 
+<a name="PhoneNumberManager.GetUsername"></a>
+### func \(\*PhoneNumberManager\) GetUsername
+
+```go
+func (manager *PhoneNumberManager) GetUsername(phoneNumberId string) (*BusinessUsernameResponse, error)
+```
+
+GetUsername fetches the current business username for the phone number id. Username is empty when none is set.
+
 <a name="PhoneNumberManager.RequestVerificationCode"></a>
 ### func \(\*PhoneNumberManager\) RequestVerificationCode
 
@@ -1328,6 +1768,15 @@ func (manager *PhoneNumberManager) RequestVerificationCode(phoneNumberId string,
 ```
 
 
+
+<a name="PhoneNumberManager.SetUsername"></a>
+### func \(\*PhoneNumberManager\) SetUsername
+
+```go
+func (manager *PhoneNumberManager) SetUsername(phoneNumberId, username string) (*UsernameMutationResponse, error)
+```
+
+SetUsername sets \(or changes\) the business username for the phone number id.
 
 <a name="PhoneNumberManager.UpdateQrCode"></a>
 ### func \(\*PhoneNumberManager\) UpdateQrCode
@@ -1343,6 +1792,15 @@ UpdateQrCode updates a QR code by its ID for the specified phone number with the
 
 ```go
 func (manager *PhoneNumberManager) VerifyCode(phoneNumberId, verificationCode string) (VerifyCodeResponse, error)
+```
+
+
+
+<a name="PhoneNumberManager.executeUsernameMutation"></a>
+### func \(\*PhoneNumberManager\) executeUsernameMutation
+
+```go
+func (manager *PhoneNumberManager) executeUsernameMutation(response string, execErr error) (*UsernameMutationResponse, error)
 ```
 
 
@@ -1416,8 +1874,36 @@ type PhoneNumberQualityUpdateValue struct {
 
 ```go
 type Pricing struct {
+    Billable     bool                      `json:"billable"`
     PricingModel string                    `json:"pricing_model"`
     Category     MessageStatusCategoryEnum `json:"category"`
+}
+```
+
+<a name="ProductError"></a>
+## type ProductError
+
+
+
+```go
+type ProductError struct {
+    ErrorType     string `json:"error_type"`
+    ErrorPriority string `json:"error_priority"`
+    Title         string `json:"title"`
+    Description   string `json:"description"`
+}
+```
+
+<a name="ProductFeed"></a>
+## type ProductFeed
+
+
+
+```go
+type ProductFeed struct {
+    Id       string `json:"id"`
+    FileName string `json:"file_name"`
+    Name     string `json:"name"`
 }
 ```
 
@@ -1436,85 +1922,85 @@ type ProductGroup struct {
 <a name="ProductItem"></a>
 ## type ProductItem
 
-
+ProductItem represents a product in a catalog.
 
 ```go
 type ProductItem struct {
-    Id                                                    string        `json:"id"`
-    AdditionalImageCdnUrls                                []ImageCdnUrl `json:"additional_image_cdn_urls,omitempty"`
-    AdditionalImageUrls                                   []string      `json:"additional_image_urls,omitempty"`
-    AdditionalVariantAttributes                           []KeyValue    `json:"additional_variant_attributes,omitempty"`
-    AgeGroup                                              string        `json:"age_group,omitempty"`
-    Applinks                                              *Applinks     `json:"applinks,omitempty"`
-    Availability                                          string        `json:"availability,omitempty"`
-    Brand                                                 string        `json:"brand,omitempty"`
-    CapabilityToReviewStatus                              []KeyValue    `json:"capability_to_review_status,omitempty"`
-    Category                                              string        `json:"category,omitempty"`
-    CategorySpecificFields                                interface{}        `json:"category_specific_fields,omitempty"`
-    Color                                                 string        `json:"color,omitempty"`
-    CommerceInsights                                      string        `json:"commerce_insights,omitempty"`
-    Condition                                             string        `json:"condition,omitempty"`
-    Currency                                              string        `json:"currency,omitempty"`
-    CustomData                                            []KeyValue    `json:"custom_data,omitempty"`
-    CustomLabel0                                          string        `json:"custom_label_0,omitempty"`
-    CustomLabel1                                          string        `json:"custom_label_1,omitempty"`
-    CustomLabel2                                          string        `json:"custom_label_2,omitempty"`
-    CustomLabel3                                          string        `json:"custom_label_3,omitempty"`
-    CustomLabel4                                          string        `json:"custom_label_4,omitempty"`
-    CustomNumber0                                         string        `json:"custom_number_0,omitempty"`
-    CustomNumber1                                         string        `json:"custom_number_1,omitempty"`
-    CustomNumber2                                         string        `json:"custom_number_2,omitempty"`
-    CustomNumber3                                         string        `json:"custom_number_3,omitempty"`
-    CustomNumber4                                         string        `json:"custom_number_4,omitempty"`
-    Description                                           string        `json:"description,omitempty"`
-    Errors                                                []string      `json:"errors,omitempty"`
-    ExpirationDate                                        string        `json:"expiration_date,omitempty"`
-    FbProductCategory                                     string        `json:"fb_product_category,omitempty"`
-    Gender                                                string        `json:"gender,omitempty"`
-    Gtin                                                  string        `json:"gtin,omitempty"`
-    ImageCdnUrls                                          []ImageCdnUrl `json:"image_cdn_urls,omitempty"`
-    ImageFetchStatus                                      string        `json:"image_fetch_status,omitempty"`
-    ImageUrl                                              string        `json:"image_url,omitempty"`
-    Images                                                []string      `json:"images,omitempty"`
-    ImporterAddress                                       string        `json:"importer_address,omitempty"`
-    ImporterName                                          string        `json:"importer_name,omitempty"`
-    InvalidationErrors                                    []string      `json:"invalidation_errors,omitempty"`
-    Inventory                                             int           `json:"inventory,omitempty"`
-    ManufacturerInfo                                      string        `json:"manufacturer_info,omitempty"`
-    ManufacturerPartNumber                                string        `json:"manufacturer_part_number,omitempty"`
-    MarkedForProductLaunch                                string        `json:"marked_for_product_launch,omitempty"`
-    Material                                              string        `json:"material,omitempty"`
-    MobileLink                                            string        `json:"mobile_link,omitempty"`
-    Name                                                  string        `json:"name,omitempty"`
-    OrderingIndex                                         int           `json:"ordering_index,omitempty"`
-    OriginCountry                                         string        `json:"origin_country,omitempty"`
-    ParentProductID                                       string        `json:"parent_product_id,omitempty"`
-    Pattern                                               string        `json:"pattern,omitempty"`
-    PostConversionSignalBasedEnforcementAppealEligibility bool          `json:"post_conversion_signal_based_enforcement_appeal_eligibility,omitempty"`
-    Price                                                 string        `json:"price,omitempty"`
-    ProductFeed                                           string        `json:"product_feed,omitempty"`
-    ProductGroup                                          *ProductGroup `json:"product_group,omitempty"`
-    ProductLocalInfo                                      string        `json:"product_local_info,omitempty"`
-    ProductType                                           string        `json:"product_type,omitempty"`
-    QuantityToSellOnFacebook                              int           `json:"quantity_to_sell_on_facebook,omitempty"`
-    RetailerId                                            string        `json:"retailer_id,omitempty"`
-    RetailerProductGroupID                                string        `json:"retailer_product_group_id,omitempty"`
-    ReviewRejectionReasons                                []string      `json:"review_rejection_reasons,omitempty"`
-    ReviewStatus                                          string        `json:"review_status,omitempty"`
-    SalePrice                                             string        `json:"sale_price,omitempty"`
-    SalePriceEndDate                                      string        `json:"sale_price_end_date,omitempty"`
-    SalePriceStartDate                                    string        `json:"sale_price_start_date,omitempty"`
-    ShippingWeightUnit                                    string        `json:"shipping_weight_unit,omitempty"`
-    ShippingWeightValue                                   float64       `json:"shipping_weight_value,omitempty"`
-    ShortDescription                                      string        `json:"short_description,omitempty"`
-    Size                                                  string        `json:"size,omitempty"`
-    StartDate                                             string        `json:"start_date,omitempty"`
-    Tags                                                  []string      `json:"tags,omitempty"`
-    Url                                                   string        `json:"url,omitempty"`
-    VendorId                                              string        `json:"vendor_id,omitempty"`
-    VideoFetchStatus                                      string        `json:"video_fetch_status,omitempty"`
-    Visibility                                            string        `json:"visibility,omitempty"`
-    WaComplianceCategory                                  string        `json:"wa_compliance_category,omitempty"`
+    Id                                                    string          `json:"id"`
+    AdditionalImageCdnUrls                                [][]ImageCdnUrl `json:"additional_image_cdn_urls,omitempty"`
+    AdditionalImageUrls                                   []string        `json:"additional_image_urls,omitempty"`
+    AdditionalVariantAttributes                           []KeyValue      `json:"additional_variant_attributes,omitempty"`
+    AgeGroup                                              string          `json:"age_group,omitempty"`
+    Applinks                                              *Applinks       `json:"applinks,omitempty"`
+    Availability                                          string          `json:"availability,omitempty"`
+    Brand                                                 string          `json:"brand,omitempty"`
+    CapabilityToReviewStatus                              []KeyValue      `json:"capability_to_review_status,omitempty"`
+    Category                                              string          `json:"category,omitempty"`
+    CategorySpecificFields                                interface{}     `json:"category_specific_fields,omitempty"`
+    Color                                                 string          `json:"color,omitempty"`
+    CommerceInsights                                      string          `json:"commerce_insights,omitempty"`
+    Condition                                             string          `json:"condition,omitempty"`
+    Currency                                              string          `json:"currency,omitempty"`
+    CustomData                                            []KeyValue      `json:"custom_data,omitempty"`
+    CustomLabel0                                          string          `json:"custom_label_0,omitempty"`
+    CustomLabel1                                          string          `json:"custom_label_1,omitempty"`
+    CustomLabel2                                          string          `json:"custom_label_2,omitempty"`
+    CustomLabel3                                          string          `json:"custom_label_3,omitempty"`
+    CustomLabel4                                          string          `json:"custom_label_4,omitempty"`
+    CustomNumber0                                         string          `json:"custom_number_0,omitempty"`
+    CustomNumber1                                         string          `json:"custom_number_1,omitempty"`
+    CustomNumber2                                         string          `json:"custom_number_2,omitempty"`
+    CustomNumber3                                         string          `json:"custom_number_3,omitempty"`
+    CustomNumber4                                         string          `json:"custom_number_4,omitempty"`
+    Description                                           string          `json:"description,omitempty"`
+    Errors                                                []ProductError  `json:"errors,omitempty"`
+    ExpirationDate                                        string          `json:"expiration_date,omitempty"`
+    FbProductCategory                                     string          `json:"fb_product_category,omitempty"`
+    Gender                                                string          `json:"gender,omitempty"`
+    Gtin                                                  string          `json:"gtin,omitempty"`
+    ImageCdnUrls                                          []ImageCdnUrl   `json:"image_cdn_urls,omitempty"`
+    ImageFetchStatus                                      string          `json:"image_fetch_status,omitempty"`
+    ImageUrl                                              string          `json:"image_url,omitempty"`
+    Images                                                []string        `json:"images,omitempty"`
+    ImporterAddress                                       string          `json:"importer_address,omitempty"`
+    ImporterName                                          string          `json:"importer_name,omitempty"`
+    InvalidationErrors                                    []string        `json:"invalidation_errors,omitempty"`
+    Inventory                                             int             `json:"inventory,omitempty"`
+    ManufacturerInfo                                      string          `json:"manufacturer_info,omitempty"`
+    ManufacturerPartNumber                                string          `json:"manufacturer_part_number,omitempty"`
+    MarkedForProductLaunch                                string          `json:"marked_for_product_launch,omitempty"`
+    Material                                              string          `json:"material,omitempty"`
+    MobileLink                                            string          `json:"mobile_link,omitempty"`
+    Name                                                  string          `json:"name,omitempty"`
+    OrderingIndex                                         int             `json:"ordering_index,omitempty"`
+    OriginCountry                                         string          `json:"origin_country,omitempty"`
+    ParentProductID                                       string          `json:"parent_product_id,omitempty"`
+    Pattern                                               string          `json:"pattern,omitempty"`
+    PostConversionSignalBasedEnforcementAppealEligibility bool            `json:"post_conversion_signal_based_enforcement_appeal_eligibility,omitempty"`
+    Price                                                 string          `json:"price,omitempty"`
+    ProductFeed                                           *ProductFeed    `json:"product_feed,omitempty"`
+    ProductGroup                                          *ProductGroup   `json:"product_group,omitempty"`
+    ProductLocalInfo                                      string          `json:"product_local_info,omitempty"`
+    ProductType                                           string          `json:"product_type,omitempty"`
+    QuantityToSellOnFacebook                              int             `json:"quantity_to_sell_on_facebook,omitempty"`
+    RetailerId                                            string          `json:"retailer_id,omitempty"`
+    RetailerProductGroupID                                string          `json:"retailer_product_group_id,omitempty"`
+    ReviewRejectionReasons                                []string        `json:"review_rejection_reasons,omitempty"`
+    ReviewStatus                                          string          `json:"review_status,omitempty"`
+    SalePrice                                             string          `json:"sale_price,omitempty"`
+    SalePriceEndDate                                      string          `json:"sale_price_end_date,omitempty"`
+    SalePriceStartDate                                    string          `json:"sale_price_start_date,omitempty"`
+    ShippingWeightUnit                                    string          `json:"shipping_weight_unit,omitempty"`
+    ShippingWeightValue                                   float64         `json:"shipping_weight_value,omitempty"`
+    ShortDescription                                      string          `json:"short_description,omitempty"`
+    Size                                                  string          `json:"size,omitempty"`
+    StartDate                                             string          `json:"start_date,omitempty"`
+    Tags                                                  []string        `json:"tags,omitempty"`
+    Url                                                   string          `json:"url,omitempty"`
+    VendorId                                              string          `json:"vendor_id,omitempty"`
+    VideoFetchStatus                                      string          `json:"video_fetch_status,omitempty"`
+    Visibility                                            string          `json:"visibility,omitempty"`
+    WaComplianceCategory                                  string          `json:"wa_compliance_category,omitempty"`
 }
 ```
 
@@ -1544,8 +2030,6 @@ ProductSetMetadata represents metadata for a product set.
 
 ```go
 type ProductSetMetadata struct {
-    // Define minimal metadata fields as needed.
-    // For example:
     UpdateTime string `json:"update_time,omitempty"`
 }
 ```
@@ -1558,6 +2042,32 @@ type ProductSetMetadata struct {
 ```go
 type Profile struct {
     Name string `json:"name"`
+    // Username is the business-set WhatsApp username of the contact when Meta
+    // surfaces it (username rollout). Empty otherwise.
+    Username string `json:"username,omitempty"`
+}
+```
+
+<a name="ReferralInfo"></a>
+## type ReferralInfo
+
+ReferralInfo represents referral data from Click to WhatsApp ads
+
+```go
+type ReferralInfo struct {
+    SourceUrl      string                           `json:"source_url"`
+    SourceType     AdInteractionSourceTypeEnum      `json:"source_type"`
+    SourceId       string                           `json:"source_id"`
+    Headline       string                           `json:"headline"`
+    Body           string                           `json:"body"`
+    ImageUrl       string                           `json:"image_url,omitempty"`
+    VideoUrl       string                           `json:"video_url,omitempty"`
+    ThumbnailUrl   string                           `json:"thumbnail_url,omitempty"`
+    CtwaClid       string                           `json:"ctwa_clid,omitempty"`
+    MediaType      AdInteractionSourceMediaTypeEnum `json:"media_type"`
+    WelcomeMessage struct {
+        Text string `json:"text"`
+    }   `json:"welcome_message,omitempty"`
 }
 ```
 
@@ -1585,6 +2095,76 @@ type SecurityValue struct {
 }
 ```
 
+<a name="SenderContact"></a>
+## type SenderContact
+
+
+
+```go
+type SenderContact struct {
+    WaId            string  `json:"wa_id"`
+    Profile         Profile `json:"profile"`
+    IdentityKeyHash string  `json:"identity_key_hash,omitempty"`
+    // BSUID identity fields (Meta business-scoped user id rollout). Present when
+    // Meta includes them; empty for phone-only contacts. Additive — existing
+    // phone-known consumers are unaffected.
+    UserId       string `json:"user_id,omitempty"`
+    ParentUserId string `json:"parent_user_id,omitempty"`
+}
+```
+
+<a name="SmbAppStateSyncValue"></a>
+## type SmbAppStateSyncValue
+
+
+
+```go
+type SmbAppStateSyncValue struct {
+    MessagingProduct string `json:"messaging_product"`
+    Metadata         struct {
+        DisplayPhoneNumber string `json:"display_phone_number"`
+        PhoneNumberId      string `json:"phone_number_id"`
+    }   `json:"metadata"`
+    StateSync []struct {
+        Type    string `json:"type"` // e.g., "contact"
+        Contact struct {
+            FullName    string `json:"full_name,omitempty"`
+            FirstName   string `json:"first_name,omitempty"`
+            PhoneNumber string `json:"phone_number,omitempty"`
+        }   `json:"contact,omitempty"`
+        Action   string `json:"action"` // e.g., "add", "remove", "update"
+        Metadata struct {
+            Timestamp string `json:"timestamp"`
+        }   `json:"metadata"`
+    }   `json:"state_sync"`
+}
+```
+
+<a name="SmbMessageEchoesValue"></a>
+## type SmbMessageEchoesValue
+
+
+
+```go
+type SmbMessageEchoesValue struct {
+    MessagingProduct string `json:"messaging_product"`
+    Metadata         struct {
+        DisplayPhoneNumber string `json:"display_phone_number"`
+        PhoneNumberId      string `json:"phone_number_id"`
+    }   `json:"metadata"`
+    MessageEchoes []struct {
+        From      string `json:"from"`
+        To        string `json:"to"`
+        Id        string `json:"id"`
+        Timestamp string `json:"timestamp"`
+        Type      string `json:"type"`
+        // Message contents are dynamic based on type
+        // Using map for flexibility
+        MessageContent map[string]interface{} `json:"-"` // Will be populated from the type-specific field
+    }   `json:"message_echoes"`
+}
+```
+
 <a name="Status"></a>
 ## type Status
 
@@ -1592,13 +2172,33 @@ type SecurityValue struct {
 
 ```go
 type Status struct {
-    Id           string       `json:"id"`
-    Conversation Conversation `json:"conversation,omitempty"`
-    Errors       []Error      `json:"errors,omitempty"`
-    Status       string       `json:"status"`
-    Timestamp    string       `json:"timestamp"`
-    RecipientId  string       `json:"recipient_id"`
-    Pricing      Pricing      `json:"pricing,omitempty"`
+    Id                       string       `json:"id"`
+    Conversation             Conversation `json:"conversation,omitempty"`
+    Errors                   []Error      `json:"errors,omitempty"`
+    Status                   string       `json:"status"`
+    Timestamp                string       `json:"timestamp"`
+    RecipientId              string       `json:"recipient_id"`
+    RecipientType            string       `json:"recipient_type,omitempty"`              // Only included if message sent to a group
+    RecipientParticipantId   string       `json:"recipient_participant_id,omitempty"`    // Only included if message sent to a group
+    RecipientIdentityKeyHash string       `json:"recipient_identity_key_hash,omitempty"` // Only included if identity change check enabled
+    BizOpaqueCallbackData    string       `json:"biz_opaque_callback_data,omitempty"`    // Only included if message sent with biz_opaque_callback_data
+    Pricing                  Pricing      `json:"pricing,omitempty"`
+    // BSUID identity of the recipient on status updates. Present alongside
+    // recipient_id in the dual-identifier rollout; either may be omitted.
+    RecipientUserId       string `json:"recipient_user_id,omitempty"`
+    RecipientParentUserId string `json:"recipient_parent_user_id,omitempty"`
+}
+```
+
+<a name="StatusResponse"></a>
+## type StatusResponse
+
+StatusResponse represents the API response for status updates \(read receipts\).
+
+```go
+type StatusResponse struct {
+    Success bool              `json:"success"`
+    Error   *MessageSendError `json:"error,omitempty"`
 }
 ```
 
@@ -1683,7 +2283,7 @@ Delete dissociates a template \(delete implementation to be added as needed\).
 func (manager *TemplateManager) Fetch(Id string) (*WhatsAppBusinessMessageTemplateNode, error)
 ```
 
-Fetch fetches a single WhatsApp Business message template by its ID.
+Fetch fetches a single WhatsApp Business message template by its ID \(no changes needed\)
 
 <a name="TemplateManager.FetchAll"></a>
 ### func \(\*TemplateManager\) FetchAll
@@ -1692,7 +2292,25 @@ Fetch fetches a single WhatsApp Business message template by its ID.
 func (manager *TemplateManager) FetchAll() (*WhatsAppBusinessTemplatesFetchResponseEdge, error)
 ```
 
-FetchAll fetches all WhatsApp Business message templates.
+Deprecated: Use FetchAllWithPagination for better control
+
+<a name="TemplateManager.FetchAllWithPagination"></a>
+### func \(\*TemplateManager\) FetchAllWithPagination
+
+```go
+func (manager *TemplateManager) FetchAllWithPagination(paginationInput ...*PaginationInput) (*PaginatedResponse[WhatsAppBusinessMessageTemplateNode], error)
+```
+
+FetchAllWithPagination fetches WhatsApp Business message templates with pagination support
+
+<a name="TemplateManager.GetAllTemplates"></a>
+### func \(\*TemplateManager\) GetAllTemplates
+
+```go
+func (manager *TemplateManager) GetAllTemplates(limit ...int) ([]WhatsAppBusinessMessageTemplateNode, error)
+```
+
+GetAllTemplates fetches all templates across all pages This is a helper method that handles pagination automatically
 
 <a name="TemplateManager.MigrateFromOtherBusinessAccount"></a>
 ### func \(\*TemplateManager\) MigrateFromOtherBusinessAccount
@@ -1744,6 +2362,12 @@ const (
     TemplateMessageButtonTypeCopyCode            TemplateMessageButtonType = "COPY_CODE"
     TemplateMessageButtonTypeCatalog             TemplateMessageButtonType = "CATALOG"
     TemplateMessageButtonTypeMultiProductMessage TemplateMessageButtonType = "MPM"
+    // TemplateMessageButtonTypeRequestContactInfo asks the recipient to share
+    // their contact info (BSUID/phone). The button takes no other fields — the
+    // label is Meta-controlled — so a create-request button is just
+    // {"type": "REQUEST_CONTACT_INFO"}, and sending the template needs no
+    // button parameter.
+    TemplateMessageButtonTypeRequestContactInfo TemplateMessageButtonType = "REQUEST_CONTACT_INFO"
 )
 ```
 
@@ -1769,7 +2393,7 @@ TemplateMessageComponentCard represents a card component in a message template.
 
 ```go
 type TemplateMessageComponentCard struct {
-    // Add card-specific fields if needed.
+    CardIndex  int                                       `json:"card_index,omitempty"`
     Components []WhatsAppBusinessHSMWhatsAppHSMComponent `json:"components,omitempty"`
 }
 ```
@@ -1808,8 +2432,8 @@ TemplateMessagePreviewEdge represents the preview response.
 
 ```go
 type TemplateMessagePreviewEdge struct {
-    Data   []TemplateMessagePreviewNode               `json:"data,omitempty"`
-    Paging internal.WhatsAppBusinessApiPaginationMeta `json:"paging,omitempty"`
+    Data   []TemplateMessagePreviewNode `json:"data,omitempty"`
+    Paging PaginationDetails            `json:"paging,omitempty"`
 }
 ```
 
@@ -1837,7 +2461,7 @@ TemplateMessageQualityScore represents the quality score of a template.
 type TemplateMessageQualityScore struct {
     Date    int      `json:"date,omitempty"`
     Reasons []string `json:"reasons,omitempty"`
-    Score   int      `json:"score,omitempty"`
+    Score   string   `json:"score,omitempty"`
 }
 ```
 
@@ -1949,6 +2573,50 @@ type TemplateStatusUpdateValue struct {
 }
 ```
 
+<a name="UserIdUpdateValue"></a>
+## type UserIdUpdateValue
+
+UserIdUpdateValue is the webhook value for the \`user\_id\_update\` field \(BSUID transition\). Field names follow Meta's payload; all optional. Raw values are preserved for downstream identity bridging.
+
+```go
+type UserIdUpdateValue struct {
+    WaId         string `json:"wa_id,omitempty"`
+    OldUserId    string `json:"old_user_id,omitempty"`
+    NewUserId    string `json:"new_user_id,omitempty"`
+    UserId       string `json:"user_id,omitempty"`
+    ParentUserId string `json:"parent_user_id,omitempty"`
+}
+```
+
+<a name="UserPreferencesValue"></a>
+## type UserPreferencesValue
+
+
+
+```go
+type UserPreferencesValue struct {
+    UserPreferences []struct {
+        WaId      string `json:"wa_id"`
+        Detail    string `json:"detail"`
+        Category  string `json:"category"` // e.g., "marketing_messages"
+        Value     string `json:"value"`    // Preference value
+        Timestamp int64  `json:"timestamp"`
+    } `json:"user_preferences"`
+}
+```
+
+<a name="UsernameMutationResponse"></a>
+## type UsernameMutationResponse
+
+UsernameMutationResponse is the POST/DELETE username result.
+
+```go
+type UsernameMutationResponse struct {
+    Success bool              `json:"success,omitempty"`
+    Error   *MessageSendError `json:"error,omitempty"`
+}
+```
+
 <a name="VerifyCodeMethod"></a>
 ## type VerifyCodeMethod
 
@@ -1978,6 +2646,61 @@ type VerifyCodeResponse struct {
 }
 ```
 
+<a name="WabaHealthStatus"></a>
+## type WabaHealthStatus
+
+
+
+```go
+type WabaHealthStatus struct {
+    CanSendMessage string `json:"can_send_message"`
+    Entities       []struct {
+        EntityType        string `json:"entity_type"`
+        ID                string `json:"id"`
+        CanSendMessage    string `json:"can_send_message,omitempty"`
+        CanReceiveCallSIP string `json:"can_receive_call_sip,omitempty"`
+        Errors            []struct {
+            ErrorCode        int    `json:"error_code"`
+            ErrorDescription string `json:"error_description"`
+            PossibleSolution string `json:"possible_solution"`
+        }   `json:"errors,omitempty"`
+    }   `json:"entities"`
+}
+```
+
+<a name="WabaOfficialBusinessAccount"></a>
+## type WabaOfficialBusinessAccount
+
+
+
+```go
+type WabaOfficialBusinessAccount struct {
+    OBAStatus string `json:"oba_status"`
+}
+```
+
+<a name="WabaQualityScore"></a>
+## type WabaQualityScore
+
+
+
+```go
+type WabaQualityScore struct {
+    Score string `json:"score"`
+}
+```
+
+<a name="WabaThroughput"></a>
+## type WabaThroughput
+
+
+
+```go
+type WabaThroughput struct {
+    Level string `json:"level"`
+}
+```
+
 <a name="WebApplink"></a>
 ## type WebApplink
 
@@ -2003,17 +2726,25 @@ type WebhookFieldEnum string
 
 ```go
 const (
-    WebhookFieldEnumAccountAlerts          WebhookFieldEnum = "account_alerts"
-    WebhookFieldEnumMessages               WebhookFieldEnum = "messages"
-    WebhookFieldEnumSecurity               WebhookFieldEnum = "security"
-    WebhookFieldEnumAccountUpdate          WebhookFieldEnum = "account_update"
-    WebhookFieldEnumAccountReview          WebhookFieldEnum = "account_review"
-    WebhookFieldEnumBusinessCapability     WebhookFieldEnum = "business_capability"
-    WebhookFieldEnumMessageTemplateQuality WebhookFieldEnum = "message_template_quality"
-    WebhookFieldEnumMessageTemplateStatus  WebhookFieldEnum = "message_template_status"
-    WebhookFieldEnumPhoneNumberName        WebhookFieldEnum = "phone_number_name"
-    WebhookFieldEnumPhoneNumberQuality     WebhookFieldEnum = "phone_number_quality"
-    WebhookFieldEnumTemplateCategoryUpdate WebhookFieldEnum = "template_category"
+    WebhookFieldEnumAccountAlerts                   WebhookFieldEnum = "account_alerts"
+    WebhookFieldEnumMessages                        WebhookFieldEnum = "messages"
+    WebhookFieldEnumSecurity                        WebhookFieldEnum = "security"
+    WebhookFieldEnumAccountUpdate                   WebhookFieldEnum = "account_update"
+    WebhookFieldEnumAccountReview                   WebhookFieldEnum = "account_review"
+    WebhookFieldEnumBusinessCapability              WebhookFieldEnum = "business_capability"
+    WebhookFieldEnumMessageTemplateQuality          WebhookFieldEnum = "message_template_quality"
+    WebhookFieldEnumMessageTemplateStatus           WebhookFieldEnum = "message_template_status"
+    WebhookFieldEnumPhoneNumberName                 WebhookFieldEnum = "phone_number_name"
+    WebhookFieldEnumPhoneNumberQuality              WebhookFieldEnum = "phone_number_quality"
+    WebhookFieldEnumTemplateCategoryUpdate          WebhookFieldEnum = "template_category"
+    WebhookFieldEnumUserPreferences                 WebhookFieldEnum = "user_preferences"
+    WebhookFieldEnumMessageTemplateComponentsUpdate WebhookFieldEnum = "message_template_components_update"
+    WebhookFieldEnumPaymentConfigurationUpdate      WebhookFieldEnum = "payment_configuration_update"
+    WebhookFieldEnumSmbAppStateSync                 WebhookFieldEnum = "smb_app_state_sync"
+    WebhookFieldEnumSmbMessageEchoes                WebhookFieldEnum = "smb_message_echoes"
+    WebhookFieldEnumHistory                         WebhookFieldEnum = "history"
+    WebhookFieldEnumUserIdUpdate                    WebhookFieldEnum = "user_id_update"
+    WebhookFieldEnumBusinessUsernameUpdates         WebhookFieldEnum = "business_username_updates"
 )
 ```
 
@@ -2113,6 +2844,33 @@ func (wh *WebhookManager) handleBusinessCapabilitySubscriptionEvents(baseEvent e
 
 
 
+<a name="WebhookManager.handleBusinessUsernameUpdateSubscriptionEvents"></a>
+### func \(\*WebhookManager\) handleBusinessUsernameUpdateSubscriptionEvents
+
+```go
+func (wh *WebhookManager) handleBusinessUsernameUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value BusinessUsernameUpdateValue) error
+```
+
+
+
+<a name="WebhookManager.handleHistorySubscriptionEvents"></a>
+### func \(\*WebhookManager\) handleHistorySubscriptionEvents
+
+```go
+func (wh *WebhookManager) handleHistorySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value HistoryValue)
+```
+
+
+
+<a name="WebhookManager.handleMessageTemplateComponentsUpdateSubscriptionEvents"></a>
+### func \(\*WebhookManager\) handleMessageTemplateComponentsUpdateSubscriptionEvents
+
+```go
+func (wh *WebhookManager) handleMessageTemplateComponentsUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value MessageTemplateComponentsUpdateValue)
+```
+
+
+
 <a name="WebhookManager.handleMessageTemplateQualitySubscriptionEvents"></a>
 ### func \(\*WebhookManager\) handleMessageTemplateQualitySubscriptionEvents
 
@@ -2136,6 +2894,15 @@ func (wh *WebhookManager) handleMessageTemplateStatusSubscriptionEvents(baseEven
 
 ```go
 func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessageSubscriptionEventPayload) error
+```
+
+
+
+<a name="WebhookManager.handlePaymentConfigurationUpdateSubscriptionEvents"></a>
+### func \(\*WebhookManager\) handlePaymentConfigurationUpdateSubscriptionEvents
+
+```go
+func (wh *WebhookManager) handlePaymentConfigurationUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value PaymentConfigurationUpdateValue)
 ```
 
 
@@ -2167,11 +2934,47 @@ func (wh *WebhookManager) handleSecuritySubscriptionEvents(value SecurityValue)
 
 
 
+<a name="WebhookManager.handleSmbAppStateSyncSubscriptionEvents"></a>
+### func \(\*WebhookManager\) handleSmbAppStateSyncSubscriptionEvents
+
+```go
+func (wh *WebhookManager) handleSmbAppStateSyncSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value SmbAppStateSyncValue)
+```
+
+
+
+<a name="WebhookManager.handleSmbMessageEchoesSubscriptionEvents"></a>
+### func \(\*WebhookManager\) handleSmbMessageEchoesSubscriptionEvents
+
+```go
+func (wh *WebhookManager) handleSmbMessageEchoesSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value SmbMessageEchoesValue)
+```
+
+
+
 <a name="WebhookManager.handleTemplateCategoryUpdateSubscriptionEvents"></a>
 ### func \(\*WebhookManager\) handleTemplateCategoryUpdateSubscriptionEvents
 
 ```go
 func (wh *WebhookManager) handleTemplateCategoryUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateCategoryUpdateValue) error
+```
+
+
+
+<a name="WebhookManager.handleUserIdUpdateSubscriptionEvents"></a>
+### func \(\*WebhookManager\) handleUserIdUpdateSubscriptionEvents
+
+```go
+func (wh *WebhookManager) handleUserIdUpdateSubscriptionEvents(baseEvent events.BaseSystemEvent, businessAccountId string, value UserIdUpdateValue) error
+```
+
+
+
+<a name="WebhookManager.handleUserPreferencesSubscriptionEvents"></a>
+### func \(\*WebhookManager\) handleUserPreferencesSubscriptionEvents
+
+```go
+func (wh *WebhookManager) handleUserPreferencesSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value UserPreferencesValue)
 ```
 
 
@@ -2277,8 +3080,8 @@ WhatsAppBusinessTemplatesFetchResponseEdge represents the response structure for
 
 ```go
 type WhatsAppBusinessTemplatesFetchResponseEdge struct {
-    Data   []WhatsAppBusinessMessageTemplateNode      `json:"data,omitempty"`
-    Paging internal.WhatsAppBusinessApiPaginationMeta `json:"paging,omitempty"`
+    Data   []WhatsAppBusinessMessageTemplateNode `json:"data,omitempty"`
+    Paging PaginationDetails                     `json:"paging,omitempty"`
 }
 ```
 
@@ -2301,16 +3104,52 @@ WhatsappBusinessAccountPhoneNumber represents a WhatsApp Business Account phone 
 
 ```go
 type WhatsappBusinessAccountPhoneNumber struct {
-    VerifiedName           string `json:"verified_name,omitempty"`
-    DisplayPhoneNumber     string `json:"display_phone_number,omitempty"`
-    Id                     string `json:"id,omitempty"`
-    QualityRating          string `json:"quality_rating,omitempty"`
-    CodeVerificationStatus string `json:"code_verification_status,omitempty"`
-    Status                 string `json:"status,omitempty"` // CONNECTED
-    PlatformType           string `json:"platform_type,omitempty"`
-    CountryDialCode        string `json:"country_dial_code,omitempty"`
-    SearchVisibility       string `json:"search_visibility,omitempty"`
+    VerifiedName                          string                                                   `json:"verified_name,omitempty"`
+    DisplayPhoneNumber                    string                                                   `json:"display_phone_number,omitempty"`
+    Id                                    string                                                   `json:"id,omitempty"`
+    QualityRating                         string                                                   `json:"quality_rating,omitempty"`
+    CodeVerificationStatus                WhatsappBusinessAccountPhoneNumberCodeVerificationStatus `json:"code_verification_status,omitempty"`
+    Status                                WhatsappBusinessAccountPhoneNumberStatus                 `json:"status,omitempty"` // CONNECTED
+    PlatformType                          WhatsappBusinessAccountPhoneNumberPlatformType           `json:"platform_type,omitempty"`
+    CountryDialCode                       string                                                   `json:"country_dial_code,omitempty"`
+    SearchVisibility                      string                                                   `json:"search_visibility,omitempty"`
+    Certificate                           string                                                   `json:"certificate,omitempty"`
+    HealthStatus                          *WabaHealthStatus                                        `json:"health_status,omitempty"`
+    IsOfficialBusinessAccount             bool                                                     `json:"is_official_business_account,omitempty"`
+    IsOnBizApp                            bool                                                     `json:"is_on_biz_app,omitempty"`
+    IsPinEnabled                          bool                                                     `json:"is_pin_enabled,omitempty"`
+    IsPreverifiedNumber                   bool                                                     `json:"is_preverified_number,omitempty"`
+    LastOnboardedTime                     string                                                   `json:"last_onboarded_time,omitempty"`
+    MessagingLimitTier                    WhatsappBusinessAccountPhoneNumberMessagingLimitTier     `json:"messaging_limit_tier,omitempty"`
+    NameStatus                            WhatsappBusinessAccountPhoneNumberNameStatus             `json:"name_status,omitempty"`
+    NewCertificate                        string                                                   `json:"new_certificate,omitempty"`
+    NewDisplayName                        string                                                   `json:"new_display_name,omitempty"`
+    NewNameStatus                         WhatsappBusinessAccountPhoneNumberNameStatus             `json:"new_name_status,omitempty"`
+    EligibilityForApiBusinessGlobalSearch string                                                   `json:"eligibility_for_api_business_global_search,omitempty"`
+    AccountMode                           string                                                   `json:"account_mode,omitempty"`
+    Throughput                            *WabaThroughput                                          `json:"throughput,omitempty"`
+    OfficialBusinessAccount               *WabaOfficialBusinessAccount                             `json:"official_business_account,omitempty"`
+    QualityScore                          *WabaQualityScore                                        `json:"quality_score,omitempty"`
 }
+```
+
+<a name="WhatsappBusinessAccountPhoneNumberCodeVerificationStatus"></a>
+## type WhatsappBusinessAccountPhoneNumberCodeVerificationStatus
+
+
+
+```go
+type WhatsappBusinessAccountPhoneNumberCodeVerificationStatus string
+```
+
+<a name="WhatsappBusinessAccountPhoneNumberCodeVerificationStatusVerified"></a>
+
+```go
+const (
+    WhatsappBusinessAccountPhoneNumberCodeVerificationStatusVerified    WhatsappBusinessAccountPhoneNumberCodeVerificationStatus = "VERIFIED"
+    WhatsappBusinessAccountPhoneNumberCodeVerificationStatusNotVerified WhatsappBusinessAccountPhoneNumberCodeVerificationStatus = "NOT_VERIFIED"
+    WhatsappBusinessAccountPhoneNumberCodeVerificationStatusExpired     WhatsappBusinessAccountPhoneNumberCodeVerificationStatus = "EXPIRED"
+)
 ```
 
 <a name="WhatsappBusinessAccountPhoneNumberEdge"></a>
@@ -2320,10 +3159,101 @@ WhatsappBusinessAccountPhoneNumberEdge represents a list of WhatsApp Business Ac
 
 ```go
 type WhatsappBusinessAccountPhoneNumberEdge struct {
-    Data    []WhatsappBusinessAccountPhoneNumber       `json:"data,omitempty"`
-    Paging  internal.WhatsAppBusinessApiPaginationMeta `json:"paging,omitempty"`
-    Summary string                                     `json:"summary,omitempty"`
+    Data    []WhatsappBusinessAccountPhoneNumber `json:"data,omitempty"`
+    Paging  PaginationDetails                    `json:"paging,omitempty"`
+    Summary string                               `json:"summary,omitempty"`
 }
+```
+
+<a name="WhatsappBusinessAccountPhoneNumberMessagingLimitTier"></a>
+## type WhatsappBusinessAccountPhoneNumberMessagingLimitTier
+
+
+
+```go
+type WhatsappBusinessAccountPhoneNumberMessagingLimitTier string
+```
+
+<a name="WhatsappBusinessAccountPhoneNumberMessagingLimitTierTier50"></a>
+
+```go
+const (
+    WhatsappBusinessAccountPhoneNumberMessagingLimitTierTier50        WhatsappBusinessAccountPhoneNumberMessagingLimitTier = "TIER_50"
+    WhatsappBusinessAccountPhoneNumberMessagingLimitTierTier250       WhatsappBusinessAccountPhoneNumberMessagingLimitTier = "TIER_250"
+    WhatsappBusinessAccountPhoneNumberMessagingLimitTierTier1K        WhatsappBusinessAccountPhoneNumberMessagingLimitTier = "TIER_1K"
+    WhatsappBusinessAccountPhoneNumberMessagingLimitTierTier10K       WhatsappBusinessAccountPhoneNumberMessagingLimitTier = "TIER_10K"
+    WhatsappBusinessAccountPhoneNumberMessagingLimitTierTier100K      WhatsappBusinessAccountPhoneNumberMessagingLimitTier = "TIER_100K"
+    WhatsappBusinessAccountPhoneNumberMessagingLimitTierTierUnlimited WhatsappBusinessAccountPhoneNumberMessagingLimitTier = "TIER_UNLIMITED"
+)
+```
+
+<a name="WhatsappBusinessAccountPhoneNumberNameStatus"></a>
+## type WhatsappBusinessAccountPhoneNumberNameStatus
+
+
+
+```go
+type WhatsappBusinessAccountPhoneNumberNameStatus string
+```
+
+<a name="WhatsappBusinessAccountPhoneNumberNameStatusApproved"></a>
+
+```go
+const (
+    WhatsappBusinessAccountPhoneNumberNameStatusApproved               WhatsappBusinessAccountPhoneNumberNameStatus = "APPROVED"
+    WhatsappBusinessAccountPhoneNumberNameStatusAvailableWithoutReview WhatsappBusinessAccountPhoneNumberNameStatus = "AVAILABLE_WITHOUT_REVIEW"
+    WhatsappBusinessAccountPhoneNumberNameStatusDeclined               WhatsappBusinessAccountPhoneNumberNameStatus = "DECLINED"
+    WhatsappBusinessAccountPhoneNumberNameStatusExpired                WhatsappBusinessAccountPhoneNumberNameStatus = "EXPIRED"
+    WhatsappBusinessAccountPhoneNumberNameStatusNonExists              WhatsappBusinessAccountPhoneNumberNameStatus = "NON_EXISTS"
+    WhatsappBusinessAccountPhoneNumberNameStatusNone                   WhatsappBusinessAccountPhoneNumberNameStatus = "NONE"
+    WhatsappBusinessAccountPhoneNumberNameStatusPendingReview          WhatsappBusinessAccountPhoneNumberNameStatus = "PENDING_REVIEW"
+)
+```
+
+<a name="WhatsappBusinessAccountPhoneNumberPlatformType"></a>
+## type WhatsappBusinessAccountPhoneNumberPlatformType
+
+
+
+```go
+type WhatsappBusinessAccountPhoneNumberPlatformType string
+```
+
+<a name="WhatsappBusinessAccountPhoneNumberPlatformTypeCloudApi"></a>
+
+```go
+const (
+    WhatsappBusinessAccountPhoneNumberPlatformTypeCloudApi      WhatsappBusinessAccountPhoneNumberPlatformType = "CLOUD_API"
+    WhatsappBusinessAccountPhoneNumberPlatformTypeNotApplicable WhatsappBusinessAccountPhoneNumberPlatformType = "NOT_APPLICABLE"
+    WhatsappBusinessAccountPhoneNumberPlatformTypeOnPremise     WhatsappBusinessAccountPhoneNumberPlatformType = "ON_PREMISE"
+)
+```
+
+<a name="WhatsappBusinessAccountPhoneNumberStatus"></a>
+## type WhatsappBusinessAccountPhoneNumberStatus
+
+
+
+```go
+type WhatsappBusinessAccountPhoneNumberStatus string
+```
+
+<a name="WhatsappBusinessAccountPhoneNumberStatusPending"></a>
+
+```go
+const (
+    WhatsappBusinessAccountPhoneNumberStatusPending      WhatsappBusinessAccountPhoneNumberStatus = "PENDING"
+    WhatsappBusinessAccountPhoneNumberStatusDeleted      WhatsappBusinessAccountPhoneNumberStatus = "DELETED"
+    WhatsappBusinessAccountPhoneNumberStatusMigrated     WhatsappBusinessAccountPhoneNumberStatus = "MIGRATED"
+    WhatsappBusinessAccountPhoneNumberStatusBanned       WhatsappBusinessAccountPhoneNumberStatus = "BANNED"
+    WhatsappBusinessAccountPhoneNumberStatusRestricted   WhatsappBusinessAccountPhoneNumberStatus = "RESTRICTED"
+    WhatsappBusinessAccountPhoneNumberStatusRateLimited  WhatsappBusinessAccountPhoneNumberStatus = "RATE_LIMITED"
+    WhatsappBusinessAccountPhoneNumberStatusFlagged      WhatsappBusinessAccountPhoneNumberStatus = "FLAGGED"
+    WhatsappBusinessAccountPhoneNumberStatusConnected    WhatsappBusinessAccountPhoneNumberStatus = "CONNECTED"
+    WhatsappBusinessAccountPhoneNumberStatusDisconnected WhatsappBusinessAccountPhoneNumberStatus = "DISCONNECTED"
+    WhatsappBusinessAccountPhoneNumberStatusUnknown      WhatsappBusinessAccountPhoneNumberStatus = "UNKNOWN"
+    WhatsappBusinessAccountPhoneNumberStatusUnverified   WhatsappBusinessAccountPhoneNumberStatus = "UNVERIFIED"
+)
 ```
 
 <a name="WhatsappMessageTemplateButtonCreateRequestBody"></a>
@@ -2360,6 +3290,7 @@ WhatsappMessageTemplateComponentCreateOrUpdateRequestBody represents the request
 ```go
 type WhatsappMessageTemplateComponentCreateOrUpdateRequestBody struct {
     Type    MessageTemplateComponentType                     `json:"type,omitempty"`
+    Cards   []TemplateMessageComponentCard                   `json:"cards,omitempty"`
     Format  MessageTemplateComponentFormat                   `json:"format,omitempty"`
     Text    string                                           `json:"text,omitempty"`
     Buttons []WhatsappMessageTemplateButtonCreateRequestBody `json:"buttons,omitempty"`

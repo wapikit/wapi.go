@@ -45,6 +45,16 @@ type BaseMessageEvent struct {
 	Timestamp         string              `json:"timestamp"`
 	IsForwarded       bool                `json:"is_forwarded"`
 	PhoneNumber       BusinessPhoneNumber `json:"phone_number"`
+	// Identity fields (BSUID/username rollout). All additive and optional — a
+	// phone-known message leaves the BSUID fields empty, and existing consumers
+	// that only read `From`/`SenderName` are unaffected. WaId is the sender's
+	// wa_id from the contacts block (equals From for phone-known contacts).
+	WaId             string `json:"wa_id,omitempty"`
+	UserId           string `json:"user_id,omitempty"`
+	ParentUserId     string `json:"parent_user_id,omitempty"`
+	FromUserId       string `json:"from_user_id,omitempty"`
+	FromParentUserId string `json:"from_parent_user_id,omitempty"`
+	Username         string `json:"username,omitempty"`
 }
 
 type BaseMessageEventParams struct {
@@ -57,6 +67,13 @@ type BaseMessageEventParams struct {
 	IsForwarded       bool
 	Context           MessageContext // * this context will not be present if in case a message is a reply to another message
 	Requester         request_client.RequestClient
+	// Identity fields (BSUID/username rollout); all optional/additive.
+	WaId             string
+	UserId           string
+	ParentUserId     string
+	FromUserId       string
+	FromParentUserId string
+	Username         string
 }
 
 func NewBaseMessageEvent(params BaseMessageEventParams) BaseMessageEvent {
@@ -70,6 +87,12 @@ func NewBaseMessageEvent(params BaseMessageEventParams) BaseMessageEvent {
 		SenderName:        params.SenderName,
 		BusinessAccountId: params.BusinessAccountId,
 		From:              params.From,
+		WaId:              params.WaId,
+		UserId:            params.UserId,
+		ParentUserId:      params.ParentUserId,
+		FromUserId:        params.FromUserId,
+		FromParentUserId:  params.FromParentUserId,
+		Username:          params.Username,
 	}
 }
 

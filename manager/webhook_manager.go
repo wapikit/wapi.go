@@ -108,8 +108,17 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 				}
 
 				senderName := ""
+				senderWaId := ""
+				senderUserId := ""
+				senderParentUserId := ""
+				senderUsername := ""
 				if len(messageValue.Contacts) > 0 {
-					senderName = messageValue.Contacts[0].Profile.Name
+					contact := messageValue.Contacts[0]
+					senderName = contact.Profile.Name
+					senderWaId = contact.WaId
+					senderUserId = contact.UserId
+					senderParentUserId = contact.ParentUserId
+					senderUsername = contact.Profile.Username
 				}
 
 				err = wh.handleMessagesSubscriptionEvents(HandleMessageSubscriptionEventPayload{
@@ -119,8 +128,12 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 						DisplayNumber: messageValue.Metadata.DisplayPhoneNumber,
 						Id:            messageValue.Metadata.PhoneNumberId,
 					},
-					BusinessAccountId: entry.Id,
-					SenderName:        senderName,
+					BusinessAccountId:  entry.Id,
+					SenderName:         senderName,
+					SenderWaId:         senderWaId,
+					SenderUserId:       senderUserId,
+					SenderParentUserId: senderParentUserId,
+					SenderUsername:     senderUsername,
 				})
 
 				if err != nil {
@@ -309,6 +322,23 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 					BusinessAccountId: entry.Id,
 					Timestamp:         fmt.Sprint(entry.Time),
 				}, historyValue)
+			case WebhookFieldEnumUserIdUpdate:
+				userIdUpdate, err := unmarshalWebhookValue[UserIdUpdateValue](change.Value)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid user_id_update webhook: %v", err))
+				}
+				wh.handleUserIdUpdateSubscriptionEvents(events.BaseSystemEvent{
+					Timestamp: fmt.Sprint(entry.Time),
+				}, entry.Id, userIdUpdate)
+			case WebhookFieldEnumBusinessUsernameUpdates:
+				usernameUpdate, err := unmarshalWebhookValue[BusinessUsernameUpdateValue](change.Value)
+				if err != nil {
+					return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid business_username_updates webhook: %v", err))
+				}
+				wh.handleBusinessUsernameUpdateSubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         fmt.Sprint(entry.Time),
+				}, usernameUpdate)
 			}
 		}
 	}
@@ -352,31 +382,55 @@ type HandleMessageSubscriptionEventPayload struct {
 	PhoneNumber       events.BusinessPhoneNumber `json:"phone_number_id"`     // * this is the phone number to which this event has bee sent to
 	BusinessAccountId string                     `json:"business_account_id"` // * business account id to which this event has been sent to
 	SenderName        string                     `json:"sender_name"`
+	// Sender identity from contacts[0] (BSUID/username rollout). Additive; empty
+	// for phone-only contacts.
+	SenderWaId         string `json:"sender_wa_id"`
+	SenderUserId       string `json:"sender_user_id"`
+	SenderParentUserId string `json:"sender_parent_user_id"`
+	SenderUsername     string `json:"sender_username"`
 }
 
 func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessageSubscriptionEventPayload) error {
 	// consider the field here too, because we will be supporting more events
 	if len(payload.Statuses) > 0 {
 		for _, status := range payload.Statuses {
+			// Meta's pricing block — present on billable status updates. It is
+			// surfaced on every status event so consumers can pick whichever
+			// status they bill on; deduplicate downstream by message id, since
+			// the block may repeat across sent/delivered/read for one message.
+			pricing := buildPricingInfo(status.Pricing)
+
 			switch status.Status {
 			case string(MessageStatusDelivered):
 				{
-					wh.EventManager.Publish(events.MessageDeliveredEventType, events.NewMessageDeliveredEvent(events.BaseSystemEvent{
+					ev := events.NewMessageDeliveredEvent(events.BaseSystemEvent{
 						Timestamp: status.Timestamp,
-					}, status.Id, status.RecipientId))
+					}, status.Id, status.RecipientId)
+					ev.Pricing = pricing
+					ev.RecipientUserId = status.RecipientUserId
+					ev.RecipientParentUserId = status.RecipientParentUserId
+					wh.EventManager.Publish(events.MessageDeliveredEventType, ev)
 				}
 
 			case string(MessageStatusRead):
 				{
-					wh.EventManager.Publish(events.MessageReadEventType, events.NewMessageReadEvent(events.BaseSystemEvent{
+					ev := events.NewMessageReadEvent(events.BaseSystemEvent{
 						Timestamp: status.Timestamp,
-					}, status.Id, status.RecipientId))
+					}, status.Id, status.RecipientId)
+					ev.Pricing = pricing
+					ev.RecipientUserId = status.RecipientUserId
+					ev.RecipientParentUserId = status.RecipientParentUserId
+					wh.EventManager.Publish(events.MessageReadEventType, ev)
 				}
 			case string(MessageStatusSent):
 				{
-					wh.EventManager.Publish(events.MessageSentEventType, events.NewMessageSentEvent(events.BaseSystemEvent{
+					ev := events.NewMessageSentEvent(events.BaseSystemEvent{
 						Timestamp: status.Timestamp,
-					}, status.Id, status.RecipientId))
+					}, status.Id, status.RecipientId)
+					ev.Pricing = pricing
+					ev.RecipientUserId = status.RecipientUserId
+					ev.RecipientParentUserId = status.RecipientParentUserId
+					wh.EventManager.Publish(events.MessageSentEventType, ev)
 				}
 			case string(MessageStatusFailed):
 				{
@@ -437,6 +491,15 @@ func (wh *WebhookManager) handleMessagesSubscriptionEvents(payload HandleMessage
 				RepliedToMessageId: repliedTo,
 			},
 			Requester: wh.Requester,
+			// Identity fields (BSUID/username rollout). Sender-contact-level
+			// fields come from contacts[0]; the from_* fields come from the
+			// message itself. All additive/optional.
+			WaId:             payload.SenderWaId,
+			UserId:           payload.SenderUserId,
+			ParentUserId:     payload.SenderParentUserId,
+			Username:         payload.SenderUsername,
+			FromUserId:       message.FromUserId,
+			FromParentUserId: message.FromParentUserId,
 		})
 
 		if message.Referral != nil {
@@ -988,4 +1051,53 @@ func (wh *WebhookManager) handleHistorySubscriptionEvents(baseEvent events.BaseB
 		value.Metadata.PhoneNumberId,
 		chunks,
 	))
+}
+
+func (wh *WebhookManager) handleUserIdUpdateSubscriptionEvents(baseEvent events.BaseSystemEvent, businessAccountId string, value UserIdUpdateValue) error {
+	// Prefer explicit old/new; fall back to user_id when Meta only sends the
+	// current id. Raw values preserved for downstream identity bridging.
+	newUserId := value.NewUserId
+	if newUserId == "" {
+		newUserId = value.UserId
+	}
+	wh.EventManager.Publish(events.UserIdUpdateEventType, events.NewUserIdUpdateEvent(
+		baseEvent,
+		businessAccountId,
+		value.WaId,
+		value.OldUserId,
+		newUserId,
+		value.ParentUserId,
+	))
+	return nil
+}
+
+func (wh *WebhookManager) handleBusinessUsernameUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value BusinessUsernameUpdateValue) error {
+	wh.EventManager.Publish(events.BusinessUsernameUpdateEventType, events.NewBusinessUsernameUpdateEvent(
+		&baseEvent,
+		value.Metadata.PhoneNumberId,
+		value.Username,
+		value.PreviousUsername,
+		value.Event,
+	))
+	return nil
+}
+
+// buildPricingInfo converts the internal Pricing struct (parsed from
+// Meta's webhook payload) into the public events.MessagePricingInfo
+// surface. Returns nil for the empty case so downstream handlers can
+// distinguish 'pricing block absent' from 'pricing block present with
+// Billable=false'.
+func buildPricingInfo(p Pricing) *events.MessagePricingInfo {
+	// Treat truly empty Pricing (no fields populated) as nil. Meta omits
+	// the entire pricing block on non-billable internal status pings; we
+	// don't want every downstream to have to null-check three empty
+	// strings.
+	if !p.Billable && p.PricingModel == "" && string(p.Category) == "" {
+		return nil
+	}
+	return &events.MessagePricingInfo{
+		Billable:     p.Billable,
+		PricingModel: p.PricingModel,
+		Category:     string(p.Category),
+	}
 }

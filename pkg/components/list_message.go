@@ -150,7 +150,7 @@ func (m *listMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]byte,
 	}
 
 	jsonData := ListMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeInteractive),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeInteractive),
 		Interactive:        *m,
 	}
 

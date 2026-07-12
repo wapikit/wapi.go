@@ -54,7 +54,7 @@ func (video *VideoMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]
 	}
 
 	jsonData := VideoMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeVideo),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeVideo),
 		Video:              *video,
 	}
 

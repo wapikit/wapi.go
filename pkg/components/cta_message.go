@@ -117,7 +117,7 @@ func (m *CtaMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]byte, 
 	}
 
 	jsonData := CtaMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeInteractive),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeInteractive),
 		Interactive:        *m,
 	}
 

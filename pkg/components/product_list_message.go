@@ -139,7 +139,7 @@ func (m *ProductListMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) (
 	}
 
 	jsonData := ProductListMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeInteractive),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeInteractive),
 		Interactive:        *m,
 	}
 

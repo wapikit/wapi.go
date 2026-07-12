@@ -342,7 +342,7 @@ func (m *TemplateMessage) ToJson(configs ApiCompatibleJsonConverterConfigs) ([]b
 	}
 
 	jsonData := TemplateMessageApiPayload{
-		BaseMessagePayload: NewBaseMessagePayload(configs.SendToPhoneNumber, MessageTypeTemplate),
+		BaseMessagePayload: NewBaseMessagePayload(configs, MessageTypeTemplate),
 		Template:           *m,
 	}
 

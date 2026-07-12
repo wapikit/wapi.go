@@ -236,10 +236,18 @@ type SenderContact struct {
 	WaId            string  `json:"wa_id"`
 	Profile         Profile `json:"profile"`
 	IdentityKeyHash string  `json:"identity_key_hash,omitempty"`
+	// BSUID identity fields (Meta business-scoped user id rollout). Present when
+	// Meta includes them; empty for phone-only contacts. Additive — existing
+	// phone-known consumers are unaffected.
+	UserId       string `json:"user_id,omitempty"`
+	ParentUserId string `json:"parent_user_id,omitempty"`
 }
 
 type Profile struct {
 	Name string `json:"name"`
+	// Username is the business-set WhatsApp username of the contact when Meta
+	// surfaces it (username rollout). Empty otherwise.
+	Username string `json:"username,omitempty"`
 }
 
 type WhatsappApiNotificationPayloadSchemaType struct {
@@ -273,7 +281,33 @@ const (
 	WebhookFieldEnumSmbAppStateSync                 WebhookFieldEnum = "smb_app_state_sync"
 	WebhookFieldEnumSmbMessageEchoes                WebhookFieldEnum = "smb_message_echoes"
 	WebhookFieldEnumHistory                         WebhookFieldEnum = "history"
+	WebhookFieldEnumUserIdUpdate                    WebhookFieldEnum = "user_id_update"
+	WebhookFieldEnumBusinessUsernameUpdates         WebhookFieldEnum = "business_username_updates"
 )
+
+// UserIdUpdateValue is the webhook value for the `user_id_update` field (BSUID
+// transition). Field names follow Meta's payload; all optional. Raw values are
+// preserved for downstream identity bridging.
+type UserIdUpdateValue struct {
+	WaId         string `json:"wa_id,omitempty"`
+	OldUserId    string `json:"old_user_id,omitempty"`
+	NewUserId    string `json:"new_user_id,omitempty"`
+	UserId       string `json:"user_id,omitempty"`
+	ParentUserId string `json:"parent_user_id,omitempty"`
+}
+
+// BusinessUsernameUpdateValue is the webhook value for the
+// `business_username_updates` field (the business's own username changing for a
+// phone number). All optional; raw values preserved.
+type BusinessUsernameUpdateValue struct {
+	Metadata struct {
+		DisplayPhoneNumber string `json:"display_phone_number,omitempty"`
+		PhoneNumberId      string `json:"phone_number_id,omitempty"`
+	} `json:"metadata,omitempty"`
+	Username         string `json:"username,omitempty"`
+	PreviousUsername string `json:"previous_username,omitempty"`
+	Event            string `json:"event,omitempty"`
+}
 
 type TemplateMessageStatusUpdateEventEnum string
 
@@ -580,6 +614,10 @@ type Status struct {
 	RecipientIdentityKeyHash string       `json:"recipient_identity_key_hash,omitempty"` // Only included if identity change check enabled
 	BizOpaqueCallbackData    string       `json:"biz_opaque_callback_data,omitempty"`    // Only included if message sent with biz_opaque_callback_data
 	Pricing                  Pricing      `json:"pricing,omitempty"`
+	// BSUID identity of the recipient on status updates. Present alongside
+	// recipient_id in the dual-identifier rollout; either may be omitted.
+	RecipientUserId       string `json:"recipient_user_id,omitempty"`
+	RecipientParentUserId string `json:"recipient_parent_user_id,omitempty"`
 }
 
 type Conversation struct {
@@ -602,6 +640,8 @@ type Pricing struct {
 type Message struct {
 	Id                                              string                                      `json:"id"`
 	From                                            string                                      `json:"from"`
+	FromUserId                                      string                                      `json:"from_user_id,omitempty"`        // BSUID of the sender (identity rollout); empty for phone-only
+	FromParentUserId                                string                                      `json:"from_parent_user_id,omitempty"` // parent BSUID of the sender when Meta includes it
 	Timestamp                                       string                                      `json:"timestamp"`
 	Type                                            NotificationMessageTypeEnum                 `json:"type"`
 	GroupId                                         string                                      `json:"group_id,omitempty"`

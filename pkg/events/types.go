@@ -42,6 +42,8 @@ const (
 	UserPreferencesEventType                 EventType = "user_preferences"
 	MessageTemplateComponentsUpdateEventType EventType = "message_template_components_update"
 	PaymentConfigurationUpdateEventType      EventType = "payment_configuration_update"
+	UserIdUpdateEventType                    EventType = "user_id_update"
+	BusinessUsernameUpdateEventType          EventType = "business_username_update"
 	SmbAppStateSyncEventType                 EventType = "smb_app_state_sync"
 	SmbMessageEchoesEventType                EventType = "smb_message_echoes"
 	TemplateCategoryUpdateEventType          EventType = "template_category_update"
