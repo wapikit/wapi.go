@@ -59,6 +59,21 @@ type CtaMessage struct {
 	Type   InteractiveMessageType `json:"type" validate:"required"`
 }
 
+// MarshalJSON leaves out the header when SetHeader was never called, instead
+// of sending an empty header that Meta rejects.
+func (message CtaMessage) MarshalJSON() ([]byte, error) {
+	type plain CtaMessage
+	aux := struct {
+		plain
+		Header *CtaMessageHeader `json:"header,omitempty"`
+	}{plain: plain(message)}
+	if message.Header != (CtaMessageHeader{}) {
+		header := message.Header
+		aux.Header = &header
+	}
+	return json.Marshal(aux)
+}
+
 func (message *CtaMessage) SetBody(text string) {
 	message.Body = CtaMessageBody{
 		Text: text,

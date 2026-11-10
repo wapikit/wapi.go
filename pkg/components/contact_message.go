@@ -44,7 +44,7 @@ type ContactAddress struct {
 	State       string      `json:"state,omitempty"`
 	Zip         string      `json:"zip,omitempty"`
 	Country     string      `json:"country,omitempty"`
-	CountryCode string      `json:"countryCode,omitempty"`
+	CountryCode string      `json:"country_code,omitempty"`
 	Type        AddressType `json:"type" validate:"required"`
 }
 
@@ -96,6 +96,21 @@ type Contact struct {
 	Origin string `json:"origin,omitempty"`
 }
 
+// MarshalJSON leaves out org when no organisation details are set, instead
+// of sending an empty object.
+func (contact Contact) MarshalJSON() ([]byte, error) {
+	type plain Contact
+	aux := struct {
+		plain
+		Org *ContactOrg `json:"org,omitempty"`
+	}{plain: plain(contact)}
+	if contact.Org != (ContactOrg{}) {
+		org := contact.Org
+		aux.Org = &org
+	}
+	return json.Marshal(aux)
+}
+
 func NewContact(name ContactName) *Contact {
 	return &Contact{
 		Name: name,
@@ -120,6 +135,10 @@ func (contact *Contact) SetMiddleName(middleName string) {
 
 func (contact *Contact) SetOrg(params ContactOrg) {
 	contact.Org = params
+}
+
+func (contact *Contact) AddAddress(params ContactAddress) {
+	contact.Addresses = append(contact.Addresses, params)
 }
 
 func (contact *Contact) AddPhone(params ContactPhone) {

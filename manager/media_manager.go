@@ -63,8 +63,8 @@ type DeleteSuccessResponse struct {
 }
 
 func (mm *MediaManager) DeleteMedia(id string) (string, error) {
-	// The path becomes "media/<MEDIA_ID>"
-	apiRequest := mm.requester.NewApiRequest(strings.Join([]string{"media", id}, "/"), http.MethodDelete)
+	// Meta documents this as DELETE /<MEDIA_ID>.
+	apiRequest := mm.requester.NewApiRequest(id, http.MethodDelete)
 
 	rawResponse, err := apiRequest.Execute()
 	if err != nil {

@@ -37,8 +37,9 @@ func NewVideoMessage(params VideoMessageConfigs) (*VideoMessage, error) {
 	}
 
 	return &VideoMessage{
-		Id:   params.Id,
-		Link: params.Link,
+		Id:      params.Id,
+		Link:    params.Link,
+		Caption: params.Caption,
 	}, nil
 }
 

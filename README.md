@@ -246,10 +246,11 @@ client.On(events.MessageFailedEventType, func(event events.BaseEvent) {
 | Incoming messages | `TextMessageEventType`, `ImageMessageEventType`, `VideoMessageEventType`, `AudioMessageEventType`, `DocumentMessageEventType`, `StickerMessageEventType`, `LocationMessageEventType`, `ContactMessageEventType`, `ReactionMessageEventType` |
 | Interactions | `QuickReplyMessageEventType`, `ReplyButtonInteractionEventType`, `ListInteractionMessageEventType`, `OrderReceivedEventType`, `AdInteractionEventType` |
 | Delivery statuses | `MessageSentEventType`, `MessageDeliveredEventType`, `MessageReadEventType`, `MessageFailedEventType`, `MessageUndeliveredEventType` |
-| Account and identity | `AccountAlertsEventType`, `AccountUpdateEventType`, `UserPreferencesEventType`, `UserIdUpdateEventType`, `BusinessUsernameUpdateEventType`, `CustomerNumberChangedEventType` |
-| Templates and other | `MessageTemplateComponentsUpdateEventType`, `PaymentConfigurationUpdateEventType`, `HistoryEventType`, `SmbAppStateSyncEventType`, `SmbMessageEchoesEventType`, `ReadyEventType` |
+| Account and identity | `AccountAlertsEventType`, `AccountUpdateEventType`, `AccountReviewUpdateEventType`, `BusinessCapabilityUpdateEventType`, `SecurityEventType`, `PhoneNumberNameUpdateEventType`, `PhoneNumberQualityUpdateEventType`, `UserPreferencesEventType`, `UserIdUpdateEventType`, `BusinessUsernameUpdateEventType`, `CustomerNumberChangedEventType` |
+| Templates | `MessageTemplateStatusUpdateEventType`, `MessageTemplateQualityUpdateEventType`, `TemplateCategoryUpdateEventType`, `MessageTemplateComponentsUpdateEventType` |
+| Other | `PaymentConfigurationUpdateEventType`, `HistoryEventType`, `SmbAppStateSyncEventType`, `SmbMessageEchoesEventType`, `ReadyEventType` |
 
-> **Note:** template status, quality and category updates, account review, business capability, phone number name and quality, and security notifications are currently all delivered under `AccountAlertsEventType`. Switch on the concrete type inside that handler (for example `*events.MessageTemplateStatusUpdateEvent` or `*events.PhoneNumberQualityUpdateEvent`). Their dedicated event types are defined but are not published yet.
+Business-management webhooks each arrive under their own event type, and webhook fields the library doesn't support are acknowledged and ignored.
 
 Status events carry Meta's pricing block in `Pricing` when it is present. Message events carry the sender's identity: `From`, `SenderName`, and the BSUID fields `UserId`, `ParentUserId` and `Username`.
 
@@ -309,8 +310,8 @@ products, err := client.Business.Catalog.GetAllCatalogProducts("<CATALOG_ID>")
 Also available:
 
 - **Phone numbers:** `Create`, `RequestVerificationCode`, `VerifyCode`, QR codes (`GenerateQrCode`, `GetAllQrCodes`, `GetQrCodeById`, `UpdateQrCode`, `DeleteQrCode`) and usernames (`GetUsername`, `SetUsername`, `DeleteUsername`).
-- **Templates:** `Create`, `Update` and `MigrateFromOtherBusinessAccount`.
-- **Analytics:** `client.Business.FetchAnalytics` and `client.Business.ConversationAnalytics`.
+- **Templates:** `Create`, `Update`, `Delete` (by ID), `DeleteByName` and `MigrateFromOtherBusinessAccount`.
+- **Analytics:** `client.Business.FetchAnalytics` (sent and delivered counts) and `client.Business.FetchConversationAnalytics` (conversation counts and cost). `ConversationAnalytics` still works but is deprecated because it rounds cost to a whole number.
 - **Registration:** `messaging.Register(pin)` and `messaging.Deregister()` register a phone number with the Cloud API and remove it again.
 
 ## Error handling

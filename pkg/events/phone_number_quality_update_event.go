@@ -26,6 +26,11 @@ type PhoneNumberQualityUpdateEvent struct {
 	DisplayPhoneNumber string
 	Event              PhoneNumberUpdateEventEnum
 	CurrentLimit       PhoneNumberQualityUpdateCurrentLimitEnum
+	// OldLimit is the previous messaging limit; only sent for limit changes.
+	OldLimit PhoneNumberQualityUpdateCurrentLimitEnum
+	// MaxDailyConversationsPerBusiness is the portfolio's daily messaging
+	// limit, which Meta is moving to in place of CurrentLimit/OldLimit.
+	MaxDailyConversationsPerBusiness string
 }
 
 func NewPhoneNumberQualityUpdateEvent(baseEvent *BaseBusinessAccountEvent, displayPhoneNumber string, event PhoneNumberUpdateEventEnum, currentLimit PhoneNumberQualityUpdateCurrentLimitEnum) *PhoneNumberQualityUpdateEvent {

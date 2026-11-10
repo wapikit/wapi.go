@@ -29,9 +29,11 @@ func (ps *ProductSection) AddProduct(product Product) {
 }
 
 type ProductListMessageAction struct {
-	Sections          []ProductSection `json:"sections" validate:"required"` // minimum 1 and maximum 10
-	CatalogId         string           `json:"catalog_id" validate:"required"`
-	ProductRetailerId string           `json:"product_retailer_id" validate:"required"`
+	Sections  []ProductSection `json:"sections" validate:"required"` // minimum 1 and maximum 10
+	CatalogId string           `json:"catalog_id" validate:"required"`
+	// ProductRetailerId is not part of Meta's product_list action and is not
+	// sent. It is kept so existing code compiles.
+	ProductRetailerId string `json:"-"`
 }
 
 func (a *ProductListMessageAction) AddSection(section ProductSection) {
@@ -67,6 +69,21 @@ type ProductListMessage struct {
 	Type   InteractiveMessageType    `json:"type" validate:"required"`
 }
 
+// MarshalJSON leaves out the header when SetHeader was never called, instead
+// of sending an empty header object.
+func (message ProductListMessage) MarshalJSON() ([]byte, error) {
+	type plain ProductListMessage
+	aux := struct {
+		plain
+		Header *ProductListMessageHeader `json:"header,omitempty"`
+	}{plain: plain(message)}
+	if message.Header != (ProductListMessageHeader{}) {
+		header := message.Header
+		aux.Header = &header
+	}
+	return json.Marshal(aux)
+}
+
 func (message *ProductListMessage) AddSection(section ProductSection) {
 	message.Action.Sections = append(message.Action.Sections, section)
 }
@@ -100,8 +117,10 @@ func (message *ProductListMessage) SetHeader(text string) {
 
 // ProductListMessageParams represents the parameters for creating a product list message.
 type ProductListMessageParams struct {
-	CatalogId         string `validate:"required"`
-	ProductRetailerId string `validate:"required"`
+	CatalogId string `validate:"required"`
+	// ProductRetailerId is optional and not sent; Meta's product_list action
+	// has no such field.
+	ProductRetailerId string
 	BodyText          string `validate:"required"`
 	Sections          []ProductSection
 }
