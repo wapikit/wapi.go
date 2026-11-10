@@ -20,8 +20,12 @@ type AccountUpdateEvent struct {
 	ViolationInfo                    *ViolationInfo
 	AuthInternationalRateEligibility *AuthInternationalRateEligibility
 	BanInfo                          *BanInfo
-	RestrictionInfo                  *RestrictionInfo
-	PartnerClientCertificationInfo   *PartnerClientCertificationInfo
+	// RestrictionInfo is the first entry of RestrictionInfoList.
+	RestrictionInfo                *RestrictionInfo
+	PartnerClientCertificationInfo *PartnerClientCertificationInfo
+	// RestrictionInfoList holds every restriction in an ACCOUNT_RESTRICTION
+	// event; Meta can send more than one.
+	RestrictionInfoList []RestrictionInfo
 }
 
 type WabaInfo struct {
@@ -54,7 +58,9 @@ type BanInfo struct {
 
 type RestrictionInfo struct {
 	RestrictionType string
-	Expiration      string
+	// Expiration is the Unix timestamp at which the restriction ends.
+	Expiration  string
+	Remediation string
 }
 
 type PartnerClientCertificationInfo struct {

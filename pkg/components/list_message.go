@@ -125,7 +125,14 @@ func (m *listMessage) AddSection(section *ListSection) {
 	m.Action.Sections = append(m.Action.Sections, *section)
 }
 
-// SetBodyText sets the body text of the list message.
+// SetBody sets the body text of the list message.
+func (m *listMessage) SetBody(text string) {
+	m.Body.Text = text
+}
+
+// SetBodyText sets the body text to the section's title.
+//
+// Deprecated: use SetBody, which takes the text directly.
 func (m *listMessage) SetBodyText(section *ListSection) {
 	m.Body.Text = section.Title
 }

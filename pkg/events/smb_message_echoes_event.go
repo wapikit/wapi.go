@@ -15,6 +15,9 @@ type MessageEcho struct {
 	Id        string `json:"id"`
 	Timestamp string `json:"timestamp"`
 	Type      string `json:"type"`
+	// Content is the type-specific message object, for example
+	// {"body": "hi"} for a text echo.
+	Content map[string]interface{} `json:"content,omitempty"`
 }
 
 // NewSmbMessageEchoesEvent creates a new SmbMessageEchoesEvent instance

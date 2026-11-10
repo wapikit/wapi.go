@@ -1,6 +1,9 @@
 package manager
 
 import (
+	"bytes"
+	"encoding/json"
+
 	"github.com/wapikit/wapi.go/pkg/components"
 )
 
@@ -263,18 +266,39 @@ type Entry struct {
 
 type WebhookFieldEnum string
 
+// legacyWebhookFieldNames maps the field names older releases of this library
+// matched on to the names Meta actually sends, so either spelling is handled.
+var legacyWebhookFieldNames = map[WebhookFieldEnum]WebhookFieldEnum{
+	"account_review":           WebhookFieldEnumAccountReview,
+	"business_capability":      WebhookFieldEnumBusinessCapability,
+	"message_template_quality": WebhookFieldEnumMessageTemplateQuality,
+	"message_template_status":  WebhookFieldEnumMessageTemplateStatus,
+	"phone_number_name":        WebhookFieldEnumPhoneNumberName,
+	"phone_number_quality":     WebhookFieldEnumPhoneNumberQuality,
+	"template_category":        WebhookFieldEnumTemplateCategoryUpdate,
+	"business_username_update": WebhookFieldEnumBusinessUsernameUpdates,
+}
+
+// canonicalWebhookField returns the field name the webhook switch matches on.
+func canonicalWebhookField(field WebhookFieldEnum) WebhookFieldEnum {
+	if canonical, ok := legacyWebhookFieldNames[field]; ok {
+		return canonical
+	}
+	return field
+}
+
 const (
 	WebhookFieldEnumAccountAlerts                   WebhookFieldEnum = "account_alerts"
 	WebhookFieldEnumMessages                        WebhookFieldEnum = "messages"
 	WebhookFieldEnumSecurity                        WebhookFieldEnum = "security"
 	WebhookFieldEnumAccountUpdate                   WebhookFieldEnum = "account_update"
-	WebhookFieldEnumAccountReview                   WebhookFieldEnum = "account_review"
-	WebhookFieldEnumBusinessCapability              WebhookFieldEnum = "business_capability"
-	WebhookFieldEnumMessageTemplateQuality          WebhookFieldEnum = "message_template_quality"
-	WebhookFieldEnumMessageTemplateStatus           WebhookFieldEnum = "message_template_status"
-	WebhookFieldEnumPhoneNumberName                 WebhookFieldEnum = "phone_number_name"
-	WebhookFieldEnumPhoneNumberQuality              WebhookFieldEnum = "phone_number_quality"
-	WebhookFieldEnumTemplateCategoryUpdate          WebhookFieldEnum = "template_category"
+	WebhookFieldEnumAccountReview                   WebhookFieldEnum = "account_review_update"
+	WebhookFieldEnumBusinessCapability              WebhookFieldEnum = "business_capability_update"
+	WebhookFieldEnumMessageTemplateQuality          WebhookFieldEnum = "message_template_quality_update"
+	WebhookFieldEnumMessageTemplateStatus           WebhookFieldEnum = "message_template_status_update"
+	WebhookFieldEnumPhoneNumberName                 WebhookFieldEnum = "phone_number_name_update"
+	WebhookFieldEnumPhoneNumberQuality              WebhookFieldEnum = "phone_number_quality_update"
+	WebhookFieldEnumTemplateCategoryUpdate          WebhookFieldEnum = "template_category_update"
 	WebhookFieldEnumUserPreferences                 WebhookFieldEnum = "user_preferences"
 	WebhookFieldEnumMessageTemplateComponentsUpdate WebhookFieldEnum = "message_template_components_update"
 	WebhookFieldEnumPaymentConfigurationUpdate      WebhookFieldEnum = "payment_configuration_update"
@@ -320,11 +344,32 @@ const (
 )
 
 type TemplateMessageStatusUpdateDisableInfo struct {
+	// DisableDate is kept as text. Meta documents it as a Unix timestamp but
+	// has also sent it as a string; both are accepted.
 	DisableDate string `json:"disable_date"`
 }
 
+func (info *TemplateMessageStatusUpdateDisableInfo) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		DisableDate json.RawMessage `json:"disable_date"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	info.DisableDate = jsonScalarString(raw.DisableDate)
+	return nil
+}
+
 type TemplateMessageStatusUpdateOtherInfo struct {
-	Title string `json:"title"`
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+}
+
+// TemplateMessageStatusUpdateRejectionInfo is sent when a template is
+// rejected with INVALID_FORMAT.
+type TemplateMessageStatusUpdateRejectionInfo struct {
+	Reason         string `json:"reason"`
+	Recommendation string `json:"recommendation"`
 }
 
 type TemplateMessageRejectionReasonEnum string
@@ -338,13 +383,15 @@ const (
 )
 
 type TemplateStatusUpdateValue struct {
-	Event                   TemplateMessageStatusUpdateEventEnum   `json:"event"`
-	MessageTemplateId       int64                                  `json:"message_template_id"`
-	MessageTemplateName     string                                 `json:"message_template_name"`
-	MessageTemplateLanguage string                                 `json:"message_template_language"`
-	Reason                  TemplateMessageRejectionReasonEnum     `json:"reason"`
-	DisableInfo             TemplateMessageStatusUpdateDisableInfo `json:"disable_info,omitempty"`
-	OtherInfo               TemplateMessageStatusUpdateOtherInfo   `json:"other_info,omitempty"`
+	Event                   TemplateMessageStatusUpdateEventEnum      `json:"event"`
+	MessageTemplateId       int64                                     `json:"message_template_id"`
+	MessageTemplateName     string                                    `json:"message_template_name"`
+	MessageTemplateLanguage string                                    `json:"message_template_language"`
+	Reason                  TemplateMessageRejectionReasonEnum        `json:"reason"`
+	DisableInfo             TemplateMessageStatusUpdateDisableInfo    `json:"disable_info,omitempty"`
+	OtherInfo               TemplateMessageStatusUpdateOtherInfo      `json:"other_info,omitempty"`
+	RejectionInfo           *TemplateMessageStatusUpdateRejectionInfo `json:"rejection_info,omitempty"`
+	MessageTemplateCategory string                                    `json:"message_template_category,omitempty"`
 }
 
 type TemplateCategoryUpdateValue struct {
@@ -401,6 +448,11 @@ type PhoneNumberQualityUpdateValue struct {
 	DisplayPhoneNumber string                                   `json:"display_phone_number"`
 	Event              string                                   `json:"event"`
 	CurrentLimit       PhoneNumberQualityUpdateCurrentLimitEnum `json:"current_limit"`
+	// OldLimit is only sent for messaging limit changes.
+	OldLimit PhoneNumberQualityUpdateCurrentLimitEnum `json:"old_limit,omitempty"`
+	// MaxDailyConversationsPerBusiness replaces CurrentLimit and OldLimit in
+	// newer payloads.
+	MaxDailyConversationsPerBusiness string `json:"max_daily_conversations_per_business,omitempty"`
 }
 
 type AccountAlertSeverityEnum string
@@ -430,7 +482,25 @@ type AccountUpdateBanInfo struct {
 
 type AccountUpdateRestrictionInfo struct {
 	RestrictionType string `json:"restriction_type"`
-	Expiration      string `json:"expiration"`
+	// Expiration is a Unix timestamp. Meta sends a number; it is kept as text
+	// so string-formatted values are accepted too.
+	Expiration  string `json:"expiration"`
+	Remediation string `json:"remediation,omitempty"`
+}
+
+func (info *AccountUpdateRestrictionInfo) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		RestrictionType string          `json:"restriction_type"`
+		Expiration      json.RawMessage `json:"expiration"`
+		Remediation     string          `json:"remediation"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	info.RestrictionType = raw.RestrictionType
+	info.Expiration = jsonScalarString(raw.Expiration)
+	info.Remediation = raw.Remediation
+	return nil
 }
 
 type AccountUpdateViolationInfo struct {
@@ -477,8 +547,57 @@ type AccountUpdateValue struct {
 	ViolationInfo                    *AccountUpdateViolationInfo                    `json:"violation_info,omitempty"`                      // Only for ACCOUNT_VIOLATION
 	AuthInternationalRateEligibility *AccountUpdateAuthInternationalRateEligibility `json:"auth_international_rate_eligibility,omitempty"` // Only for AUTH_INTL_PRICE_ELIGIBILITY_UPDATE
 	BanInfo                          *AccountUpdateBanInfo                          `json:"ban_info,omitempty"`                            // Only for DISABLED_UPDATE
-	RestrictionInfo                  *AccountUpdateRestrictionInfo                  `json:"restriction_info,omitempty"`                    // Only for ACCOUNT_RESTRICTION
+	RestrictionInfo                  *AccountUpdateRestrictionInfo                  `json:"restriction_info,omitempty"`                    // Only for ACCOUNT_RESTRICTION; the first entry of RestrictionInfoList
 	PartnerClientCertificationInfo   *AccountUpdatePartnerClientCertificationInfo   `json:"partner_client_certification_info,omitempty"`   // Only for PARTNER_CLIENT_CERTIFICATION_STATUS_UPDATE
+	// RestrictionInfoList holds every restriction. Meta sends restriction_info
+	// as a list; a single object is accepted too.
+	RestrictionInfoList []AccountUpdateRestrictionInfo `json:"-"`
+}
+
+func (value *AccountUpdateValue) UnmarshalJSON(data []byte) error {
+	type plain AccountUpdateValue
+	aux := struct {
+		*plain
+		RestrictionInfo json.RawMessage `json:"restriction_info,omitempty"`
+	}{plain: (*plain)(value)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	value.RestrictionInfo = nil
+	value.RestrictionInfoList = nil
+	raw := bytes.TrimSpace(aux.RestrictionInfo)
+	switch {
+	case len(raw) == 0 || bytes.Equal(raw, []byte("null")):
+	case raw[0] == '[':
+		if err := json.Unmarshal(raw, &value.RestrictionInfoList); err != nil {
+			return err
+		}
+	default:
+		var single AccountUpdateRestrictionInfo
+		if err := json.Unmarshal(raw, &single); err != nil {
+			return err
+		}
+		value.RestrictionInfoList = []AccountUpdateRestrictionInfo{single}
+	}
+	if len(value.RestrictionInfoList) > 0 {
+		first := value.RestrictionInfoList[0]
+		value.RestrictionInfo = &first
+	}
+	return nil
+}
+
+// jsonScalarString returns a JSON string's value, or the literal text of a
+// number or boolean. null and empty input give "".
+func jsonScalarString(raw json.RawMessage) string {
+	raw = bytes.TrimSpace(raw)
+	if len(raw) == 0 || bytes.Equal(raw, []byte("null")) {
+		return ""
+	}
+	var str string
+	if err := json.Unmarshal(raw, &str); err == nil {
+		return str
+	}
+	return string(raw)
 }
 
 type AccountReviewUpdateValue struct {
@@ -541,16 +660,41 @@ type SmbMessageEchoesValue struct {
 		DisplayPhoneNumber string `json:"display_phone_number"`
 		PhoneNumberId      string `json:"phone_number_id"`
 	} `json:"metadata"`
-	MessageEchoes []struct {
-		From      string `json:"from"`
-		To        string `json:"to"`
-		Id        string `json:"id"`
-		Timestamp string `json:"timestamp"`
-		Type      string `json:"type"`
-		// Message contents are dynamic based on type
-		// Using map for flexibility
-		MessageContent map[string]interface{} `json:"-"` // Will be populated from the type-specific field
-	} `json:"message_echoes"`
+	MessageEchoes []SmbMessageEcho `json:"message_echoes"`
+}
+
+// SmbMessageEcho is one message a business sent from the WhatsApp Business app.
+type SmbMessageEcho struct {
+	From      string `json:"from"`
+	To        string `json:"to"`
+	Id        string `json:"id"`
+	Timestamp string `json:"timestamp"`
+	Type      string `json:"type"`
+	// MessageContent is the object under the key named by Type, for example
+	// {"body": "hi"} for a text echo.
+	MessageContent map[string]interface{} `json:"-"`
+}
+
+func (echo *SmbMessageEcho) UnmarshalJSON(data []byte) error {
+	type plain SmbMessageEcho
+	if err := json.Unmarshal(data, (*plain)(echo)); err != nil {
+		return err
+	}
+	echo.MessageContent = nil
+	if echo.Type == "" {
+		return nil
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	if raw, ok := fields[echo.Type]; ok {
+		var content map[string]interface{}
+		if err := json.Unmarshal(raw, &content); err == nil {
+			echo.MessageContent = content
+		}
+	}
+	return nil
 }
 
 type HistoryValue struct {

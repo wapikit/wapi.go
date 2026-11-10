@@ -155,7 +155,7 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 
 	for _, entry := range payload.Entry {
 		for _, change := range entry.Changes {
-			switch change.Field {
+			switch canonicalWebhookField(change.Field) {
 			case WebhookFieldEnumMessages:
 				messageValue, err := unmarshalWebhookValue[MessagesValue](change.Value)
 				if err != nil {
@@ -288,7 +288,10 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 					logSkippedChange(change.Field, err)
 					continue
 				}
-				wh.handleSecuritySubscriptionEvents(securityChange)
+				wh.handleSecuritySubscriptionEvents(events.BaseBusinessAccountEvent{
+					BusinessAccountId: entry.Id,
+					Timestamp:         fmt.Sprint(entry.Time),
+				}, securityChange)
 			case WebhookFieldEnumUserPreferences:
 				userPrefsValue, err := unmarshalWebhookValue[UserPreferencesValue](change.Value)
 				if err != nil {
@@ -368,6 +371,8 @@ func (wh *WebhookManager) PostRequestHandler(c echo.Context) error {
 					BusinessAccountId: entry.Id,
 					Timestamp:         fmt.Sprint(entry.Time),
 				}, usernameUpdate)
+			default:
+				slog.Debug("wapi: ignoring unsupported webhook field", "field", change.Field)
 			}
 		}
 	}
@@ -788,8 +793,13 @@ func (wh *WebhookManager) handleAccountAlertsSubscriptionEvents(baseEvent events
 	))
 }
 
-func (wh *WebhookManager) handleSecuritySubscriptionEvents(value SecurityValue) {
-	_ = wh.EventManager.Publish(events.AccountAlertsEventType, events.SecurityEvent{})
+func (wh *WebhookManager) handleSecuritySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value SecurityValue) {
+	event := events.NewSecurity()
+	event.BaseBusinessAccountEvent = baseEvent
+	event.DisplayPhoneNumber = value.DisplayPhoneNumber
+	event.Event = value.Event
+	event.Requester = value.Requester
+	_ = wh.EventManager.Publish(events.SecurityEventType, event)
 }
 
 func (wh *WebhookManager) handleAccountUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value AccountUpdateValue) {
@@ -835,12 +845,18 @@ func (wh *WebhookManager) handleAccountUpdateSubscriptionEvents(baseEvent events
 		}
 	}
 
+	var restrictionInfoList []events.RestrictionInfo
+	for _, info := range value.RestrictionInfoList {
+		restrictionInfoList = append(restrictionInfoList, events.RestrictionInfo{
+			RestrictionType: info.RestrictionType,
+			Expiration:      info.Expiration,
+			Remediation:     info.Remediation,
+		})
+	}
 	var restrictionInfo *events.RestrictionInfo
-	if value.RestrictionInfo != nil {
-		restrictionInfo = &events.RestrictionInfo{
-			RestrictionType: value.RestrictionInfo.RestrictionType,
-			Expiration:      value.RestrictionInfo.Expiration,
-		}
+	if len(restrictionInfoList) > 0 {
+		first := restrictionInfoList[0]
+		restrictionInfo = &first
 	}
 
 	var partnerClientCertInfo *events.PartnerClientCertificationInfo
@@ -852,7 +868,7 @@ func (wh *WebhookManager) handleAccountUpdateSubscriptionEvents(baseEvent events
 		}
 	}
 
-	_ = wh.EventManager.Publish(events.AccountUpdateEventType, events.NewAccountUpdateEvent(
+	event := events.NewAccountUpdateEvent(
 		&baseEvent,
 		events.AccountUpdateEventEnum(value.Event),
 		value.PhoneNumber,
@@ -863,11 +879,13 @@ func (wh *WebhookManager) handleAccountUpdateSubscriptionEvents(baseEvent events
 		banInfo,
 		restrictionInfo,
 		partnerClientCertInfo,
-	))
+	)
+	event.RestrictionInfoList = restrictionInfoList
+	_ = wh.EventManager.Publish(events.AccountUpdateEventType, event)
 }
 
 func (wh *WebhookManager) handleAccountReviewSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value AccountReviewUpdateValue) {
-	_ = wh.EventManager.Publish(events.AccountAlertsEventType, events.NewAccountReviewUpdateEvent(
+	_ = wh.EventManager.Publish(events.AccountReviewUpdateEventType, events.NewAccountReviewUpdateEvent(
 		&baseEvent,
 		events.AccountReviewUpdateEventEnum(value.Decision),
 	))
@@ -875,7 +893,7 @@ func (wh *WebhookManager) handleAccountReviewSubscriptionEvents(baseEvent events
 }
 
 func (wh *WebhookManager) handleBusinessCapabilitySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value BusinessCapabilityUpdateValue) {
-	_ = wh.EventManager.Publish(events.AccountAlertsEventType, events.NewBusinessCapabilityUpdateEvent(
+	_ = wh.EventManager.Publish(events.BusinessCapabilityUpdateEventType, events.NewBusinessCapabilityUpdateEvent(
 		&baseEvent,
 		int64(value.MaxDailyConversationPerPhone),
 		int64(value.MaxPhoneNumbersPerBusiness),
@@ -884,7 +902,7 @@ func (wh *WebhookManager) handleBusinessCapabilitySubscriptionEvents(baseEvent e
 }
 
 func (wh *WebhookManager) handleMessageTemplateQualitySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateQualityUpdateValue) {
-	_ = wh.EventManager.Publish(events.AccountAlertsEventType, events.NewMessageTemplateQualityUpdateEvent(
+	_ = wh.EventManager.Publish(events.MessageTemplateQualityUpdateEventType, events.NewMessageTemplateQualityUpdateEvent(
 		&baseEvent,
 		events.MessageTemplateQualityUpdateQualityScoreEnum(value.PreviousQualityScore),
 		events.MessageTemplateQualityUpdateQualityScoreEnum(value.NewQualityScore),
@@ -895,19 +913,30 @@ func (wh *WebhookManager) handleMessageTemplateQualitySubscriptionEvents(baseEve
 }
 
 func (wh *WebhookManager) handleMessageTemplateStatusSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateStatusUpdateValue) {
-	_ = wh.EventManager.Publish(events.AccountAlertsEventType, events.NewMessageTemplateStatusUpdateEvent(
+	event := events.NewMessageTemplateStatusUpdateEvent(
 		&baseEvent,
 		events.MessageTemplateStatusUpdateEventEnum(value.Event),
 		value.MessageTemplateId,
 		value.MessageTemplateName,
 		value.MessageTemplateLanguage,
 		events.MessageTemplateStatusUpdateReason(value.Reason),
-	))
+	)
+	event.MessageTemplateCategory = events.MessageTemplateCategoryEnum(value.MessageTemplateCategory)
+	if value.DisableInfo != (TemplateMessageStatusUpdateDisableInfo{}) {
+		event.DisableInfo = &events.TemplateDisableInfo{DisableDate: value.DisableInfo.DisableDate}
+	}
+	if value.OtherInfo != (TemplateMessageStatusUpdateOtherInfo{}) {
+		event.OtherInfo = &events.TemplateOtherInfo{Title: value.OtherInfo.Title, Description: value.OtherInfo.Description}
+	}
+	if value.RejectionInfo != nil {
+		event.RejectionInfo = &events.TemplateRejectionInfo{Reason: value.RejectionInfo.Reason, Recommendation: value.RejectionInfo.Recommendation}
+	}
+	_ = wh.EventManager.Publish(events.MessageTemplateStatusUpdateEventType, event)
 
 }
 
 func (wh *WebhookManager) handlePhoneNumberNameSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value PhoneNumberNameUpdateValue) {
-	_ = wh.EventManager.Publish(events.AccountAlertsEventType, events.NewPhoneNumberNameUpdateEvent(
+	_ = wh.EventManager.Publish(events.PhoneNumberNameUpdateEventType, events.NewPhoneNumberNameUpdateEvent(
 		&baseEvent,
 		value.DisplayPhoneNumber,
 		value.RequestedVerifiedName,
@@ -917,23 +946,28 @@ func (wh *WebhookManager) handlePhoneNumberNameSubscriptionEvents(baseEvent even
 }
 
 func (wh *WebhookManager) handlePhoneNumberQualitySubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value PhoneNumberQualityUpdateValue) {
-	_ = wh.EventManager.Publish(events.AccountAlertsEventType, events.NewPhoneNumberQualityUpdateEvent(
+	event := events.NewPhoneNumberQualityUpdateEvent(
 		&baseEvent,
 		value.DisplayPhoneNumber,
 		events.PhoneNumberUpdateEventEnum(value.Event),
 		events.PhoneNumberQualityUpdateCurrentLimitEnum(value.CurrentLimit),
-	))
+	)
+	event.OldLimit = events.PhoneNumberQualityUpdateCurrentLimitEnum(value.OldLimit)
+	event.MaxDailyConversationsPerBusiness = value.MaxDailyConversationsPerBusiness
+	_ = wh.EventManager.Publish(events.PhoneNumberQualityUpdateEventType, event)
 }
 
 func (wh *WebhookManager) handleTemplateCategoryUpdateSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value TemplateCategoryUpdateValue) {
-	_ = wh.EventManager.Publish(events.AccountAlertsEventType, events.NewMessageTemplateCategoryUpdateEvent(
+	event := events.NewMessageTemplateCategoryUpdateEvent(
 		&baseEvent,
 		value.MessageTemplateId,
 		value.MessageTemplateName,
 		value.MessageTemplateLanguage,
 		events.MessageTemplateCategoryEnum(value.PreviousCategory),
 		events.MessageTemplateCategoryEnum(value.NewCategory),
-	))
+	)
+	event.CorrectCategory = events.MessageTemplateCategoryEnum(value.CorrectCategory)
+	_ = wh.EventManager.Publish(events.TemplateCategoryUpdateEventType, event)
 }
 
 func (wh *WebhookManager) handleUserPreferencesSubscriptionEvents(baseEvent events.BaseBusinessAccountEvent, value UserPreferencesValue) {
@@ -1020,6 +1054,7 @@ func (wh *WebhookManager) handleSmbMessageEchoesSubscriptionEvents(baseEvent eve
 			Id:        e.Id,
 			Timestamp: e.Timestamp,
 			Type:      e.Type,
+			Content:   e.MessageContent,
 		}
 	}
 	_ = wh.EventManager.Publish(events.SmbMessageEchoesEventType, events.NewSmbMessageEchoesEvent(

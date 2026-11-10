@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/wapikit/wapi.go/internal/request_client"
@@ -176,7 +176,8 @@ type WhatsappBusinessAccountAnalyticsResponse struct {
 	DataPoints   []AnalyticsDataPoint `json:"data_points,omitempty"`
 }
 
-// FetchAnalytics fetches the analytics for the business account.
+// FetchAnalytics fetches message analytics (sent and delivered counts) for
+// the business account.
 func (client *BusinessClient) FetchAnalytics(options AccountAnalyticsOptions) (WhatsappBusinessAccountAnalyticsResponse, error) {
 	apiRequest := client.requester.NewApiRequest(client.BusinessAccountId, http.MethodGet)
 	analyticsField := apiRequest.AddField(request_client.ApiRequestQueryParamField{
@@ -186,30 +187,35 @@ func (client *BusinessClient) FetchAnalytics(options AccountAnalyticsOptions) (W
 	analyticsField.AddFilter("start", fmt.Sprint(options.Start.Unix()))
 	analyticsField.AddFilter("end", fmt.Sprint(options.End.Unix()))
 	analyticsField.AddFilter("granularity", string(options.Granularity))
+	// An empty list means every phone number / country.
+	analyticsField.AddFilter("phone_numbers", graphListParam(options.PhoneNumbers))
+	analyticsField.AddFilter("country_codes", graphListParam(options.CountryCodes))
 
-	if len(options.PhoneNumbers) > 0 {
-		// get specific phone numbers
-		analyticsField.AddFilter("phone_numbers", strings.Join(options.PhoneNumbers, ","))
-	} else {
-		// get all phone numbers
-		analyticsField.AddFilter("phone_numbers", "[]")
-	}
-
-	if len(options.CountryCodes) > 0 {
-		analyticsField.AddFilter("country_codes", strings.Join(options.CountryCodes, ","))
-	} else {
-		// get all country codes
-		analyticsField.AddFilter("country_codes", "[]")
-	}
 	response, err := apiRequest.Execute()
 	if err != nil {
 		return WhatsappBusinessAccountAnalyticsResponse{}, err
 	}
-	var responseToReturn WhatsappBusinessAccountAnalyticsResponse
-	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+	// Meta nests the result under the requested field name.
+	var envelope struct {
+		Analytics WhatsappBusinessAccountAnalyticsResponse `json:"analytics"`
+	}
+	if err := json.Unmarshal([]byte(response), &envelope); err != nil {
 		return WhatsappBusinessAccountAnalyticsResponse{}, fmt.Errorf("error unmarshalling analytics response: %w", err)
 	}
-	return responseToReturn, nil
+	return envelope.Analytics, nil
+}
+
+// graphListParam renders values as a JSON array, the form Graph API field
+// filters such as phone_numbers(["1","2"]) expect.
+func graphListParam[T ~string](values []T) string {
+	if len(values) == 0 {
+		return "[]"
+	}
+	encoded, err := json.Marshal(values)
+	if err != nil {
+		return "[]"
+	}
+	return string(encoded)
 }
 
 type ConversationCategoryType string
@@ -275,7 +281,9 @@ type WhatsAppConversationAnalyticsNode struct {
 	ConversationType      string `json:"conversation_type,omitempty"`
 	ConversationDirection string `json:"conversation_direction,omitempty"`
 	ConversationCategory  string `json:"conversation_category,omitempty"`
-	Cost                  int    `json:"cost,omitempty"`
+	// Cost is rounded to a whole number; ConversationAnalyticsDataPoint.Cost
+	// keeps the exact value.
+	Cost int `json:"cost,omitempty"`
 }
 
 type WhatsAppConversationAnalyticsEdge struct {
@@ -289,8 +297,31 @@ type WhatsAppConversationAnalyticsResponse struct {
 	ConversationAnalytics []WhatsAppConversationAnalyticsEdge `json:"conversation_analytics" validate:"required"`
 }
 
-// ConversationAnalytics fetches the conversation analytics for the business account.
-func (client *BusinessClient) ConversationAnalytics(options ConversationAnalyticsOptions) (*WhatsAppConversationAnalyticsResponse, error) {
+// ConversationAnalyticsDataPoint is one bucket of conversation analytics.
+type ConversationAnalyticsDataPoint struct {
+	Start                 int64   `json:"start"`
+	End                   int64   `json:"end"`
+	Conversation          int     `json:"conversation,omitempty"`
+	PhoneNumber           string  `json:"phone_number,omitempty"`
+	Country               string  `json:"country,omitempty"`
+	ConversationType      string  `json:"conversation_type,omitempty"`
+	ConversationDirection string  `json:"conversation_direction,omitempty"`
+	ConversationCategory  string  `json:"conversation_category,omitempty"`
+	Cost                  float64 `json:"cost,omitempty"`
+}
+
+// ConversationAnalyticsResult is the conversation_analytics object Meta
+// returns: one or more groups of data points, plus paging.
+type ConversationAnalyticsResult struct {
+	Data []struct {
+		DataPoints []ConversationAnalyticsDataPoint `json:"data_points,omitempty"`
+	} `json:"data,omitempty"`
+	Paging manager.PaginationDetails `json:"paging,omitempty"`
+}
+
+// FetchConversationAnalytics fetches conversation counts and cost for the
+// business account.
+func (client *BusinessClient) FetchConversationAnalytics(options ConversationAnalyticsOptions) (*ConversationAnalyticsResult, error) {
 	apiRequest := client.requester.NewApiRequest(client.BusinessAccountId, http.MethodGet)
 	analyticsField := apiRequest.AddField(request_client.ApiRequestQueryParamField{
 		Name:    "conversation_analytics",
@@ -299,65 +330,65 @@ func (client *BusinessClient) ConversationAnalytics(options ConversationAnalytic
 	analyticsField.AddFilter("start", fmt.Sprint(options.Start.Unix()))
 	analyticsField.AddFilter("end", fmt.Sprint(options.End.Unix()))
 	analyticsField.AddFilter("granularity", string(options.Granularity))
-
-	if len(options.PhoneNumbers) > 0 {
-		// get specific phone numbers
-		analyticsField.AddFilter("phone_numbers", strings.Join(options.PhoneNumbers, ","))
-	} else {
-		// get all phone numbers
-		analyticsField.AddFilter("phone_numbers", "[]")
-	}
-
+	// An empty list means every phone number.
+	analyticsField.AddFilter("phone_numbers", graphListParam(options.PhoneNumbers))
+	// The remaining filters are left out when empty, which Meta treats as "all".
 	if len(options.ConversationCategory) > 0 {
-		categoryStrings := make([]string, len(options.ConversationCategory))
-		for i, category := range options.ConversationCategory {
-			categoryStrings[i] = string(category)
-		}
-		analyticsField.AddFilter("conversation_category", strings.Join(categoryStrings, ","))
-	} else {
-		analyticsField.AddFilter("conversation_category", "[]") // Empty slice
+		analyticsField.AddFilter("conversation_categories", graphListParam(options.ConversationCategory))
 	}
-
 	if len(options.ConversationTypes) > 0 {
-		typeStrings := make([]string, len(options.ConversationTypes))
-		for i, ctype := range options.ConversationTypes {
-			typeStrings[i] = string(ctype)
-		}
-		analyticsField.AddFilter("conversation_types", strings.Join(typeStrings, ","))
-	} else {
-		analyticsField.AddFilter("conversation_types", "[]") // Empty slice
+		analyticsField.AddFilter("conversation_types", graphListParam(options.ConversationTypes))
 	}
-
 	if len(options.ConversationDirection) > 0 {
-		directionStrings := make([]string, len(options.ConversationDirection))
-		for i, direction := range options.ConversationDirection {
-			directionStrings[i] = string(direction)
-		}
-		analyticsField.AddFilter("conversation_direction", strings.Join(directionStrings, ","))
-	} else {
-		analyticsField.AddFilter("conversation_direction", "[]") // Empty slice
+		analyticsField.AddFilter("conversation_directions", graphListParam(options.ConversationDirection))
 	}
-
 	if len(options.Dimensions) > 0 {
-		dimensionsStrings := make([]string, len(options.Dimensions))
-		for i, dim := range options.Dimensions {
-			dimensionsStrings[i] = string(dim)
-		}
-		analyticsField.AddFilter("dimensions", strings.Join(dimensionsStrings, ","))
-	} else {
-		// get all country codes
-		analyticsField.AddFilter("dimensions", "[]")
+		analyticsField.AddFilter("dimensions", graphListParam(options.Dimensions))
 	}
 
 	response, err := apiRequest.Execute()
 	if err != nil {
 		return nil, err
 	}
-	var responseToReturn WhatsAppConversationAnalyticsResponse
-	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+	var envelope struct {
+		ConversationAnalytics ConversationAnalyticsResult `json:"conversation_analytics"`
+	}
+	if err := json.Unmarshal([]byte(response), &envelope); err != nil {
 		return nil, fmt.Errorf("error unmarshalling conversation analytics response: %w", err)
 	}
-	return &responseToReturn, nil
+	return &envelope.ConversationAnalytics, nil
+}
+
+// ConversationAnalytics fetches the conversation analytics for the business account.
+//
+// Deprecated: use FetchConversationAnalytics, which keeps fractional costs.
+// This method returns the same data with Cost rounded to a whole number.
+func (client *BusinessClient) ConversationAnalytics(options ConversationAnalyticsOptions) (*WhatsAppConversationAnalyticsResponse, error) {
+	result, err := client.FetchConversationAnalytics(options)
+	if err != nil {
+		return nil, err
+	}
+	edge := WhatsAppConversationAnalyticsEdge{Paging: result.Paging}
+	for _, group := range result.Data {
+		nodes := make([]WhatsAppConversationAnalyticsNode, len(group.DataPoints))
+		for i, point := range group.DataPoints {
+			nodes[i] = WhatsAppConversationAnalyticsNode{
+				Start:                 int(point.Start),
+				End:                   int(point.End),
+				Conversation:          point.Conversation,
+				PhoneNumber:           point.PhoneNumber,
+				Country:               point.Country,
+				ConversationType:      point.ConversationType,
+				ConversationDirection: point.ConversationDirection,
+				ConversationCategory:  point.ConversationCategory,
+				Cost:                  int(math.Round(point.Cost)),
+			}
+		}
+		edge.Data = append(edge.Data, struct {
+			DataPoints []WhatsAppConversationAnalyticsNode `json:"data_points,omitempty"`
+		}{DataPoints: nodes})
+	}
+	return &WhatsAppConversationAnalyticsResponse{ConversationAnalytics: []WhatsAppConversationAnalyticsEdge{edge}}, nil
 }
 
 type BusinessRole string

@@ -17,6 +17,9 @@ type TemplateCategoryUpdateEvent struct {
 	MessageTemplateLanguage string
 	PreviousCategory        MessageTemplateCategoryEnum
 	NewCategory             MessageTemplateCategoryEnum
+	// CorrectCategory is the category Meta determined the template belongs to,
+	// when it sends one.
+	CorrectCategory MessageTemplateCategoryEnum
 }
 
 func NewMessageTemplateCategoryUpdateEvent(baseEvent *BaseBusinessAccountEvent, messageTemplateId int64, messageTemplateName string, messageTemplateLanguage string, previousCategory MessageTemplateCategoryEnum, newCategory MessageTemplateCategoryEnum) *TemplateCategoryUpdateEvent {

@@ -2,6 +2,7 @@ package manager
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -218,6 +219,8 @@ type MessageTemplateCreationResponse struct {
 	Id       string                  `json:"id,omitempty"`
 	Status   MessageTemplateStatus   `json:"status,omitempty"`
 	Category MessageTemplateCategory `json:"category,omitempty"`
+	// Success is set by Update, whose response is {"success": true}.
+	Success bool `json:"success,omitempty"`
 }
 
 // Create sends a creation request for a message template.
@@ -247,7 +250,8 @@ type WhatsAppBusinessAccountMessageTemplateUpdateRequestBody struct {
 	MessageSendTtlSeconds int                                                         `json:"message_send_ttl_seconds,omitempty"`
 }
 
-// Update sends an update request for a template.
+// Update sends an update request for a template. Meta answers with
+// {"success": true}, so only Success is set on the returned response.
 func (manager *TemplateManager) Update(templateId string, updates WhatsAppBusinessAccountMessageTemplateUpdateRequestBody) (*MessageTemplateCreationResponse, error) {
 	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{templateId}, ""), http.MethodPost)
 	jsonBody, err := json.Marshal(updates)
@@ -273,9 +277,57 @@ type WhatsAppBusinessAccountMessageTemplateDeleteRequestBody struct {
 	Name  string `json:"name,omitempty"`
 }
 
-// Delete is not implemented and does nothing; it never calls the Graph API.
-func (tm *TemplateManager) Delete(id string) {
-	// Implement deletion logic here as per API requirements.
+// Delete deletes the template with the given ID. Meta needs the template's
+// name as well as its ID, so Delete looks the name up first. Only this
+// language version of the template is deleted.
+func (manager *TemplateManager) Delete(id string) error {
+	lookup := manager.requester.NewApiRequest(id, http.MethodGet)
+	lookup.AddQueryParam("fields", "name")
+	response, err := lookup.Execute()
+	if err != nil {
+		return err
+	}
+	var template struct {
+		Name string `json:"name"`
+	}
+	if err := json.Unmarshal([]byte(response), &template); err != nil {
+		return err
+	}
+	if template.Name == "" {
+		return fmt.Errorf("template %s: name not found", id)
+	}
+	return manager.deleteTemplates(WhatsAppBusinessAccountMessageTemplateDeleteRequestBody{HsmId: id, Name: template.Name})
+}
+
+// DeleteByName deletes every language version of the template with the
+// given name.
+func (manager *TemplateManager) DeleteByName(name string) error {
+	if name == "" {
+		return fmt.Errorf("template name is required")
+	}
+	return manager.deleteTemplates(WhatsAppBusinessAccountMessageTemplateDeleteRequestBody{Name: name})
+}
+
+func (manager *TemplateManager) deleteTemplates(params WhatsAppBusinessAccountMessageTemplateDeleteRequestBody) error {
+	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{manager.businessAccountId, "message_templates"}, "/"), http.MethodDelete)
+	apiRequest.AddQueryParam("name", params.Name)
+	if params.HsmId != "" {
+		apiRequest.AddQueryParam("hsm_id", params.HsmId)
+	}
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return err
+	}
+	var result struct {
+		Success bool `json:"success"`
+	}
+	if err := json.Unmarshal([]byte(response), &result); err != nil {
+		return err
+	}
+	if !result.Success {
+		return fmt.Errorf("template deletion returned success=false: %s", response)
+	}
+	return nil
 }
 
 // WhatsAppBusinessAccountMessageTemplatePreviewButton represents a preview button.
@@ -307,9 +359,15 @@ type TemplateMigrationResponse struct {
 
 // MigrateFromOtherBusinessAccount migrates templates from another business account.
 func (manager *TemplateManager) MigrateFromOtherBusinessAccount(sourcePageNumber int, sourceWabaId int) (*TemplateMigrationResponse, error) {
-	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{manager.businessAccountId, "migrate_message_templates"}, "/"), http.MethodGet)
-	apiRequest.AddQueryParam("page_number", strconv.Itoa(sourcePageNumber))
-	apiRequest.AddQueryParam("source_waba_id", strconv.Itoa(sourceWabaId))
+	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{manager.businessAccountId, "migrate_message_templates"}, "/"), http.MethodPost)
+	jsonBody, err := json.Marshal(map[string]string{
+		"page_number":    strconv.Itoa(sourcePageNumber),
+		"source_waba_id": strconv.Itoa(sourceWabaId),
+	})
+	if err != nil {
+		return nil, err
+	}
+	apiRequest.SetBody(string(jsonBody))
 	response, err := apiRequest.Execute()
 	if err != nil {
 		return nil, err
