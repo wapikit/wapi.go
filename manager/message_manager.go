@@ -66,7 +66,7 @@ type StatusResponse struct {
 func (mm *MessageManager) dispatch(message components.BaseMessage, configs components.ApiCompatibleJsonConverterConfigs, endpointSuffix string) (*MessageSendResponse, error) {
 	body, err := message.ToJson(configs)
 	if err != nil {
-		return nil, fmt.Errorf("error converting message to json: %v", err)
+		return nil, fmt.Errorf("error converting message to json: %w", err)
 	}
 
 	apiRequest := mm.requester.NewApiRequest(strings.Join([]string{mm.PhoneNumberId, endpointSuffix}, "/"), http.MethodPost)
@@ -159,7 +159,7 @@ func (mm *MessageManager) readMessage(messageId string, showTyping bool) error {
 	apiRequest.SetBody(string(body))
 	responseStr, err := apiRequest.Execute()
 	if err != nil {
-		return fmt.Errorf("error executing read message request: %v", err)
+		return fmt.Errorf("error executing read message request: %w", err)
 	}
 
 	// Parse the response to check for errors

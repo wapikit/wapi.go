@@ -34,11 +34,13 @@ func main() {
 	// 	Granularity: business.ConversationAnalyticsGranularityTypeDay,
 	// })
 
-	client.Business.FetchAnalytics(business.AccountAnalyticsOptions{
+	if _, err := client.Business.FetchAnalytics(business.AccountAnalyticsOptions{
 		Start:       time.Now().Add(-time.Hour * 24 * 7 * 30),
 		End:         time.Now(),
 		Granularity: business.AnalyticsRequestGranularityTypeDay,
-	})
+	}); err != nil {
+		fmt.Println("error fetching analytics", err)
+	}
 
 	// client.Business.PhoneNumber.FetchAll(manager.FetchPhoneNumberFilters{
 	// 	GetSandboxNumbers: false,
@@ -144,8 +146,12 @@ func main() {
 		return
 	}
 
-	buttonMessage.AddButton("1", "Button 1")
-	buttonMessage.AddButton("2", "Button 2")
+	for id, title := range map[string]string{"1": "Button 1", "2": "Button 2"} {
+		if err := buttonMessage.AddButton(id, title); err != nil {
+			fmt.Println("error adding button", err)
+			return
+		}
+	}
 
 	client.On(events.ReadyEventType, func(event events.BaseEvent) {
 		fmt.Println("client is ready")
@@ -158,23 +164,41 @@ func main() {
 
 		switch strings.ToLower(textMessageEvent.Text) {
 		case "text":
-			textMessageEvent.Reply(textMessage)
+			if _, err := textMessageEvent.Reply(textMessage); err != nil {
+				fmt.Println("error sending reply", err)
+			}
 		case "audio":
-			textMessageEvent.Reply(audioMessage)
+			if _, err := textMessageEvent.Reply(audioMessage); err != nil {
+				fmt.Println("error sending reply", err)
+			}
 		case "image":
-			textMessageEvent.Reply(imageMessage)
+			if _, err := textMessageEvent.Reply(imageMessage); err != nil {
+				fmt.Println("error sending reply", err)
+			}
 		case "video":
-			textMessageEvent.Reply(videoMessage)
+			if _, err := textMessageEvent.Reply(videoMessage); err != nil {
+				fmt.Println("error sending reply", err)
+			}
 		case "contact":
-			textMessageEvent.Reply(contactMessage)
+			if _, err := textMessageEvent.Reply(contactMessage); err != nil {
+				fmt.Println("error sending reply", err)
+			}
 		case "location":
-			textMessageEvent.Reply(locationMessage)
+			if _, err := textMessageEvent.Reply(locationMessage); err != nil {
+				fmt.Println("error sending reply", err)
+			}
 		case "reaction":
-			textMessageEvent.React("😍")
+			if _, err := textMessageEvent.React("😍"); err != nil {
+				fmt.Println("error sending reply", err)
+			}
 		case "list":
-			textMessageEvent.Reply(listMessage)
+			if _, err := textMessageEvent.Reply(listMessage); err != nil {
+				fmt.Println("error sending reply", err)
+			}
 		case "button":
-			textMessageEvent.Reply(buttonMessage)
+			if _, err := textMessageEvent.Reply(buttonMessage); err != nil {
+				fmt.Println("error sending reply", err)
+			}
 		case "qr":
 			{
 				response, err := client.Business.PhoneNumber.GenerateQrCode(phoneNumber, "This is Wapi.go this side.")
@@ -196,10 +220,14 @@ func main() {
 					return
 				}
 
-				textMessageEvent.Reply(qrCodeMessage)
+				if _, err := textMessageEvent.Reply(qrCodeMessage); err != nil {
+					fmt.Println("error sending reply", err)
+				}
 			}
 		default:
-			textMessageEvent.Reply(textMessage)
+			if _, err := textMessageEvent.Reply(textMessage); err != nil {
+				fmt.Println("error sending reply", err)
+			}
 		}
 	})
 

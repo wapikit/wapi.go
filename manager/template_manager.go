@@ -234,7 +234,9 @@ func (manager *TemplateManager) Create(body WhatsappMessageTemplateCreateRequest
 	}
 
 	var responseToReturn MessageTemplateCreationResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, err
+	}
 	return &responseToReturn, nil
 }
 
@@ -259,7 +261,9 @@ func (manager *TemplateManager) Update(templateId string, updates WhatsAppBusine
 	}
 
 	var responseToReturn MessageTemplateCreationResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, err
+	}
 	return &responseToReturn, nil
 }
 
@@ -269,7 +273,7 @@ type WhatsAppBusinessAccountMessageTemplateDeleteRequestBody struct {
 	Name  string `json:"name,omitempty"`
 }
 
-// Delete dissociates a template (delete implementation to be added as needed).
+// Delete is not implemented and does nothing; it never calls the Graph API.
 func (tm *TemplateManager) Delete(id string) {
 	// Implement deletion logic here as per API requirements.
 }
@@ -311,7 +315,9 @@ func (manager *TemplateManager) MigrateFromOtherBusinessAccount(sourcePageNumber
 		return nil, err
 	}
 	var responseToReturn TemplateMigrationResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, err
+	}
 	return &responseToReturn, nil
 }
 
