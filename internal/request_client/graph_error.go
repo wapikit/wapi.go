@@ -2,8 +2,14 @@ package request_client
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 )
+
+// asGraphAPIError reports whether err (or anything it wraps) is a *GraphAPIError.
+func asGraphAPIError(err error, target **GraphAPIError) bool {
+	return errors.As(err, target)
+}
 
 // GraphAPIError is returned when the Graph API responds with a non-2xx status.
 // It carries the HTTP status, the raw response body, and the parsed fields from

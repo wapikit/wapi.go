@@ -2,6 +2,7 @@ package business
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -120,11 +121,19 @@ func (client *BusinessClient) Fetch() (*FetchBusinessAccountResponse, error) {
 
 	response, err := apiRequest.Execute()
 	if err != nil {
-		fmt.Println("Error while fetching business account", err)
 		return nil, err
 	}
 	var responseToReturn FetchBusinessAccountResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		// A field whose JSON type differs from the struct (Meta changing a
+		// field's shape) still leaves every other field populated. Earlier
+		// releases ignored that case and returned the partial result; keep doing
+		// so, and only fail on a body that is not JSON at all.
+		var typeErr *json.UnmarshalTypeError
+		if !errors.As(err, &typeErr) {
+			return nil, fmt.Errorf("error unmarshalling business account response: %w", err)
+		}
+	}
 	return &responseToReturn, nil
 }
 
@@ -194,11 +203,12 @@ func (client *BusinessClient) FetchAnalytics(options AccountAnalyticsOptions) (W
 	}
 	response, err := apiRequest.Execute()
 	if err != nil {
-		// return wapi.go custom error here
-		fmt.Println("Error while fetching business account", err)
+		return WhatsappBusinessAccountAnalyticsResponse{}, err
 	}
 	var responseToReturn WhatsappBusinessAccountAnalyticsResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return WhatsappBusinessAccountAnalyticsResponse{}, fmt.Errorf("error unmarshalling analytics response: %w", err)
+	}
 	return responseToReturn, nil
 }
 
@@ -341,14 +351,12 @@ func (client *BusinessClient) ConversationAnalytics(options ConversationAnalytic
 
 	response, err := apiRequest.Execute()
 	if err != nil {
-		// return wapi.go custom error here
-		fmt.Println("Error while fetching business account", err)
+		return nil, err
 	}
 	var responseToReturn WhatsAppConversationAnalyticsResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
-
-	fmt.Println("Response to return is", responseToReturn)
-
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, fmt.Errorf("error unmarshalling conversation analytics response: %w", err)
+	}
 	return &responseToReturn, nil
 }
 

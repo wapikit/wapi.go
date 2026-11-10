@@ -68,7 +68,6 @@ type ProductListMessage struct {
 }
 
 func (message *ProductListMessage) AddSection(section ProductSection) {
-	fmt.Println("message", message, "section", section)
 	message.Action.Sections = append(message.Action.Sections, section)
 }
 

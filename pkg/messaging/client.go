@@ -45,27 +45,35 @@ type RegisterResponse struct {
 	Success bool `json:"success"`
 }
 
-// this register function is for one time registration of the phone number to enable the usage with WhatsApp Cloud API
+// Register registers the phone number for use with the WhatsApp Cloud API.
+// pin is the six-digit two-step verification PIN (set or reused by this call).
 func (client *MessagingClient) Register(pin string) (RegisterResponse, error) {
-	apiRequest := client.Requester.NewApiRequest(strings.Join([]string{client.PhoneNumberId, "resgiter"}, "/"), http.MethodPost)
-	apiRequest.AddQueryParam("messaging_product", "WHATSAPP")
-	apiRequest.AddQueryParam("pin", pin)
-	response, err := apiRequest.Execute()
+	body, err := json.Marshal(map[string]string{
+		"messaging_product": "whatsapp",
+		"pin":               pin,
+	})
 	if err != nil {
 		return RegisterResponse{}, err
 	}
-	var registerResponse RegisterResponse
-	json.Unmarshal([]byte(response), &registerResponse)
-	return registerResponse, nil
+	apiRequest := client.Requester.NewApiRequest(strings.Join([]string{client.PhoneNumberId, "register"}, "/"), http.MethodPost)
+	apiRequest.SetBody(string(body))
+	return executeRegisterRequest(apiRequest)
 }
 
+// Deregister deregisters the phone number from the WhatsApp Cloud API.
 func (client *MessagingClient) Deregister() (RegisterResponse, error) {
 	apiRequest := client.Requester.NewApiRequest(strings.Join([]string{client.PhoneNumberId, "deregister"}, "/"), http.MethodPost)
+	return executeRegisterRequest(apiRequest)
+}
+
+func executeRegisterRequest(apiRequest *request_client.ApiRequest) (RegisterResponse, error) {
 	response, err := apiRequest.Execute()
 	if err != nil {
 		return RegisterResponse{}, err
 	}
 	var registerResponse RegisterResponse
-	json.Unmarshal([]byte(response), &registerResponse)
+	if err := json.Unmarshal([]byte(response), &registerResponse); err != nil {
+		return RegisterResponse{}, err
+	}
 	return registerResponse, nil
 }

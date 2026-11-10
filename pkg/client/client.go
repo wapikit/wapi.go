@@ -1,6 +1,8 @@
 package wapi
 
 import (
+	"net/http"
+
 	"github.com/labstack/echo/v4"
 	"github.com/wapikit/wapi.go/internal/request_client"
 	"github.com/wapikit/wapi.go/manager"
@@ -17,6 +19,22 @@ type ClientConfig struct {
 	// these two are not required, because may be user want to use their own server
 	WebhookPath       string
 	WebhookServerPort int
+
+	// The fields below are optional; leaving them empty keeps the defaults.
+
+	// WebhookAppSecret is the Meta app secret. When set, the webhook POST
+	// handler rejects requests whose X-Hub-Signature-256 header does not match
+	// the raw body with 401. Leave it empty if a proxy in front of the handler
+	// verifies signatures itself or rewrites the body.
+	WebhookAppSecret string
+	// HTTPClient is used for every Graph API request. Defaults to a shared
+	// client with connect, TLS and response-header timeouts.
+	HTTPClient *http.Client
+	// ApiVersion is the Graph API version, e.g. "v21.0". Defaults to "v20.0".
+	ApiVersion string
+	// GraphBaseURL is the scheme and host of the Graph API. Defaults to
+	// "https://graph.facebook.com"; set it to an httptest server URL in tests.
+	GraphBaseURL string
 }
 
 type Client struct {
@@ -31,20 +49,31 @@ type Client struct {
 }
 
 func New(config *ClientConfig) *Client {
-	eventManager := *manager.NewEventManager()
-	requester := *request_client.NewRequestClient(config.ApiAccessToken)
+	eventManager := manager.NewEventManager()
+	requester := request_client.NewRequestClientWithOptions(config.ApiAccessToken, request_client.Options{
+		HTTPClient: config.HTTPClient,
+		ApiVersion: config.ApiVersion,
+		BaseURL:    config.GraphBaseURL,
+	})
 	return &Client{
 		businessAccountId: config.BusinessAccountId,
 		apiAccessToken:    config.ApiAccessToken,
 		Messaging:         []messaging.MessagingClient{},
-		eventManager:      &eventManager,
+		eventManager:      eventManager,
 		Business: *business.NewBusinessClient(&business.BusinessClientConfig{
 			BusinessAccountId: config.BusinessAccountId,
 			AccessToken:       config.ApiAccessToken,
-			Requester:         &requester,
+			Requester:         requester,
 		}),
-		webhook:   manager.NewWebhook(&manager.WebhookManagerConfig{Path: config.WebhookPath, Secret: config.WebhookSecret, Port: config.WebhookServerPort, EventManager: eventManager, Requester: requester}),
-		requester: &requester,
+		webhook: manager.NewWebhook(&manager.WebhookManagerConfig{
+			Path:         config.WebhookPath,
+			Secret:       config.WebhookSecret,
+			AppSecret:    config.WebhookAppSecret,
+			Port:         config.WebhookServerPort,
+			EventManager: eventManager,
+			Requester:    *requester,
+		}),
+		requester: requester,
 	}
 }
 

@@ -1,6 +1,8 @@
 package events
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -100,7 +102,8 @@ func (bme BaseMessageEvent) GetEventType() string {
 	return "message"
 }
 
-// Reply to the message
+// Reply sends Message as a reply to this message and returns the id of the
+// sent message.
 func (baseMessageEvent *BaseMessageEvent) Reply(Message components.BaseMessage) (string, error) {
 	body, err := Message.ToJson(components.ApiCompatibleJsonConverterConfigs{
 		SendToPhoneNumber: baseMessageEvent.From,
@@ -113,13 +116,27 @@ func (baseMessageEvent *BaseMessageEvent) Reply(Message components.BaseMessage) 
 
 	apiRequest := baseMessageEvent.requester.NewApiRequest(strings.Join([]string{baseMessageEvent.PhoneNumber.Id, "messages"}, "/"), http.MethodPost)
 	apiRequest.SetBody(string(body))
-	apiRequest.Execute()
+	response, err := apiRequest.Execute()
+	if err != nil {
+		return "", err
+	}
 
-	return "", nil
-
+	var sendResponse struct {
+		Messages []struct {
+			ID string `json:"id"`
+		} `json:"messages"`
+	}
+	if err := json.Unmarshal([]byte(response), &sendResponse); err != nil {
+		return "", fmt.Errorf("error unmarshalling reply response: %w", err)
+	}
+	if len(sendResponse.Messages) == 0 {
+		return "", nil
+	}
+	return sendResponse.Messages[0].ID, nil
 }
 
-// React to the message
+// React reacts to this message with emoji and returns the id of the sent
+// reaction.
 func (baseMessageEvent *BaseMessageEvent) React(emoji string) (string, error) {
 	reactionMessage, err := components.NewReactionMessage(components.ReactionMessageParams{
 		Emoji:     emoji,
@@ -128,8 +145,7 @@ func (baseMessageEvent *BaseMessageEvent) React(emoji string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	baseMessageEvent.Reply(reactionMessage)
-	return "", nil
+	return baseMessageEvent.Reply(reactionMessage)
 }
 
 // BaseMediaMessageEvent represents a base media message event which contains media information.

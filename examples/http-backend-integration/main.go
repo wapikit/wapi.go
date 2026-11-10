@@ -28,7 +28,9 @@ func main() {
 			fmt.Println("error creating text message", err)
 			return
 		}
-		textMessageEvent.Reply(reply)
+		if _, err := textMessageEvent.Reply(reply); err != nil {
+			fmt.Println("error sending reply", err)
+		}
 	})
 
 	getHandler := client.GetWebhookGetRequestHandler()
@@ -39,6 +41,8 @@ func main() {
 	server.GET("/webhook", getHandler)
 	server.POST("/webhook", postHandler)
 
-	server.Start(":8080")
+	if err := server.Start(":8080"); err != nil {
+		fmt.Println("server stopped", err)
+	}
 
 }

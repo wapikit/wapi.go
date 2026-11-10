@@ -150,7 +150,10 @@ type WhatsappBusinessAccountPhoneNumberEdge struct {
 	Summary string                               `json:"summary,omitempty"`
 }
 
-// FetchAll fetches all phone numbers based on the provided filters.
+// FetchAll fetches the business account's LIVE phone numbers.
+//
+// getSandBoxNumbers is currently ignored: only numbers with account_mode LIVE
+// are returned, as in every previous release.
 func (manager *PhoneNumberManager) FetchAll(getSandBoxNumbers bool) (*WhatsappBusinessAccountPhoneNumberEdge, error) {
 	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{manager.businessAccountId, "/", "phone_numbers"}, ""), http.MethodGet)
 
@@ -224,8 +227,11 @@ func (manager *PhoneNumberManager) RequestVerificationCode(phoneNumberId string,
 	apiRequest.AddQueryParam("code_method", string(codeMethod))
 	apiRequest.AddQueryParam("language", languageCode)
 	response, err := apiRequest.Execute()
+	if err != nil {
+		return RequestVerificationCodeResponse{}, err
+	}
 	responseToReturn := RequestVerificationCodeResponse{}
-	json.Unmarshal([]byte(response), &responseToReturn)
+	err = json.Unmarshal([]byte(response), &responseToReturn)
 	return responseToReturn, err
 }
 
@@ -237,8 +243,11 @@ func (manager *PhoneNumberManager) VerifyCode(phoneNumberId, verificationCode st
 	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{phoneNumberId, "verify_code"}, "/"), http.MethodPost)
 	apiRequest.AddQueryParam("code", verificationCode)
 	response, err := apiRequest.Execute()
+	if err != nil {
+		return VerifyCodeResponse{}, err
+	}
 	responseToReturn := VerifyCodeResponse{}
-	json.Unmarshal([]byte(response), &responseToReturn)
+	err = json.Unmarshal([]byte(response), &responseToReturn)
 	return responseToReturn, err
 }
 
@@ -266,7 +275,9 @@ func (manager *PhoneNumberManager) GenerateQrCode(phoneNumber string, prefilledM
 		return nil, err
 	}
 	var responseToReturn GenerateQrCodeResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, err
+	}
 	return &responseToReturn, nil
 }
 
@@ -284,19 +295,23 @@ func (manager *PhoneNumberManager) GetAllQrCodes(phoneNumber string) (*GetAllQrC
 	}
 
 	var responseToReturn GetAllQrCodesResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, err
+	}
 	return &responseToReturn, nil
 }
 
 // GetQrCodeById gets a QR code by its ID for the specified phone number.
 func (manager *PhoneNumberManager) GetQrCodeById(phoneNumber, id string) (*GetAllQrCodesResponse, error) {
-	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{phoneNumber, "/message_qrdls", "/", id}, ""), http.MethodDelete)
+	apiRequest := manager.requester.NewApiRequest(strings.Join([]string{phoneNumber, "/message_qrdls", "/", id}, ""), http.MethodGet)
 	response, err := apiRequest.Execute()
 	if err != nil {
 		return nil, err
 	}
 	var responseToReturn GetAllQrCodesResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, err
+	}
 	return &responseToReturn, nil
 }
 
@@ -314,7 +329,9 @@ func (manager *PhoneNumberManager) DeleteQrCode(phoneNumber, id string) (*Delete
 		return nil, err
 	}
 	var responseToReturn DeleteQrCodeResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, err
+	}
 	return &responseToReturn, nil
 }
 
@@ -335,6 +352,8 @@ func (manager *PhoneNumberManager) UpdateQrCode(phoneNumber, id, prefilledMessag
 	}
 
 	var responseToReturn GenerateQrCodeResponse
-	json.Unmarshal([]byte(response), &responseToReturn)
+	if err := json.Unmarshal([]byte(response), &responseToReturn); err != nil {
+		return nil, err
+	}
 	return &responseToReturn, nil
 }
